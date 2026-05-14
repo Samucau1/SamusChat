@@ -1,5 +1,6 @@
 package com.chatapp.chatapp_backend.controller;
 
+
 import com.chatapp.chatapp_backend.dto.LoginRequest;
 import com.chatapp.chatapp_backend.dto.RegisterRequest;
 import com.chatapp.chatapp_backend.service.AuthService;
