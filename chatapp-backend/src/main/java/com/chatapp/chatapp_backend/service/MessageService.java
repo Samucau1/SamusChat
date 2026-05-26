@@ -7,6 +7,7 @@ import com.chatapp.chatapp_backend.entity.Message;
 import com.chatapp.chatapp_backend.entity.User;
 import com.chatapp.chatapp_backend.repository.ChannelRepository;
 import com.chatapp.chatapp_backend.repository.MessageRepository;
+import com.chatapp.chatapp_backend.repository.ServerMemberRepository;
 import com.chatapp.chatapp_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,6 +25,8 @@ public class MessageService {
     private final ChannelRepository channelRepository;
     private final UserRepository userRepository;
     private final PermissionService permissionService;
+    private final NotificationService notificationService;
+    private final ServerMemberRepository serverMemberRepository;
 
     public MessageResponse sendMessage(String senderEmail, Long channelId, MessageRequest request) {
         Channel channel = channelRepository.findById(channelId)
@@ -47,6 +50,8 @@ public class MessageService {
         message.setChannel(channel);
 
         messageRepository.save(message);
+
+        notifyServerMembers(channel, user, request.getContent().trim(), senderEmail);
 
         return toResponse(message);
     }
@@ -81,6 +86,9 @@ public class MessageService {
         message.setChannel(channel);
 
         messageRepository.save(message);
+
+        String notificationBody = message.getContent() != null ? message.getContent() : "Enviou um anexo";
+        notifyServerMembers(channel, user, notificationBody, senderEmail);
 
         return toResponse(message);
     }
@@ -127,5 +135,22 @@ public class MessageService {
         response.setAttachmentType(message.getAttachmentType());
         response.setCreatedAt(message.getCreatedAt());
         return response;
+    }
+
+    private void notifyServerMembers(Channel channel, User user, String body, String senderEmail) {
+        Long serverId = channel.getServer().getId();
+        List<String> memberEmails = serverMemberRepository
+                .findByServerId(serverId)
+                .stream()
+                .map(member -> member.getUserEmail())
+                .collect(Collectors.toList());
+
+        notificationService.sendToUsers(
+                memberEmails,
+                user.getUsername(),
+                body,
+                String.valueOf(channel.getId()),
+                senderEmail
+        );
     }
 }
