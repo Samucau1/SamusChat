@@ -1,10 +1,18 @@
 package com.chatapp.chatapp_backend.service;
 
-import com.chatapp.chatapp_backend.dto.*;
-import com.chatapp.chatapp_backend.entity.*;
-import com.chatapp.chatapp_backend.repository.*;
+import com.chatapp.chatapp_backend.dto.ChannelRequest;
+import com.chatapp.chatapp_backend.dto.ChannelResponse;
+import com.chatapp.chatapp_backend.dto.ServerRequest;
+import com.chatapp.chatapp_backend.dto.ServerResponse;
+import com.chatapp.chatapp_backend.entity.Channel;
+import com.chatapp.chatapp_backend.entity.Server;
+import com.chatapp.chatapp_backend.entity.ServerMember;
+import com.chatapp.chatapp_backend.repository.ChannelRepository;
+import com.chatapp.chatapp_backend.repository.ServerMemberRepository;
+import com.chatapp.chatapp_backend.repository.ServerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -15,8 +23,8 @@ public class ServerService {
     private final ServerRepository serverRepository;
     private final ChannelRepository channelRepository;
     private final ServerMemberRepository serverMemberRepository;
+    private final PermissionService permissionService;
 
-    // Cria um servidor e já adiciona o criador como ADMIN
     public ServerResponse createServer(String ownerEmail, ServerRequest request) {
         Server server = new Server();
         server.setName(request.getName());
@@ -24,14 +32,12 @@ public class ServerService {
         server.setOwnerEmail(ownerEmail);
         serverRepository.save(server);
 
-        // Cria canal geral automaticamente
         Channel general = new Channel();
         general.setName("geral");
         general.setType("TEXT");
         general.setServer(server);
         channelRepository.save(general);
 
-        // Adiciona o criador como ADMIN
         ServerMember member = new ServerMember();
         member.setUserEmail(ownerEmail);
         member.setRole("ADMIN");
@@ -41,36 +47,29 @@ public class ServerService {
         return toResponse(server);
     }
 
-    // Lista todos os servidores que o usuário participa
     public List<ServerResponse> getMyServers(String email) {
-        return serverMemberRepository.findByUserEmail(email)
+        return serverRepository.findByOwnerEmail(email)
                 .stream()
-                .map(ServerMember::getServer)
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
-    // Busca um servidor pelo ID
-    public ServerResponse getServer(String email, Long serverId) {
+    public ServerResponse getServer(Long serverId) {
         Server server = serverRepository.findById(serverId)
-                .orElseThrow(() -> new RuntimeException("Servidor não encontrado"));
-
-        if (!serverMemberRepository.existsByServerIdAndUserEmail(serverId, email)) {
-            throw new RuntimeException("Você não participa deste servidor");
-        }
-
+                .orElseThrow(() -> new RuntimeException("Servidor nao encontrado"));
         return toResponse(server);
     }
 
-    // Cria um canal dentro de um servidor
+    public ServerResponse getServer(String email, Long serverId) {
+        permissionService.requireMember(serverId, email);
+        return getServer(serverId);
+    }
+
     public ChannelResponse createChannel(String email, Long serverId, ChannelRequest request) {
         Server server = serverRepository.findById(serverId)
-                .orElseThrow(() -> new RuntimeException("Servidor não encontrado"));
+                .orElseThrow(() -> new RuntimeException("Servidor nao encontrado"));
 
-        // Só o dono pode criar canais
-        if (!server.getOwnerEmail().equals(email)) {
-            throw new RuntimeException("Apenas o dono pode criar canais");
-        }
+        permissionService.requireAdmin(serverId, email);
 
         Channel channel = new Channel();
         channel.setName(request.getName());
@@ -81,13 +80,12 @@ public class ServerService {
         return toChannelResponse(channel);
     }
 
-    // Entrar em um servidor
     public String joinServer(String email, Long serverId) {
         Server server = serverRepository.findById(serverId)
-                .orElseThrow(() -> new RuntimeException("Servidor não encontrado"));
+                .orElseThrow(() -> new RuntimeException("Servidor nao encontrado"));
 
         if (serverMemberRepository.existsByServerIdAndUserEmail(serverId, email)) {
-            throw new RuntimeException("Você já é membro deste servidor");
+            throw new RuntimeException("Voce ja e membro deste servidor");
         }
 
         ServerMember member = new ServerMember();
@@ -99,7 +97,6 @@ public class ServerService {
         return "Entrou no servidor: " + server.getName();
     }
 
-    // Conversão de entidade para DTO
     private ServerResponse toResponse(Server server) {
         ServerResponse response = new ServerResponse();
         response.setId(server.getId());
