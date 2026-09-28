@@ -111,10 +111,10 @@ class DeviceControllerTests {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").exists())
+                .andExpect(jsonPath("$.data.token").exists())
                 .andReturn();
 
-        JsonNode loginBody = objectMapper.readTree(loginResult.getResponse().getContentAsString());
+        JsonNode loginBody = objectMapper.readTree(loginResult.getResponse().getContentAsString()).get("data");
         return loginBody.get("token").asText();
     }
 }

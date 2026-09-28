@@ -1,11 +1,21 @@
 package com.chatapp.chatapp_backend.controller;
 
-import com.chatapp.chatapp_backend.dto.*;
+import com.chatapp.chatapp_backend.dto.ApiResponse;
+import com.chatapp.chatapp_backend.dto.ChannelRequest;
+import com.chatapp.chatapp_backend.dto.ChannelResponse;
+import com.chatapp.chatapp_backend.dto.ServerRequest;
+import com.chatapp.chatapp_backend.dto.ServerResponse;
 import com.chatapp.chatapp_backend.service.ServerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import java.util.List;
 
 @RestController
@@ -15,42 +25,39 @@ public class ServerController {
 
     private final ServerService serverService;
 
-    // POST /api/servers — criar servidor
     @PostMapping
-    public ResponseEntity<ServerResponse> createServer(
+    public ResponseEntity<ApiResponse<ServerResponse>> createServer(
             Authentication auth,
             @RequestBody ServerRequest request) {
-        return ResponseEntity.ok(serverService.createServer(auth.getName(), request));
+        ServerResponse response = serverService.createServer(auth.getName(), request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Servidor criado com sucesso"));
     }
 
-    // GET /api/servers — listar meus servidores
     @GetMapping
-    public ResponseEntity<List<ServerResponse>> getMyServers(Authentication auth) {
-        return ResponseEntity.ok(serverService.getMyServers(auth.getName()));
+    public ResponseEntity<ApiResponse<List<ServerResponse>>> getMyServers(Authentication auth) {
+        return ResponseEntity.ok(ApiResponse.success(serverService.getMyServers(auth.getName())));
     }
 
-    // GET /api/servers/{id} — buscar servidor por ID
     @GetMapping("/{id}")
-    public ResponseEntity<ServerResponse> getServer(
+    public ResponseEntity<ApiResponse<ServerResponse>> getServer(
             Authentication auth,
             @PathVariable Long id) {
-        return ResponseEntity.ok(serverService.getServer(auth.getName(), id));
+        return ResponseEntity.ok(ApiResponse.success(serverService.getServer(auth.getName(), id)));
     }
 
-    // POST /api/servers/{id}/join — entrar em um servidor
     @PostMapping("/{id}/join")
-    public ResponseEntity<String> joinServer(
+    public ResponseEntity<ApiResponse<String>> joinServer(
             Authentication auth,
             @PathVariable Long id) {
-        return ResponseEntity.ok(serverService.joinServer(auth.getName(), id));
+        return ResponseEntity.ok(ApiResponse.success(serverService.joinServer(auth.getName(), id)));
     }
 
-    // POST /api/servers/{id}/channels — criar canal
     @PostMapping("/{id}/channels")
-    public ResponseEntity<ChannelResponse> createChannel(
+    public ResponseEntity<ApiResponse<ChannelResponse>> createChannel(
             Authentication auth,
             @PathVariable Long id,
             @RequestBody ChannelRequest request) {
-        return ResponseEntity.ok(serverService.createChannel(auth.getName(), id, request));
+        ChannelResponse response = serverService.createChannel(auth.getName(), id, request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Canal criado com sucesso"));
     }
 }

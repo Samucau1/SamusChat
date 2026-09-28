@@ -1,5 +1,6 @@
 package com.chatapp.chatapp_backend.controller;
 
+import com.chatapp.chatapp_backend.dto.ApiResponse;
 import com.chatapp.chatapp_backend.dto.MemberResponse;
 import com.chatapp.chatapp_backend.dto.UpdateRoleRequest;
 import com.chatapp.chatapp_backend.service.MemberService;
@@ -24,26 +25,27 @@ public class MemberController {
     private final MemberService memberService;
 
     @GetMapping
-    public ResponseEntity<List<MemberResponse>> getMembers(
+    public ResponseEntity<ApiResponse<List<MemberResponse>>> getMembers(
             Authentication auth,
             @PathVariable Long serverId) {
-        return ResponseEntity.ok(memberService.getMembers(serverId, auth.getName()));
+        return ResponseEntity.ok(ApiResponse.success(memberService.getMembers(serverId, auth.getName())));
     }
 
     @PutMapping("/role")
-    public ResponseEntity<MemberResponse> updateRole(
+    public ResponseEntity<ApiResponse<MemberResponse>> updateRole(
             Authentication auth,
             @PathVariable Long serverId,
             @RequestBody UpdateRoleRequest request) {
-        return ResponseEntity.ok(memberService.updateRole(serverId, auth.getName(), request));
+        MemberResponse response = memberService.updateRole(serverId, auth.getName(), request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Cargo atualizado com sucesso"));
     }
 
     @DeleteMapping("/{email}")
-    public ResponseEntity<Void> removeMember(
+    public ResponseEntity<ApiResponse<Void>> removeMember(
             Authentication auth,
             @PathVariable Long serverId,
             @PathVariable String email) {
         memberService.removeMember(serverId, auth.getName(), email);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success(null, "Membro removido com sucesso"));
     }
 }

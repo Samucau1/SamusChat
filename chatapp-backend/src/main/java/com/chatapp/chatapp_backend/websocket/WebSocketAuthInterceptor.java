@@ -18,6 +18,8 @@ import java.util.List;
 public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
     private final JwtUtil jwtUtil;
+    private final com.chatapp.chatapp_backend.repository.ChannelRepository channelRepository;
+    private final com.chatapp.chatapp_backend.service.PermissionService permissionService;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -43,6 +45,18 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
             }
         }
 
+        if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand()) && accessor.getUser() == null) {
+            throw new SecurityException("Nao autorizado");
+        }
+        if (accessor != null && (StompCommand.SUBSCRIBE.equals(accessor.getCommand()) || StompCommand.SEND.equals(accessor.getCommand()))) {
+            if (accessor.getUser() == null) throw new SecurityException("Nao autorizado");
+            String destination = accessor.getDestination();
+            String prefix = StompCommand.SUBSCRIBE.equals(accessor.getCommand()) ? "/topic/channel/" : "/app/channel/";
+            if (destination == null || !destination.startsWith(prefix)) throw new SecurityException("Destino invalido");
+            Long channelId = Long.valueOf(destination.substring(prefix.length()));
+            var target = channelRepository.findById(channelId).orElseThrow(() -> new SecurityException("Canal invalido"));
+            permissionService.requireMember(target.getServer().getId(), accessor.getUser().getName());
+        }
         return message;
     }
 }

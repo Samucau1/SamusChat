@@ -93,13 +93,13 @@ class FileControllerTests {
                         .param("content", "Olha essa imagem!")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").value("Olha essa imagem!"))
-                .andExpect(jsonPath("$.attachmentUrl").value(startsWith("http://localhost:8080/uploads/")))
-                .andExpect(jsonPath("$.attachmentUrl").value(endsWith(".png")))
-                .andExpect(jsonPath("$.attachmentType").value("IMAGE"))
+                .andExpect(jsonPath("$.data.content").value("Olha essa imagem!"))
+                .andExpect(jsonPath("$.data.attachmentUrl").value(startsWith("http://localhost:8080/uploads/")))
+                .andExpect(jsonPath("$.data.attachmentUrl").value(endsWith(".png")))
+                .andExpect(jsonPath("$.data.attachmentType").value("IMAGE"))
                 .andReturn();
 
-        String attachmentUrl = objectMapper.readTree(uploadResult.getResponse().getContentAsString())
+        String attachmentUrl = objectMapper.readTree(uploadResult.getResponse().getContentAsString()).get("data")
                 .get("attachmentUrl")
                 .asText();
         String fileName = attachmentUrl.substring(attachmentUrl.lastIndexOf("/") + 1);
@@ -111,8 +111,8 @@ class FileControllerTests {
         mockMvc.perform(get("/api/channels/{channelId}/messages", channelId)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].attachmentUrl").value(attachmentUrl))
-                .andExpect(jsonPath("$[0].attachmentType").value("IMAGE"));
+                .andExpect(jsonPath("$.data[0].attachmentUrl").value(attachmentUrl))
+                .andExpect(jsonPath("$.data[0].attachmentType").value("IMAGE"));
     }
 
     private String registerAndLogin() throws Exception {
@@ -136,10 +136,10 @@ class FileControllerTests {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").exists())
+                .andExpect(jsonPath("$.data.token").exists())
                 .andReturn();
 
-        JsonNode loginBody = objectMapper.readTree(loginResult.getResponse().getContentAsString());
+        JsonNode loginBody = objectMapper.readTree(loginResult.getResponse().getContentAsString()).get("data");
         return loginBody.get("token").asText();
     }
 
@@ -156,7 +156,7 @@ class FileControllerTests {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        return objectMapper.readTree(createServerResult.getResponse().getContentAsString())
+        return objectMapper.readTree(createServerResult.getResponse().getContentAsString()).get("data")
                 .get("channels")
                 .get(0)
                 .get("id")

@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 public class PermissionService {
     private final ServerMemberRepository serverMemberRepository;
 
+
+
+
     // Retorna o cargo do usuário no servidor
     public String getRole(Long serverId, String email) {
         return serverMemberRepository

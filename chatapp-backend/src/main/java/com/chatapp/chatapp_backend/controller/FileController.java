@@ -1,5 +1,6 @@
 package com.chatapp.chatapp_backend.controller;
 
+import com.chatapp.chatapp_backend.dto.ApiResponse;
 import com.chatapp.chatapp_backend.dto.MessageResponse;
 import com.chatapp.chatapp_backend.service.FileStorageService;
 import com.chatapp.chatapp_backend.service.MessageService;
@@ -14,8 +15,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -25,7 +24,7 @@ public class FileController {
     private final MessageService messageService;
 
     @PostMapping("/channels/{channelId}/upload")
-    public ResponseEntity<MessageResponse> uploadFile(
+    public ResponseEntity<ApiResponse<MessageResponse>> uploadFile(
             Authentication auth,
             @PathVariable Long channelId,
             @RequestParam("file") MultipartFile file,
@@ -41,15 +40,15 @@ public class FileController {
                     auth.getName(), channelId, content, fileUrl, type
             );
 
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success(response, "Arquivo enviado com sucesso"));
         } catch (Exception e) {
             throw new RuntimeException("Erro ao fazer upload: " + e.getMessage());
         }
     }
 
     @DeleteMapping("/files")
-    public ResponseEntity<Map<String, String>> deleteFile(@RequestParam String fileUrl) {
+    public ResponseEntity<ApiResponse<Void>> deleteFile(@RequestParam String fileUrl) {
         fileStorageService.deleteFile(fileUrl);
-        return ResponseEntity.ok(Map.of("message", "Arquivo deletado com sucesso"));
+        return ResponseEntity.ok(ApiResponse.success(null, "Arquivo deletado com sucesso"));
     }
 }

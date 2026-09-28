@@ -37,22 +37,24 @@ class ServerControllerTests {
                                   "name": "Servidor da Samus",
                                   "description": "Meu primeiro servidor"
                                 }
-                                """))
+                """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("Servidor da Samus"))
-                .andExpect(jsonPath("$.channels[0].name").value("geral"))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.name").value("Servidor da Samus"))
+                .andExpect(jsonPath("$.data.channels[0].name").value("geral"))
                 .andReturn();
 
         long serverId = objectMapper.readTree(createServerResult.getResponse().getContentAsString())
+                .get("data")
                 .get("id")
                 .asLong();
 
         mockMvc.perform(get("/api/servers")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(serverId))
-                .andExpect(jsonPath("$[0].name").value("Servidor da Samus"));
+                .andExpect(jsonPath("$.data[0].id").value(serverId))
+                .andExpect(jsonPath("$.data[0].name").value("Servidor da Samus"));
 
         mockMvc.perform(post("/api/servers/{id}/channels", serverId)
                         .header("Authorization", "Bearer " + token)
@@ -62,18 +64,18 @@ class ServerControllerTests {
                                   "name": "jogos",
                                   "type": "TEXT"
                                 }
-                                """))
+                """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(2))
-                .andExpect(jsonPath("$.name").value("jogos"))
-                .andExpect(jsonPath("$.type").value("TEXT"));
+                .andExpect(jsonPath("$.data.id").value(2))
+                .andExpect(jsonPath("$.data.name").value("jogos"))
+                .andExpect(jsonPath("$.data.type").value("TEXT"));
 
         mockMvc.perform(get("/api/servers/{id}", serverId)
-                        .header("Authorization", "Bearer " + token))
+                .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(serverId))
-                .andExpect(jsonPath("$.channels[0].name").value("geral"))
-                .andExpect(jsonPath("$.channels[1].name").value("jogos"));
+                .andExpect(jsonPath("$.data.id").value(serverId))
+                .andExpect(jsonPath("$.data.channels[0].name").value("geral"))
+                .andExpect(jsonPath("$.data.channels[1].name").value("jogos"));
     }
 
     private String registerAndLogin() throws Exception {
@@ -95,12 +97,12 @@ class ServerControllerTests {
                                   "email": "samus@test.com",
                                   "password": "123456"
                                 }
-                                """))
+                """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").exists())
+                .andExpect(jsonPath("$.data.token").exists())
                 .andReturn();
 
         JsonNode loginBody = objectMapper.readTree(loginResult.getResponse().getContentAsString());
-        return loginBody.get("token").asText();
+        return loginBody.get("data").get("token").asText();
     }
 }

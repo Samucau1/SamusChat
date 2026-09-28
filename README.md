@@ -238,3 +238,7 @@ O projeto permitirá aprofundamento em áreas avançadas da engenharia de softwa
 •	engenharia back-end com Java Spring Boot
 Além de ser um excelente projeto para portfólio profissional, o sistema servirá como base sólida para evolução futura em aplicações de larga escala.
  
+
+## Android — Etapa 11
+
+O aplicativo Kotlin/Jetpack Compose está em [samuschat-android](samuschat-android/README.md), com instruções de execução, configuração do Firebase e roteiro de validação em dois dispositivos.

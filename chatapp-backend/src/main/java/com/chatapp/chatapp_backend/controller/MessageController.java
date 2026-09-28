@@ -1,5 +1,6 @@
 package com.chatapp.chatapp_backend.controller;
 
+import com.chatapp.chatapp_backend.dto.ApiResponse;
 import com.chatapp.chatapp_backend.dto.MessageRequest;
 import com.chatapp.chatapp_backend.dto.MessageResponse;
 import com.chatapp.chatapp_backend.service.MessageService;
@@ -25,26 +26,29 @@ public class MessageController {
     private final MessageService messageService;
 
     @PostMapping
-    public ResponseEntity<MessageResponse> sendMessage(
+    public ResponseEntity<ApiResponse<MessageResponse>> sendMessage(
             Authentication auth,
             @PathVariable Long channelId,
             @RequestBody MessageRequest request) {
-        return ResponseEntity.ok(messageService.sendMessage(auth.getName(), channelId, request));
+        MessageResponse response = messageService.sendMessage(auth.getName(), channelId, request);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping
-    public ResponseEntity<List<MessageResponse>> getMessages(
+    public ResponseEntity<ApiResponse<List<MessageResponse>>> getMessages(
+            Authentication auth,
             @PathVariable Long channelId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
-        return ResponseEntity.ok(messageService.getMessages(channelId, page, size));
+        List<MessageResponse> messages = messageService.getMessages(auth.getName(), channelId, page, size);
+        return ResponseEntity.ok(ApiResponse.success(messages));
     }
 
     @DeleteMapping("/{messageId}")
-    public ResponseEntity<Void> deleteMessage(
+    public ResponseEntity<ApiResponse<Void>> deleteMessage(
             Authentication auth,
             @PathVariable Long messageId) {
         messageService.deleteMessage(auth.getName(), messageId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success(null, "Mensagem deletada com sucesso"));
     }
 }

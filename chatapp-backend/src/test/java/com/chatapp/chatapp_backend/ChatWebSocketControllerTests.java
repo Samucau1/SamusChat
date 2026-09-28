@@ -49,13 +49,15 @@ class ChatWebSocketControllerTests {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Test
-    void websocketFlowSavesAndBroadcastsMessageToChannelTopic() throws Exception {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
+    void websocketFlowSavesAndBroadcastsMessageToChannelTopic(boolean nativeAndroid) throws Exception {
         String token = registerAndLogin();
         long channelId = createServerAndGetGeneralChannelId(token);
 
-        WebSocketStompClient stompClient = new WebSocketStompClient(
-                new SockJsClient(List.of(new WebSocketTransport(new StandardWebSocketClient()))));
+        WebSocketStompClient stompClient = new WebSocketStompClient(nativeAndroid
+                ? new StandardWebSocketClient()
+                : new SockJsClient(List.of(new WebSocketTransport(new StandardWebSocketClient()))));
         MappingJackson2MessageConverter messageConverter = new MappingJackson2MessageConverter();
         messageConverter.setObjectMapper(objectMapper);
         stompClient.setMessageConverter(messageConverter);
@@ -65,7 +67,7 @@ class ChatWebSocketControllerTests {
 
         AtomicReference<Throwable> stompFailure = new AtomicReference<>();
         StompSession session = stompClient
-                .connectAsync("http://localhost:" + port + "/ws",
+                .connectAsync(nativeAndroid ? "ws://localhost:" + port + "/ws/websocket" : "http://localhost:" + port + "/ws",
                         new WebSocketHttpHeaders(),
                         connectHeaders,
                         new StompSessionHandlerAdapter() {
@@ -87,6 +89,7 @@ class ChatWebSocketControllerTests {
                 .get(5, TimeUnit.SECONDS);
 
         CompletableFuture<WebSocketMessage> receivedMessage = new CompletableFuture<>();
+        CompletableFuture<WebSocketMessage> restMessage = new CompletableFuture<>();
         session.subscribe("/topic/channel/" + channelId, new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
@@ -95,7 +98,9 @@ class ChatWebSocketControllerTests {
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
-                receivedMessage.complete((WebSocketMessage) payload);
+                WebSocketMessage incoming = (WebSocketMessage) payload;
+                if ("Enviada pelo Android via REST".equals(incoming.getContent())) restMessage.complete(incoming);
+                else receivedMessage.complete(incoming);
             }
         });
 
@@ -111,6 +116,15 @@ class ChatWebSocketControllerTests {
         assertThat(message.getChannelId()).isEqualTo(channelId);
         assertThat(message.getType()).isEqualTo("CHAT");
         assertThat(message.getCreatedAt()).isNotNull();
+
+        MvcResult result = mockMvc.perform(post("/api/channels/{id}/messages", channelId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"Enviada pelo Android via REST\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.success").value(true)).andReturn();
+        WebSocketMessage broadcast = restMessage.get(5, TimeUnit.SECONDS);
+        assertThat(broadcast.getId()).isEqualTo(objectMapper.readTree(result.getResponse().getContentAsString()).path("data").path("id").asLong());
+        assertThat(broadcast.getChannelId()).isEqualTo(channelId);
 
         session.disconnect();
         stompClient.stop();
@@ -137,10 +151,10 @@ class ChatWebSocketControllerTests {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").exists())
+                .andExpect(jsonPath("$.data.token").exists())
                 .andReturn();
 
-        JsonNode loginBody = objectMapper.readTree(loginResult.getResponse().getContentAsString());
+        JsonNode loginBody = objectMapper.readTree(loginResult.getResponse().getContentAsString()).get("data");
         return loginBody.get("token").asText();
     }
 
@@ -155,10 +169,10 @@ class ChatWebSocketControllerTests {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.channels[0].name").value("geral"))
+                .andExpect(jsonPath("$.data.channels[0].name").value("geral"))
                 .andReturn();
 
-        return objectMapper.readTree(createServerResult.getResponse().getContentAsString())
+        return objectMapper.readTree(createServerResult.getResponse().getContentAsString()).get("data")
                 .get("channels")
                 .get(0)
                 .get("id")

@@ -73,15 +73,15 @@ class MessageControllerTests {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.content").value("Ol\u00e1 pessoal!"))
-                .andExpect(jsonPath("$.senderUsername").value("samus"))
-                .andExpect(jsonPath("$.senderEmail").value("samus@test.com"))
-                .andExpect(jsonPath("$.channelId").value(channelId))
-                .andExpect(jsonPath("$.createdAt").exists())
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.content").value("Ol\u00e1 pessoal!"))
+                .andExpect(jsonPath("$.data.senderUsername").value("samus"))
+                .andExpect(jsonPath("$.data.senderEmail").value("samus@test.com"))
+                .andExpect(jsonPath("$.data.channelId").value(channelId))
+                .andExpect(jsonPath("$.data.createdAt").exists())
                 .andReturn();
 
-        long firstMessageId = objectMapper.readTree(firstMessageResult.getResponse().getContentAsString())
+        long firstMessageId = objectMapper.readTree(firstMessageResult.getResponse().getContentAsString()).get("data")
                 .get("id")
                 .asLong();
 
@@ -94,28 +94,28 @@ class MessageControllerTests {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(2))
-                .andExpect(jsonPath("$.content").value("Segunda mensagem!"))
-                .andExpect(jsonPath("$.senderUsername").value("samus"));
+                .andExpect(jsonPath("$.data.id").value(2))
+                .andExpect(jsonPath("$.data.content").value("Segunda mensagem!"))
+                .andExpect(jsonPath("$.data.senderUsername").value("samus"));
 
         mockMvc.perform(get("/api/channels/{channelId}/messages", channelId)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].content").value("Ol\u00e1 pessoal!"))
-                .andExpect(jsonPath("$[1].id").value(2))
-                .andExpect(jsonPath("$[1].content").value("Segunda mensagem!"));
+                .andExpect(jsonPath("$.data[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].content").value("Ol\u00e1 pessoal!"))
+                .andExpect(jsonPath("$.data[1].id").value(2))
+                .andExpect(jsonPath("$.data[1].content").value("Segunda mensagem!"));
 
         mockMvc.perform(get("/api/channels/{channelId}/messages?page=0&size=10", channelId)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].content").value("Ol\u00e1 pessoal!"))
-                .andExpect(jsonPath("$[1].content").value("Segunda mensagem!"));
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].content").value("Ol\u00e1 pessoal!"))
+                .andExpect(jsonPath("$.data[1].content").value("Segunda mensagem!"));
 
         mockMvc.perform(delete("/api/channels/{channelId}/messages/{messageId}", channelId, firstMessageId)
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
     }
 
     private String registerAndLogin() throws Exception {
@@ -139,10 +139,10 @@ class MessageControllerTests {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").exists())
+                .andExpect(jsonPath("$.data.token").exists())
                 .andReturn();
 
-        JsonNode loginBody = objectMapper.readTree(loginResult.getResponse().getContentAsString());
+        JsonNode loginBody = objectMapper.readTree(loginResult.getResponse().getContentAsString()).get("data");
         return loginBody.get("token").asText();
     }
 
@@ -157,11 +157,11 @@ class MessageControllerTests {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.channels[0].id").value(1))
-                .andExpect(jsonPath("$.channels[0].name").value("geral"))
+                .andExpect(jsonPath("$.data.channels[0].id").value(1))
+                .andExpect(jsonPath("$.data.channels[0].name").value("geral"))
                 .andReturn();
 
-        return objectMapper.readTree(createServerResult.getResponse().getContentAsString())
+        return objectMapper.readTree(createServerResult.getResponse().getContentAsString()).get("data")
                 .get("channels")
                 .get(0)
                 .get("id")

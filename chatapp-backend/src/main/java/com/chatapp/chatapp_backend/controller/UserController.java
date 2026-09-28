@@ -1,11 +1,16 @@
 package com.chatapp.chatapp_backend.controller;
 
+import com.chatapp.chatapp_backend.dto.ApiResponse;
 import com.chatapp.chatapp_backend.dto.UserResponse;
 import com.chatapp.chatapp_backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/users")
@@ -14,18 +19,16 @@ public class UserController {
 
     private final UserService userService;
 
-    // GET /api/users/me — retorna o perfil do usuário logado
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getProfile(Authentication auth) {
-        // Authentication.getName() retorna o email que registramos no JwtFilter
-        return ResponseEntity.ok(userService.getProfile(auth.getName()));
+    public ResponseEntity<ApiResponse<UserResponse>> getProfile(Authentication auth) {
+        return ResponseEntity.ok(ApiResponse.success(userService.getProfile(auth.getName())));
     }
 
-    // PUT /api/users/me/username — atualiza o username
     @PutMapping("/me/username")
-    public ResponseEntity<UserResponse> updateUsername(
+    public ResponseEntity<ApiResponse<UserResponse>> updateUsername(
             Authentication auth,
             @RequestParam String newUsername) {
-        return ResponseEntity.ok(userService.updateUsername(auth.getName(), newUsername));
+        UserResponse response = userService.updateUsername(auth.getName(), newUsername);
+        return ResponseEntity.ok(ApiResponse.success(response, "Username atualizado com sucesso"));
     }
 }
