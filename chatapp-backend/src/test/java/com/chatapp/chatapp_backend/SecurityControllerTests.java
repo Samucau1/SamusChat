@@ -61,6 +61,9 @@ class SecurityControllerTests {
                                 }
                                 """))
                 .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.timestamp").isString())
+                .andExpect(jsonPath("$.data").doesNotExist())
                 .andExpect(header().exists("X-Rate-Limit-Retry-After"))
                 .andExpect(jsonPath("$.error").value(containsString("Muitas requisicoes")));
     }
@@ -70,6 +73,9 @@ class SecurityControllerTests {
         mockMvc.perform(get("/api/users/me")
                         .header("X-Forwarded-For", "10.0.0.9"))
                 .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.timestamp").isString())
+                .andExpect(jsonPath("$.data").doesNotExist())
                 .andExpect(jsonPath("$.error").value("Nao autorizado"));
     }
 
@@ -79,6 +85,9 @@ class SecurityControllerTests {
                         .header("X-Forwarded-For", "10.0.0.10")
                         .header("Authorization", "Bearer tokeninvalido123"))
                 .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.timestamp").isString())
+                .andExpect(jsonPath("$.data").doesNotExist())
                 .andExpect(jsonPath("$.error").value("Nao autorizado"));
     }
 

@@ -42,4 +42,24 @@ class ApiContractTest {
         assertEquals(listOf(1L, 2L), merged.map { it.id })
         assertEquals("/uploads/a.png", merged.last().attachmentUrl)
     }
+
+    @Test fun standardizedSecurityErrorsRemainCompatibleWithAndroid() = runTest {
+        val server = MockWebServer()
+        try {
+            val api = Retrofit.Builder().baseUrl(server.url("/"))
+                .addConverterFactory(GsonConverterFactory.create()).build().create(ApiService::class.java)
+            for ((status, message) in listOf(401 to "Nao autorizado", 429 to "Muitas requisicoes. Tente novamente em 30 segundos.")) {
+                server.enqueue(MockResponse().setResponseCode(status).setBody(
+                    """{"success":false,"error":"$message","timestamp":"2026-09-28T10:00:00"}"""
+                ))
+                try {
+                    api.messages("Bearer expired", 1, 0, 50).data()
+                    fail("Expected ApiFailure for $status")
+                } catch (e: ApiFailure) {
+                    assertEquals(status, e.status)
+                    assertEquals(message, e.message)
+                }
+            }
+        } finally { server.shutdown() }
+    }
 }

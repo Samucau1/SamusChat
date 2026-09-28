@@ -241,4 +241,6 @@ Além de ser um excelente projeto para portfólio profissional, o sistema servir
 
 ## Android — Etapa 11
 
+A auditoria dos padrões, os complementos e os testes de regressão da etapa anterior estão em [Etapa 10 — Clean Code e Patterns](docs/ETAPA_10.md).
+
 O aplicativo Kotlin/Jetpack Compose está em [samuschat-android](samuschat-android/README.md), com instruções de execução, configuração do Firebase e roteiro de validação em dois dispositivos.

@@ -1,6 +1,7 @@
 package com.chatapp.chatapp_backend.security;
 
 import com.chatapp.chatapp_backend.config.RateLimitConfig;
+import com.chatapp.chatapp_backend.exception.ApiErrorWriter;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
 import jakarta.servlet.FilterChain;
@@ -19,6 +20,7 @@ import java.io.IOException;
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private final RateLimitConfig rateLimitConfig;
+    private final ApiErrorWriter apiErrorWriter;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -43,11 +45,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         long waitSeconds = probe.getNanosToWaitForRefill() / 1_000_000_000;
         response.addHeader("X-Rate-Limit-Retry-After", String.valueOf(waitSeconds));
-        response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-        response.setContentType("application/json");
-        response.getWriter().write(
-                "{\"error\":\"Muitas requisicoes. Tente novamente em " + waitSeconds + " segundos.\"}"
-        );
+        apiErrorWriter.write(response, HttpStatus.TOO_MANY_REQUESTS.value(),
+                "Muitas requisicoes. Tente novamente em " + waitSeconds + " segundos.");
     }
 
     private String getClientIp(HttpServletRequest request) {

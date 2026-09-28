@@ -2,6 +2,7 @@ package com.chatapp.chatapp_backend.config;
 
 import com.chatapp.chatapp_backend.security.JwtFilter;
 import com.chatapp.chatapp_backend.security.RateLimitFilter;
+import com.chatapp.chatapp_backend.exception.ApiErrorWriter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +21,7 @@ public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
     private final RateLimitFilter rateLimitFilter;
+    private final ApiErrorWriter apiErrorWriter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -31,11 +33,10 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            response.setStatus(401);
-                            response.setContentType("application/json");
-                            response.getWriter().write("{\"error\":\"Nao autorizado\"}");
-                        })
+                        .authenticationEntryPoint((request, response, authException) ->
+                                apiErrorWriter.write(response, 401, "Nao autorizado"))
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                apiErrorWriter.write(response, 403, "Acesso negado"))
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()

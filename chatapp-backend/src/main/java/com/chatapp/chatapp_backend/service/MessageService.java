@@ -45,7 +45,7 @@ public class MessageService {
             ServerMemberRepository serverMemberRepository,
             MessageFactory messageFactory,
             MessageMapper messageMapper,
-            @Qualifier("pushStrategy") NotificationStrategy notificationStrategy,
+            @Qualifier("notificationStrategy") NotificationStrategy notificationStrategy,
             ApplicationEventPublisher events) {
         this.events = events;
         this.messageRepository = messageRepository;

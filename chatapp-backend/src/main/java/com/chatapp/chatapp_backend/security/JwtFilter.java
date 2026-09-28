@@ -1,5 +1,6 @@
 package com.chatapp.chatapp_backend.security;
 
+import com.chatapp.chatapp_backend.exception.ApiErrorWriter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,6 +19,7 @@ import java.util.List;
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final ApiErrorWriter apiErrorWriter;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -35,9 +37,7 @@ public class JwtFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
 
         if (!jwtUtil.isTokenValid(token)) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"Nao autorizado\"}");
+            apiErrorWriter.write(response, HttpServletResponse.SC_UNAUTHORIZED, "Nao autorizado");
             return;
         }
 
