@@ -248,7 +248,7 @@ O aplicativo Kotlin/Jetpack Compose está em [samuschat-android](samuschat-andro
 ## CI/CD e escalabilidade — Etapa 13
 
 O backend possui pipeline GitHub Actions com testes, cobertura JaCoCo, validação da
-stack Docker, publicação no Docker Hub e deploy por SSH. A configuração de produção
+stack Docker, publicação no GitHub Container Registry (GHCR) e deploy por SSH. A configuração de produção
 usa três instâncias atrás do Nginx, Redis Pub/Sub, PostgreSQL com migrações Flyway e
 uploads compartilhados. Consulte [Etapa 13 — CI/CD e escalabilidade](docs/ETAPA_13.md)
 para preparar o servidor e configurar secrets, variáveis e o ambiente `production`.

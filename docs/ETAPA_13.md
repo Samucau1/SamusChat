@@ -52,16 +52,18 @@ variables → Actions → Variables**:
 
 | Variável | Valor |
 | --- | --- |
-| `ENABLE_DOCKER_PUBLISH` | `true` para publicar pushes da `main` |
+| `ENABLE_IMAGE_PUBLISH` | `true` para publicar imagens no GHCR em pushes da `main` |
 | `ENABLE_PRODUCTION_DEPLOY` | `true` depois de preparar o servidor |
 | `PRODUCTION_URL` | URL pública HTTPS, sem barra final |
 
-Configure os secrets do repositório (Docker) e do ambiente `production` (deploy):
+A imagem é publicada em `ghcr.io/samucau1/samuschat-backend` com tags SHA e `latest`.
+O workflow usa o `GITHUB_TOKEN` temporário com `packages: write` somente no job de
+publicação. Não é necessário cadastrar conta ou token do Docker Hub.
+
+Configure os secrets do ambiente `production` para o deploy:
 
 | Secret | Uso |
 | --- | --- |
-| `DOCKER_USERNAME` | Usuário Docker Hub |
-| `DOCKER_TOKEN` | Token com permissão para publicar a imagem |
 | `SERVER_HOST` | IP ou hostname SSH do servidor |
 | `SERVER_USER` | Usuário SSH com acesso ao Docker e a `/opt/samuschat` |
 | `SERVER_SSH_KEY` | Chave privada SSH de deploy |
@@ -78,9 +80,11 @@ não cria essa regra automaticamente.
 No servidor Linux:
 
 1. Instale Docker Engine e Compose com suporte a `up --wait` (Compose 2.24+).
-2. Prepare `/opt/samuschat/releases` para o usuário de deploy. Para imagem privada,
-   faça `docker login` nesse usuário com um token de leitura. O pipeline não envia
-   o token de publicação ao servidor.
+2. Prepare `/opt/samuschat/releases` para o usuário de deploy. O pipeline autentica
+   o pull no GHCR com um token temporário de leitura enviado por stdin via SSH.
+   A configuração Docker temporária é removida ao fim do deploy, preservando
+   qualquer login Docker que já exista no servidor. Para deploy ou rollback
+   manual de uma imagem privada, faça login no GHCR com um token de leitura próprio.
 3. Configure um proxy TLS na frente de `127.0.0.1:8080`, permitindo WebSocket e
    uploads de 11 MB. O Compose não abre uma porta HTTPS sem certificado.
 4. Ajuste o bloco `http` do Nginx para confiar **somente** no IP/CIDR desse proxy
@@ -134,7 +138,7 @@ Na raiz do repositório, em um servidor preparado:
 
 ```bash
 cp .env.prod.example .env.prod
-# Preencha .env.prod com credenciais próprias, URL e tag SHA existente no Docker Hub.
+# Preencha .env.prod com credenciais próprias, URL e tag SHA existente no GHCR.
 chmod 600 .env.prod
 bash scripts/deploy.sh
 ```
@@ -161,9 +165,10 @@ sempre executa. O perfil de testes mantém H2 isolado e Firebase desativado.
 - Workflow validado com actionlint, script de deploy com ShellCheck e segredos
   fictícios com caracteres especiais conferidos no parser do Compose.
 
-Publicação no Docker Hub, execução no GitHub Actions e deploy SSH remoto dependem
-da configuração da conta e do servidor; não foram executados nesta validação local.
+Essa validação local não substitui a execução do workflow no GitHub Actions nem
+o deploy SSH em um servidor preparado.
 
 Referências: [Compose up e --wait](https://docs.docker.com/reference/cli/docker/compose/up/),
 [Actuator e probes](https://docs.spring.io/spring-boot/3.5/reference/actuator/endpoints.html),
 [resolução dinâmica de upstreams Nginx](https://nginx.org/en/docs/http/ngx_http_upstream_module.html).
+Publicação: [GHCR com GITHUB_TOKEN](https://docs.github.com/en/actions/tutorials/publish-packages/publish-docker-images#publishing-images-to-github-packages).

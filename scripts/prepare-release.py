@@ -19,7 +19,7 @@ def main():
         raise SystemExit("SERVER_HOST must be an IP address or hostname")
     if not re.fullmatch(r"[a-z_][a-z0-9_-]*", required("SERVER_USER")):
         raise SystemExit("Invalid SERVER_USER")
-    keys = ("DOCKER_USERNAME", "IMAGE_TAG", "DB_USER", "DB_PASSWORD",
+    keys = ("BACKEND_IMAGE", "IMAGE_TAG", "DB_USER", "DB_PASSWORD",
             "REDIS_PASSWORD", "JWT_SECRET", "PUBLIC_BASE_URL")
     values = {key: required(key) for key in keys}
     if len(values["JWT_SECRET"].encode()) < 32:
@@ -44,7 +44,8 @@ def main():
         path.chmod(0o600)
     bundle = temporary / "release.tar.gz"
     with tarfile.open(bundle, "w:gz") as archive:
-        for filename in ("docker-compose.prod.yml", "nginx/nginx.conf", "scripts/deploy.sh"):
+        for filename in ("docker-compose.prod.yml", "nginx/nginx.conf", "scripts/deploy.sh",
+                         "scripts/deploy-with-registry.sh"):
             archive.add(filename, arcname=filename)
         data = "".join(lines).encode()
         info = tarfile.TarInfo(".env.prod")

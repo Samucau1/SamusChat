@@ -1,7 +1,7 @@
 name: samuschat
 
 x-backend: &backend
-  image: ${DOCKER_USERNAME:?Set DOCKER_USERNAME}/samuschat-backend:${IMAGE_TAG:?Set IMAGE_TAG to a commit SHA}
+  image: ${BACKEND_IMAGE:?Set BACKEND_IMAGE to the registry image name}:${IMAGE_TAG:?Set IMAGE_TAG to a commit SHA}
   environment: &backend-env
     SPRING_PROFILES_ACTIVE: prod
     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/chatapp

@@ -15,7 +15,7 @@ class PrepareReleaseTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             env = dict(os.environ, RUNNER_TEMP=temporary, SERVER_HOST="example.com", SERVER_USER="deploy",
                        SERVER_SSH_KEY="test-key", SERVER_KNOWN_HOSTS="example.com test-host-key",
-                       DOCKER_USERNAME="test", IMAGE_TAG="a" * 40, DB_USER="test",
+                       BACKEND_IMAGE="ghcr.io/test/samuschat-backend", IMAGE_TAG="a" * 40, DB_USER="test",
                        JWT_SECRET="test-key-at-least-thirty-two-characters", PUBLIC_BASE_URL="https://example.com")
             for password in ("plain-password", "dollar$and#space here", "single'and\"double", "back\\slash", "trailing\\"):
                 with self.subTest(password=password):
@@ -27,7 +27,7 @@ class PrepareReleaseTests(unittest.TestCase):
                         dotenv.write_bytes(archive.extractfile(".env.prod").read())
                     # Values must come from the file, not overriding shell variables.
                     compose_env = {key: value for key, value in os.environ.items()
-                                   if key not in env or key not in ("DOCKER_USERNAME", "IMAGE_TAG", "DB_USER",
+                                   if key not in ("BACKEND_IMAGE", "IMAGE_TAG", "DB_USER",
                                         "DB_PASSWORD", "REDIS_PASSWORD", "JWT_SECRET", "PUBLIC_BASE_URL")}
                     result = subprocess.check_output(["docker", "compose", "--env-file", str(dotenv),
                              "-f", "docker-compose.prod.yml", "config", "--environment"], cwd=ROOT, env=compose_env)
