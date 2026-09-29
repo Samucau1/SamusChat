@@ -1,0 +1,10 @@
+**
+!pom.xml
+!src/
+!src/main/
+!src/main/**
+src/test
+src/main/resources/firebase-service-account.json
+**/*.pem
+**/*.key
+**/.env*

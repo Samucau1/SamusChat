@@ -17,3 +17,7 @@ buildNumber.properties
 .classpath
 .android-sdk/
 *.log
+.env
+.env.prod
+.env.*.local
+__pycache__/

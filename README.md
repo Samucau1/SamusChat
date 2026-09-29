@@ -244,3 +244,11 @@ Além de ser um excelente projeto para portfólio profissional, o sistema servir
 A auditoria dos padrões, os complementos e os testes de regressão da etapa anterior estão em [Etapa 10 — Clean Code e Patterns](docs/ETAPA_10.md).
 
 O aplicativo Kotlin/Jetpack Compose está em [samuschat-android](samuschat-android/README.md), com instruções de execução, configuração do Firebase e roteiro de validação em dois dispositivos.
+
+## CI/CD e escalabilidade — Etapa 13
+
+O backend possui pipeline GitHub Actions com testes, cobertura JaCoCo, validação da
+stack Docker, publicação no Docker Hub e deploy por SSH. A configuração de produção
+usa três instâncias atrás do Nginx, Redis Pub/Sub, PostgreSQL com migrações Flyway e
+uploads compartilhados. Consulte [Etapa 13 — CI/CD e escalabilidade](docs/ETAPA_13.md)
+para preparar o servidor e configurar secrets, variáveis e o ambiente `production`.

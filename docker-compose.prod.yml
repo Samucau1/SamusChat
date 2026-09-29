@@ -1,0 +1,124 @@
+name: samuschat
+
+x-backend: &backend
+  image: ${DOCKER_USERNAME:?Set DOCKER_USERNAME}/samuschat-backend:${IMAGE_TAG:?Set IMAGE_TAG to a commit SHA}
+  environment: &backend-env
+    SPRING_PROFILES_ACTIVE: prod
+    SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/chatapp
+    SPRING_DATASOURCE_USERNAME: ${DB_USER:?Set DB_USER}
+    SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+    SPRING_DATA_REDIS_HOST: redis-master
+    SPRING_DATA_REDIS_PORT: 6379
+    REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD}
+    JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+    PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?Set PUBLIC_BASE_URL}
+  volumes:
+    - uploads:/app/uploads
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis-master:
+      condition: service_healthy
+  restart: unless-stopped
+  stop_grace_period: 40s
+  networks: [samuschat-net]
+
+services:
+  nginx:
+    image: nginx:1.28-alpine
+    ports:
+      - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-8080}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      backend1:
+        condition: service_healthy
+      backend2:
+        condition: service_healthy
+      backend3:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks: [samuschat-net]
+
+  backend1:
+    <<: *backend
+    environment:
+      <<: *backend-env
+      INSTANCE_ID: backend-1
+  backend2:
+    <<: *backend
+    environment:
+      <<: *backend-env
+      INSTANCE_ID: backend-2
+  backend3:
+    <<: *backend
+    environment:
+      <<: *backend-env
+      INSTANCE_ID: backend-3
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: chatapp
+      POSTGRES_USER: ${DB_USER:?Set DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks: [samuschat-net]
+
+  redis-master:
+    image: redis:7-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD}
+    command:
+      - sh
+      - -ec
+      - 'exec redis-server --requirepass "$$REDIS_PASSWORD" --appendonly yes --maxmemory 512mb --maxmemory-policy noeviction'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [CMD-SHELL, 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -q PONG']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks: [samuschat-net]
+
+  redis-replica:
+    image: redis:7-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD}
+    command:
+      - sh
+      - -ec
+      - 'exec redis-server --replicaof redis-master 6379 --requirepass "$$REDIS_PASSWORD" --masterauth "$$REDIS_PASSWORD" --maxmemory 512mb --maxmemory-policy noeviction'
+    depends_on:
+      redis-master:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli info replication | grep -q master_link_status:up']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks: [samuschat-net]
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads:
+
+networks:
+  samuschat-net:
+    driver: bridge

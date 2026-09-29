@@ -1,14 +1,18 @@
 package com.chatapp.chatapp_backend.config;
 
+import com.chatapp.chatapp_backend.websocket.RedisMessageSubscriber;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
+@ConditionalOnProperty(name = "app.redis.enabled", havingValue = "true", matchIfMissing = true)
 public class RedisConfig {
 
     @Bean
@@ -29,9 +33,10 @@ public class RedisConfig {
 
     @Bean
     public RedisMessageListenerContainer redisMessageListenerContainer(
-            RedisConnectionFactory factory) {
+            RedisConnectionFactory factory, RedisMessageSubscriber subscriber) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(factory);
+        container.addMessageListener(subscriber, new PatternTopic(RedisMessageSubscriber.CHANNEL_PREFIX + "*"));
         return container;
     }
 }

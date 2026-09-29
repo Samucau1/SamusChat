@@ -23,6 +23,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final ApiErrorWriter apiErrorWriter;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.equals("/actuator/health") || path.startsWith("/actuator/health/");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain)
