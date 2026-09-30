@@ -1,254 +1,140 @@
-SamusChat — Sistema de Chat em Tempo Real
-Visão Geral do Projeto
-O SamusChat é um sistema de comunicação em tempo real inspirado no Discord, desenvolvido com tecnologias modernas e arquitetura profissional voltada para escalabilidade, segurança e alta disponibilidade. O objetivo do projeto é criar uma plataforma robusta capaz de suportar comunicação instantânea entre usuários através de servidores, canais e mensagens em tempo real.
-O sistema será composto por uma aplicação Android responsável pela interface do usuário e um back-end desenvolvido em Java com Spring Boot, responsável por toda a lógica de negócio, autenticação, comunicação em tempo real e persistência de dados.
-A arquitetura foi planejada seguindo princípios de separação de responsabilidades, permitindo fácil manutenção, evolução do sistema e futura escalabilidade horizontal.
-________________________________________
-Tecnologias Utilizadas
-O sistema utilizará uma stack moderna e escalável.
-Back-end
-O back-end será desenvolvido utilizando Java 21 juntamente com Spring Boot. Essa combinação permite alta produtividade, organização do código e integração facilitada com mecanismos de segurança, banco de dados e comunicação em tempo real.
-O Spring Boot será responsável pela criação da API REST e gerenciamento dos serviços internos da aplicação.
-________________________________________
-Segurança
-A segurança será implementada utilizando Spring Security combinado com JWT (JSON Web Token).
-O JWT será utilizado para autenticação stateless, permitindo que o servidor valide usuários sem necessidade de armazenar sessões em memória.
-As senhas dos usuários serão protegidas utilizando BCrypt, garantindo que nenhuma senha seja armazenada em texto puro no banco de dados.
-________________________________________
-Banco de Dados
-O banco de dados principal será o PostgreSQL 16.
-Ele será responsável pelo armazenamento persistente de:
-•	usuários
-•	mensagens
-•	servidores
-•	canais
-•	permissões
-•	cargos
-O PostgreSQL foi escolhido devido à sua robustez, estabilidade e excelente suporte para aplicações escaláveis.
-________________________________________
-Redis
-O Redis será utilizado para operações em tempo real.
-Sua principal função será:
-•	gerenciamento de sessões
-•	cache
-•	distribuição de eventos utilizando Pub/Sub
-•	sincronização entre múltiplas instâncias do servidor
-________________________________________
-Mobile
-O aplicativo Android será desenvolvido utilizando Kotlin.
-A aplicação será responsável por:
-•	autenticação do usuário
-•	interface gráfica
-•	envio e recebimento de mensagens
-•	gerenciamento de servidores e canais
-A comunicação com o servidor ocorrerá através de REST API e WebSocket.
-________________________________________
-Arquitetura do Sistema
-A arquitetura do sistema será baseada em separação de responsabilidades.
-O cliente Android se comunicará com o servidor através de dois mecanismos principais:
-•	REST API
-•	WebSocket
-A REST API será utilizada para operações tradicionais, enquanto o WebSocket será responsável pela comunicação em tempo real.
-________________________________________
-Fluxo Geral da Arquitetura
-O aplicativo Android enviará requisições HTTP para o servidor Spring Boot.
-O Spring Boot atuará como núcleo central do sistema, processando autenticação, mensagens, permissões e gerenciamento dos dados.
-O PostgreSQL será responsável pelo armazenamento persistente das informações.
-O Redis será utilizado para distribuição de eventos em tempo real.
-Essa arquitetura permitirá baixa latência e suporte a múltiplos usuários simultaneamente.
-________________________________________
-Estrutura do Back-end
-O back-end seguirá uma arquitetura em camadas.
-Controller
-Responsável por receber requisições HTTP.
-Os controllers não devem conter lógica de negócio complexa.
-Sua função será apenas receber dados e encaminhá-los para os serviços responsáveis.
-________________________________________
-Service
-Camada responsável pela lógica de negócio do sistema.
-Aqui ficarão regras como:
-•	validação de permissões
-•	autenticação
-•	validação de mensagens
-•	regras de acesso
-________________________________________
-Repository
-Responsável pela comunicação com o banco de dados.
-Será utilizado Spring Data JPA juntamente com Hibernate.
-________________________________________
-Entity
-Representa os modelos do banco de dados.
-Exemplos:
-•	User
-•	Message
-•	Channel
-•	Server
-•	Role
-________________________________________
-DTO
-Os DTOs serão utilizados para entrada e saída de dados da API.
-Isso evita exposição direta das entidades do banco de dados.
-________________________________________
-Sistema de Autenticação
-A autenticação será a base principal do sistema.
-Nenhuma funcionalidade crítica poderá ser acessada sem autenticação válida.
-________________________________________
-Funcionamento do BCrypt
-O BCrypt será utilizado para proteger senhas dos usuários.
-As senhas nunca serão armazenadas em texto puro.
-Quando um usuário criar uma conta:
-1.	a senha será transformada em hash
-2.	o hash será salvo no banco
-3.	durante o login o BCrypt comparará os valores
-Isso aumenta drasticamente a segurança do sistema.
-________________________________________
-Funcionamento do JWT
-Após login bem-sucedido, o servidor gerará um token JWT.
-Esse token será enviado ao aplicativo Android.
-O Android armazenará esse token localmente e o enviará em todas as requisições futuras.
-O token conterá:
-•	identificação do usuário
-•	validade
-•	assinatura digital
-Isso permite autenticação segura sem necessidade de sessões tradicionais.
-________________________________________
-Fluxo de Login
-O usuário abrirá o aplicativo e enviará email e senha.
-O servidor realizará as seguintes etapas:
-1.	buscar usuário no banco de dados
-2.	comparar senha utilizando BCrypt
-3.	gerar token JWT
-4.	retornar token para o cliente
-Após isso o usuário estará autenticado.
-________________________________________
-Comunicação em Tempo Real
-O sistema utilizará WebSocket para comunicação instantânea.
-Sem WebSocket o aplicativo precisaria consultar constantemente o servidor para verificar novas mensagens.
-Isso aumentaria consumo de rede e latência.
-Com WebSocket a conexão permanece aberta continuamente.
-Quando uma mensagem for enviada:
-1.	o cliente enviará mensagem ao servidor
-2.	o servidor processará a mensagem
-3.	a mensagem será salva no banco
-4.	Redis distribuirá o evento
-5.	usuários conectados receberão instantaneamente
-________________________________________
-Sistema de Servidores e Canais
-O sistema permitirá criação de servidores semelhantes ao modelo utilizado pelo Discord.
-Cada servidor poderá possuir múltiplos canais.
-Exemplos:
-•	canal geral
-•	canal jogos
-•	canal tecnologia
-Os servidores também possuirão:
-•	membros
-•	cargos
-•	permissões
-________________________________________
-Sistema de Permissões
-O sistema possuirá controle de acesso baseado em cargos.
-Exemplo:
-•	ADMIN
-•	MODERATOR
-•	USER
-Cada cargo possuirá permissões específicas.
-Exemplos de permissões:
-•	enviar mensagens
-•	deletar mensagens
-•	criar canais
-•	banir usuários
-________________________________________
-Estrutura do Banco de Dados
-O banco possuirá tabelas principais responsáveis pela organização das entidades do sistema.
-Principais tabelas:
-•	users
-•	servers
-•	channels
-•	messages
-•	roles
-•	permissions
-•	server_members
-Os relacionamentos permitirão associação entre usuários, servidores, canais e mensagens.
-________________________________________
-Segurança do Sistema
-O sistema implementará múltiplas camadas de segurança.
-Entre elas:
-•	autenticação JWT
-•	criptografia de senhas com BCrypt
-•	validação de entrada
-•	proteção contra SQL Injection
-•	controle de permissões
-•	proteção contra spam
-•	rate limiting
-________________________________________
-Escalabilidade
-A arquitetura foi projetada para suportar crescimento futuro.
-O uso de Redis permitirá sincronização entre múltiplas instâncias do servidor.
-Futuramente será possível adicionar:
-•	load balancers
-•	múltiplos servidores
-•	containers Docker
-•	orquestração com Kubernetes
-________________________________________
-Próximas Etapas do Projeto
-O desenvolvimento seguirá uma ordem estratégica.
-Etapa 1 — Autenticação
-Implementação de:
-•	login
-•	registro
-•	JWT
-•	BCrypt
-________________________________________
-Etapa 2 — CRUD de Usuários
-Implementação de:
-•	perfil
-•	edição de dados
-•	listagem de usuários
-________________________________________
-Etapa 3 — Servidores e Canais
-Implementação de:
-•	criação de servidores
-•	criação de canais
-•	gerenciamento de membros
-________________________________________
-Etapa 4 — Mensagens
-Implementação de:
-•	envio de mensagens
-•	histórico de mensagens
-•	armazenamento persistente
-________________________________________
-Etapa 5 — WebSocket
-Implementação de mensagens em tempo real utilizando WebSocket e Redis Pub/Sub.
-________________________________________
-Etapa 6 — Sistema de Permissões
-Implementação de cargos e controle de acesso.
-________________________________________
-Etapa 7 — Upload de Arquivos
-Implementação de envio de imagens e arquivos.
-________________________________________
-Conclusão
-O SamusChat será um sistema moderno de comunicação em tempo real construído com arquitetura profissional, foco em segurança, escalabilidade e desempenho.
-O projeto permitirá aprofundamento em áreas avançadas da engenharia de software, incluindo:
-•	arquitetura distribuída
-•	autenticação segura
-•	comunicação em tempo real
-•	sistemas concorrentes
-•	banco de dados relacionais
-•	segurança de aplicações
-•	engenharia back-end com Java Spring Boot
-Além de ser um excelente projeto para portfólio profissional, o sistema servirá como base sólida para evolução futura em aplicações de larga escala.
- 
+# SamusChat
 
-## Android — Etapa 11
+[![CI/CD](https://github.com/Samucau1/SamusChat/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/Samucau1/SamusChat/actions/workflows/ci-cd.yml)
+![Java 21](https://img.shields.io/badge/Java-21-orange)
+![Kotlin](https://img.shields.io/badge/Android-Kotlin%20%2B%20Compose-7F52FF)
+[![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-A auditoria dos padrões, os complementos e os testes de regressão da etapa anterior estão em [Etapa 10 — Clean Code e Patterns](docs/ETAPA_10.md).
+Chat em tempo real com aplicativo Android nativo e backend Java/Spring Boot. Organize conversas em servidores e canais, troque mensagens por WebSocket e consulte o histórico persistido no PostgreSQL.
 
-O aplicativo Kotlin/Jetpack Compose está em [samuschat-android](samuschat-android/README.md), com instruções de execução, configuração do Firebase e roteiro de validação em dois dispositivos.
+A interface escura é inspirada no Discord, com identidade SamusChat: **“+” no canto superior esquerdo para criar servidores**, **lupa no canto superior direito para procurar**, barra lateral de comunidades e canais de texto. A busca encontra seus servidores por nome ou ID; para entrar em outro servidor, informe o ID recebido de um participante.
 
-## CI/CD e escalabilidade — Etapa 13
+<p align="center">
+  <img src="docs/images/login.png" width="240" alt="Tela de login com tema escuro">
+  <img src="docs/images/servers.png" width="240" alt="Servidores: criar à esquerda e procurar à direita">
+  <img src="docs/images/chat.png" width="240" alt="Conversa em tempo real com avatares e nomes">
+</p>
 
-O backend possui pipeline GitHub Actions com testes, cobertura JaCoCo, validação da
-stack Docker, publicação no GitHub Container Registry (GHCR) e deploy por SSH. A configuração de produção
-usa três instâncias atrás do Nginx, Redis Pub/Sub, PostgreSQL com migrações Flyway e
-uploads compartilhados. Consulte [Etapa 13 — CI/CD e escalabilidade](docs/ETAPA_13.md)
-para preparar o servidor e configurar secrets, variáveis e o ambiente `production`.
+Capturas do aplicativo no emulador Android 35, com contas fictícias de demonstração.
+
+## Funcionalidades
+
+- Cadastro, login JWT, restauração de sessão e logout.
+- Criação de servidores, entrada por ID e seleção de canais de texto.
+- Mensagens em tempo real, histórico paginado e exibição de anexos no Android.
+- API para uploads, canais, membros e cargos; autorização por participação e permissões.
+- Redis Pub/Sub para distribuir mensagens entre instâncias do backend.
+- Firebase opcional para notificações; login e chat funcionam sem suas credenciais.
+- CI com testes, cobertura, build/lint Android e teste da infraestrutura de produção.
+
+## Executar no PC
+
+Pré-requisitos: **JDK 21**, **Docker Desktop em execução** e **PowerShell**. Para a interface, instale **Android Studio**, SDK 35 e Build Tools 34.0.0. O cliente atual é Android: no PC, execute-o em um emulador.
+
+```powershell
+git clone https://github.com/Samucau1/SamusChat.git
+cd SamusChat
+.\setup.ps1
+```
+
+O script verifica dependências, cria `.env` a partir do [modelo local](.env.example) se necessário, inicia PostgreSQL/Redis com healthchecks e executa a API por Maven Wrapper. O primeiro uso baixa dependências. `Ctrl+C` encerra a API; `docker compose stop` para os serviços sem apagar os dados.
+
+```powershell
+# Verificar os requisitos sem iniciar serviços
+.\setup.ps1 -Check
+# Iniciar somente PostgreSQL e Redis
+.\setup.ps1 -NoRun
+```
+
+Se o PowerShell bloquear scripts, execute `powershell -ExecutionPolicy Bypass -File .\setup.ps1` após revisar o arquivo. O script não instala programas nem altera a política permanente do sistema.
+
+Abra `samuschat-android/` no Android Studio, selecione JDK 21 e um emulador e clique em **Run**. A API padrão é `http://10.0.2.2:8080/`, endereço usado pelo emulador para acessar o PC. Saúde da API: `http://localhost:8080/actuator/health`.
+
+Para gerar o APK pelo terminal, configure `ANDROID_HOME` ou `local.properties` com o SDK:
+
+```powershell
+cd samuschat-android
+.\gradlew.bat :app:assembleDebug
+```
+
+APK: `samuschat-android/app/build/outputs/apk/debug/app-debug.apk`.
+
+## Testar no celular
+
+Conecte PC e Android à mesma rede e substitua o endereço abaixo pelo IPv4 do PC mostrado por `ipconfig`:
+
+```powershell
+cd samuschat-android
+.\gradlew.bat :app:assembleDebug -PapiBaseUrl=http://192.168.1.10:8080/
+```
+
+Instale o APK no celular. Configure `FILE_BASE_URL=http://192.168.1.10:8080` no `.env` e reinicie `setup.ps1` para os anexos funcionarem. Se necessário, permita Java/porta 8080 no firewall para a rede privada. HTTP é habilitado apenas no build debug; release exige HTTPS.
+
+## Arquitetura
+
+```mermaid
+flowchart LR
+    A[Android · Kotlin / Compose] -->|REST + JWT| N[Nginx]
+    A <-->|WebSocket / STOMP| N
+    N --> B1[Spring Boot 1]
+    N --> B2[Spring Boot 2]
+    N --> B3[Spring Boot 3]
+    B1 & B2 & B3 --> P[(PostgreSQL 16)]
+    B1 & B2 & B3 <--> R[(Redis 7 Pub/Sub)]
+    B1 & B2 & B3 --> U[Uploads compartilhados]
+    R --> RR[Redis réplica]
+```
+
+O diagrama representa o Compose de produção. No desenvolvimento, há uma API no host e PostgreSQL/Redis em Docker. Mensagens são persistidas antes da publicação no Redis; cada backend entrega o evento às suas conexões locais. Pub/Sub não oferece replay: o histórico REST permite recuperar mensagens após reconexão.
+
+| Camada | Tecnologias |
+| --- | --- |
+| Android | Kotlin, Jetpack Compose, Material 3, ViewModel, DataStore, Retrofit, OkHttp/STOMP, Coil |
+| Backend | Java 21, Spring Boot 3.5, Security/JWT, BCrypt, Bean Validation, JPA |
+| Dados | PostgreSQL 16, Redis 7, Flyway em produção |
+| Infraestrutura | Docker Compose, Nginx, GitHub Actions, GHCR |
+| Qualidade | JUnit, Mockito, MockMvc, testes de integração, JaCoCo, Android Lint |
+
+## Testes
+
+```powershell
+cd chatapp-backend
+# Com Redis local ativo, inclui o teste de distribuição entre instâncias
+$env:RUN_REDIS_TESTS = 'true'
+.\mvnw.cmd verify
+
+cd ../samuschat-android
+.\gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+```
+
+Relatórios: `chatapp-backend/target/site/jacoco/index.html` e `samuschat-android/app/build/reports/`. O CI disponibiliza relatórios e APK debug como artifacts por sete dias. Os testes do backend usam H2; o job de smoke também verifica a stack com PostgreSQL real, três backends, Redis e Nginx.
+
+## Publicação e deploy
+
+O [workflow](.github/workflows/ci-cd.yml) valida backend e Android, testa o Compose de produção e publica `ghcr.io/samucau1/samuschat-backend` com tags SHA e `latest` quando `ENABLE_IMAGE_PUBLISH=true`. O deploy SSH depende de servidor, secrets e `ENABLE_PRODUCTION_DEPLOY=true`.
+
+Consulte o [guia da etapa 13](docs/ETAPA_13.md) e o [modelo de produção](.env.prod.example). A stack usa um único host; PostgreSQL, proxy e Redis master continuam pontos únicos de falha. A réplica Redis não configura failover automático, e a substituição de instâncias pode interromper conexões WebSocket.
+
+## Organização e documentação
+
+```text
+samuschat-android/     Aplicativo nativo Android
+chatapp-backend/       API, WebSocket e testes Java
+nginx/                Roteamento e limites do proxy
+scripts/              Deploy, configuração e smoke tests
+docs/                 Guias de implementação e operação
+setup.ps1             Inicialização local no Windows
+```
+
+- [Documentação consolidada v3.0](docs/DOCUMENTACAO_V3.md)
+- [Etapa 14: interface e portfólio](docs/ETAPA_14.md)
+- [Android: contratos e roteiro de testes](samuschat-android/README.md)
+- [CI/CD e escalabilidade](docs/ETAPA_13.md)
+
+O Android ainda não oferece telas de upload, moderação, administração de membros ou chamadas de voz/vídeo. Push real depende da configuração Firebase. As credenciais de `.env.example` são exclusivas para desenvolvimento; em volumes PostgreSQL existentes, mudar o arquivo não altera a senha já persistida.
+
+## Autor e licença
+
+**[Samuel](https://github.com/Samucau1)** — estudante de Engenharia de Software, Universidade Católica de Brasília.
+
+Projeto de portfólio sob [licença MIT](LICENSE).

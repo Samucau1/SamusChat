@@ -18,6 +18,29 @@ buildNumber.properties
 .android-sdk/
 *.log
 .env
-.env.prod
-.env.*.local
+.env.*
+!.env.example
+!.env.*.example
 __pycache__/
+
+# IDEs and generated Android files (keep Gradle/Maven wrappers tracked)
+.idea/
+.vscode/
+*.iml
+.gradle/
+**/build/
+local.properties
+*.apk
+*.aab
+
+# Local credentials and signing keys
+google-services.json
+firebase-service-account*.json
+*.jks
+*.keystore
+*.pem
+*.p12
+uploads/
+logs/
+.DS_Store
+Thumbs.db

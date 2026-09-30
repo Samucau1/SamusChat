@@ -5,9 +5,12 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -23,16 +26,22 @@ import com.samuschat.ui.auth.*
 import com.samuschat.ui.server.*
 import com.samuschat.ui.chat.*
 import com.samuschat.util.Session
+import com.samuschat.ui.theme.SamusChatTheme
+import com.samuschat.ui.theme.RailBackground
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val notifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.rgb(30, 31, 34)),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.rgb(30, 31, 34))
+        )
         val app = application as SamusChatApplication
         setContent {
-            MaterialTheme {
-                Surface(Modifier.fillMaxSize().systemBarsPadding()) {
+            SamusChatTheme {
+                Surface(Modifier.fillMaxSize().background(RailBackground).systemBarsPadding()) {
                     var loaded by remember { mutableStateOf(false) }
                     var session by remember { mutableStateOf<Session?>(null) }
                     LaunchedEffect(Unit) { app.tokens.session.collect { session = it; loaded = true } }
@@ -48,7 +57,7 @@ class MainActivity : ComponentActivity() {
                             NavHost(nav, startDestination = "servers") {
                                 composable("servers") {
                                     val vm: ServerViewModel = viewModel(factory = factory { ServerViewModel(app) })
-                                    ServerListScreen(vm, { id, name -> nav.navigate("chat/$id/${Uri.encode(name)}") }, {
+                                    ServerListScreen(vm, session!!.email, { id, name -> nav.navigate("chat/$id/${Uri.encode(name)}") }, {
                                         scope.launch { ChatMessagingService.logout(app) }
                                     })
                                 }

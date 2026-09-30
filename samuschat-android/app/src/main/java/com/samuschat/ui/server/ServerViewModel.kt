@@ -9,13 +9,16 @@ class ServerViewModel(app: SamusChatApplication) : AppViewModel(app) {
     val servers = MutableStateFlow<List<Server>>(emptyList())
     init { refresh() }
     fun refresh() = runTask { servers.value = app.servers.list() }
-    fun create(name: String) = runTask {
+    fun create(name: String, onSuccess: (Long) -> Unit) = runTask {
         require(name.isNotBlank()) { "Informe o nome do servidor" }
-        app.servers.create(name); servers.value = app.servers.list()
+        val created = app.servers.create(name)
+        servers.value = app.servers.list()
+        onSuccess(created.id)
     }
-    fun join(id: String) = runTask {
-        val serverId = id.toLongOrNull()
+    fun join(id: String, onSuccess: (Long) -> Unit) = runTask {
+        val serverId = id.trim().toLongOrNull()
         require(serverId != null && serverId > 0) { "Informe um ID válido" }
         app.servers.join(serverId); servers.value = app.servers.list()
+        onSuccess(serverId)
     }
 }

@@ -1,6 +1,8 @@
-# SamusChat Android — Etapa 11
+# SamusChat Android
 
 Aplicativo Kotlin/Jetpack Compose integrado ao back-end deste repositório. Inclui cadastro, login, restauração de sessão, logout, criação e entrada em servidores, seleção de canais de texto, histórico paginado, mensagens REST com atualização STOMP, exibição de anexos e registro de dispositivos Firebase.
+
+A etapa 14 adiciona o tema escuro inspirado no Discord, barra lateral de servidores e novos formulários. Crie servidores no **+ superior esquerdo** e abra a busca na **lupa superior direita**. A busca filtra seus servidores por nome ou ID (sem diferenciar acentos/maiúsculas); o painel também permite entrar em outro servidor pelo ID.
 
 ## Executar
 

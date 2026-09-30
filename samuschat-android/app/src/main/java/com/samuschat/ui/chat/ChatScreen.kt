@@ -1,19 +1,26 @@
 package com.samuschat.ui.chat
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import com.samuschat.ui.components.ErrorNotice
 import com.samuschat.ui.components.MessageBubble
+import com.samuschat.ui.theme.*
 
 @Composable
 fun ChatScreen(viewModel: ChatViewModel, channelName: String, email: String, onBack: () -> Unit) {
@@ -34,26 +41,49 @@ fun ChatScreen(viewModel: ChatViewModel, channelName: String, email: String, onB
         onDispose { owner.lifecycle.removeObserver(observer); viewModel.disconnect() }
     }
     LaunchedEffect(messages.lastOrNull()?.id) {
-        if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex + 1)
+        if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex + 2)
     }
-    Column(Modifier.fillMaxSize().imePadding().padding(12.dp)) {
-        Row { TextButton(onClick = onBack) { Text("Voltar") }; Text("# $channelName") }
+    Column(Modifier.fillMaxSize().background(ChatBackground).imePadding()) {
+        Row(Modifier.fillMaxWidth().background(PanelBackground).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Voltar aos servidores") }
+            Text("#", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(Modifier.padding(start = 12.dp)) {
+                Text(channelName, style = MaterialTheme.typography.titleLarge)
+                Text("Canal de texto", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
         connectionError?.let {
-            Text(it, color = MaterialTheme.colorScheme.error)
+            ErrorNotice(it, Modifier.padding(12.dp))
             TextButton(onClick = { viewModel.connect() }) { Text("Reconectar") }
         }
         error?.let {
-            Text(it, color = MaterialTheme.colorScheme.error)
+            ErrorNotice(it, Modifier.padding(12.dp))
             TextButton(onClick = { viewModel.refresh() }, enabled = !busy) { Text("Atualizar histórico") }
         }
-        LazyColumn(Modifier.weight(1f), state = listState) {
-            item { if (hasMore) TextButton(onClick = { viewModel.loadMore() }, enabled = !busy) { Text("Mensagens anteriores") } }
+        LazyColumn(Modifier.weight(1f), state = listState, contentPadding = PaddingValues(vertical = 16.dp)) {
+            item(key = "welcome") {
+                Column(Modifier.padding(horizontal = 20.dp, vertical = 20.dp)) {
+                    Text("#", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Bem-vindo a #$channelName", style = MaterialTheme.typography.headlineMedium)
+                    Text("Este é o espaço da sua conversa.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            item(key = "history") {
+                if (hasMore) TextButton(onClick = { viewModel.loadMore() }, enabled = !busy) { Text("Carregar mensagens anteriores") }
+            }
             items(messages, key = { it.id }) { MessageBubble(it, it.senderEmail == email) }
         }
-        Row {
-            OutlinedTextField(draft, { draft = it }, modifier = Modifier.weight(1f), placeholder = { Text("Mensagem") }, maxLines = 4, enabled = !busy)
-            TextButton(onClick = { viewModel.send(draft) { draft = "" } }, enabled = !busy && draft.isNotBlank()) { Text("Enviar") }
-        }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.Bottom) {
+            OutlinedTextField(draft, { draft = it }, modifier = Modifier.weight(1f),
+                placeholder = { Text("Conversar em #$channelName") }, maxLines = 4, enabled = !busy,
+                shape = MaterialTheme.shapes.large, isError = draft.length > 2000)
+            Spacer(Modifier.width(8.dp))
+            FilledIconButton(onClick = { viewModel.send(draft) { draft = "" } },
+                modifier = Modifier.padding(bottom = 4.dp), enabled = !busy && draft.isNotBlank() && draft.length <= 2000) {
+                Icon(Icons.Default.Send, "Enviar mensagem")
+            }
+        }
+        if (draft.length > 2000) Text("Limite de 2000 caracteres", Modifier.padding(start = 16.dp, bottom = 8.dp), color = MaterialTheme.colorScheme.error)
     }
 }
