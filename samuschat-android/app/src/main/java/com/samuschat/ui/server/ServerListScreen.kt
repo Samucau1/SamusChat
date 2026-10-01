@@ -19,7 +19,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.samuschat.ui.components.*
@@ -27,7 +26,7 @@ import com.samuschat.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ServerListScreen(viewModel: ServerViewModel, email: String, onChannelClick: (Long, String) -> Unit, onLogout: () -> Unit) {
+fun ServerListScreen(viewModel: ServerViewModel, onChannelClick: (Long, String) -> Unit) {
     val servers by viewModel.servers.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
@@ -127,14 +126,6 @@ fun ServerListScreen(viewModel: ServerViewModel, email: String, onChannelClick: 
                     }
                 }
             }
-        }
-        Row(Modifier.fillMaxWidth().background(RailBackground).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            InitialAvatar(email, size = 36.dp)
-            Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                Text(email, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
-                Text("Sua conta", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
-            }
-            IconButton(onClick = onLogout) { Icon(Icons.Default.ExitToApp, "Sair da conta") }
         }
     }
 
