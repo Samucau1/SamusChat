@@ -6,6 +6,8 @@ A navegação no celular tem **Servidores**, **Amigos** e **Perfil** na barra in
 
 ## Documentação
 
+- [Chamadas individuais, tela e áudio do dispositivo](docs/CHAMADAS_INDIVIDUAIS.md)
+
 - [Índice de todos os documentos](docs/README.md)
 - [Instalação, execução e arquitetura](docs/GUIA_PROJETO.md)
 - [Aplicativo Android](docs/ANDROID.md)

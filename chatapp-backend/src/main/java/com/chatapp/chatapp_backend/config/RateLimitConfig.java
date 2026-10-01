@@ -29,4 +29,9 @@ public class RateLimitConfig {
             return Bucket.builder().addLimit(limit).build();
         });
     }
+
+    public Bucket resolveCallBucket(String ip) {
+        return buckets.computeIfAbsent("calls_" + ip, key -> Bucket.builder()
+            .addLimit(Bandwidth.classic(180, Refill.intervally(180, Duration.ofMinutes(1)))).build());
+    }
 }

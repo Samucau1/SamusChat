@@ -36,7 +36,8 @@ class ProductionSupportTests {
 
     @Test
     void migrationCreatesSchemaThatHibernateValidates() {
-        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("1");
+        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("2");
+        assertThat(flyway.info().pending()).isEmpty();
     }
 
     @Test

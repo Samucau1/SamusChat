@@ -1,5 +1,7 @@
 # Documentação do SamusChat
 
+- [Chamadas individuais, compartilhamento de tela e áudio interno](CHAMADAS_INDIVIDUAIS.md)
+
 - [Guia do projeto: instalação, execução e arquitetura](GUIA_PROJETO.md)
 - [Android: interface, contratos e testes](ANDROID.md)
 - [Regressão da navegação e stress de toques](REGRESSAO_NAVEGACAO.md)

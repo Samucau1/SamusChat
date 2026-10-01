@@ -22,6 +22,11 @@ import com.samuschat.ui.server.ServerListScreen
 import com.samuschat.ui.server.ServerViewModel
 import com.samuschat.ui.theme.*
 import kotlinx.coroutines.launch
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.samuschat.ui.call.CallPanel
+import com.samuschat.ui.call.CallViewModel
 
 @Composable
 fun HomeScreen(
@@ -31,6 +36,10 @@ fun HomeScreen(
     onLogout: () -> Unit,
     channelContent: @Composable (Long, String, () -> Unit) -> Unit
 ) {
+    val calls: CallViewModel = viewModel(key = "calls-$email", factory = object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T = CallViewModel(app, email) as T
+    })
     var tab by rememberSaveable { mutableStateOf("friends") }
     var channelId by rememberSaveable { mutableStateOf<Long?>(null) }
     var channelName by rememberSaveable { mutableStateOf("") }
@@ -75,14 +84,17 @@ fun HomeScreen(
                 }
             }
         ) { padding ->
-            Box(Modifier.fillMaxSize().padding(padding).background(ChatBackground)) {
+            Column(Modifier.fillMaxSize().padding(padding).background(ChatBackground)) {
+                CallPanel(calls, showContacts = tab == "friends" && !demoChat)
+                Box(Modifier.weight(1f)) {
                 when {
-                    tab == "profile" -> ProfileScreen(app, email, onLogout)
+                    tab == "profile" -> ProfileScreen(app, email) { calls.end(); onLogout() }
                     tab == "servers" && channelId != null -> channelContent(channelId!!, channelName) {
                         scope.launch { drawer.open() }
                     }
                     demoChat -> DemoConversation(demoMessages, { demoMessages = ArrayList(demoMessages + it) }) { demoChat = false }
                     else -> FriendsScreen { demoChat = true }
+                }
                 }
             }
         }

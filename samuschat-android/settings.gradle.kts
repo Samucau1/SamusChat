@@ -5,3 +5,5 @@ dependencyResolutionManagement {
 }
 rootProject.name = "SamusChat"
 include(":app")
+// Optional media source for disposable emulator tests; never packaged into SamusChat.
+if (providers.gradleProperty("callTestTone").getOrElse("false") == "true") include(":call-test-tone")
