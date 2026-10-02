@@ -131,7 +131,7 @@ setup.ps1             Inicialização local no Windows
 - [Android: contratos e roteiro de testes](ANDROID.md)
 - [CI/CD e escalabilidade](ETAPA_13.md)
 
-O Android ainda não oferece telas de upload, moderação, administração de membros ou chamadas de voz/vídeo. Push real depende da configuração Firebase. As credenciais de `.env.example` são exclusivas para desenvolvimento; em volumes PostgreSQL existentes, mudar o arquivo não altera a senha já persistida.
+O Android oferece [chamadas individuais de voz, compartilhamento de tela e áudio do dispositivo](CHAMADAS_INDIVIDUAIS.md). Ainda não oferece vídeo da câmera nem telas de upload, moderação ou administração de membros. Push real depende da configuração Firebase. As credenciais de `.env.example` são exclusivas para desenvolvimento; em volumes PostgreSQL existentes, mudar o arquivo não altera a senha já persistida.
 
 ## Autor e licença
 

@@ -4,6 +4,8 @@ Aplicativo Android em Kotlin/Jetpack Compose e API Java/Spring Boot para convers
 
 A navegação no celular tem **Servidores**, **Amigos** e **Perfil** na barra inferior. Servidores abre o painel lateral; Amigos inclui uma conversa de demonstração; Perfil permite alterar o nome da conta e escolher uma foto local.
 
+Contatos reais de servidores compartilhados podem fazer chamadas individuais de voz, compartilhar a tela e transmitir áudio de aplicativos que permitem captura. Os dois usuários precisam manter o aplicativo aberto para receber o convite.
+
 ## Documentação
 
 - [Chamadas individuais, tela e áudio do dispositivo](docs/CHAMADAS_INDIVIDUAIS.md)

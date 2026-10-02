@@ -10,7 +10,17 @@ Na aba Amigos, a seção **Chamadas individuais** lista os contatos reais. Com o
 
 O destinatário precisa manter o aplicativo aberto para receber o convite nesta versão. Chamadas já iniciadas utilizam serviço em primeiro plano e podem continuar enquanto outro aplicativo é exibido. Não foram adicionados chamadas de grupo, vídeo da câmera, histórico, gravação ou notificações push de chamadas.
 
-## Arquitetura
+## Capturas da versão atual
+
+Capturas reais de dois emuladores Android API 35 em 02/10/2026, usando apenas contas fictícias de regressão.
+
+| Ligação conectada | Transmissão recebida |
+| --- | --- |
+| ![Ligação conectada com controles de microfone, viva-voz e tela](images/call-connected.png) | ![Receptor mostrando a superfície colorida do aplicativo de teste transmitida por WebRTC](images/screen-received.png) |
+
+A superfície verde pertence ao aplicativo separado `call-test-tone`, que alterna cores e reproduz um tom de 440 Hz. Os contadores de quadros decodificados e de amostras recebidas complementam a captura visual; um print sozinho não comprova a transmissão de áudio.
+
+## Arquitetura da chamada
 
 ```mermaid
 sequenceDiagram
@@ -122,6 +132,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-calls-emulator.
 `-Prepare -ResetDisposableEmulators` reinstala o APK, limpa os dados do SamusChat nesses emuladores e prepara contas locais e um servidor compartilhado. O teste espera os textos do diálogo de autorização do Android em inglês. Sem `-Prepare`, reutiliza os aplicativos autenticados. Ele limpa os buffers de log dos emuladores para não aceitar evidência antiga. Relatórios ficam em `samuschat-android/app/build/call-e2e/`, fora do Git.
 
 ## Resultados e limites
+
+A [regressão de 02/10/2026](REGRESSAO_CHAMADAS.md) repete a validação nesta máquina e adiciona verificação de processos após stress e capturas reais da ligação e da transmissão. Os resultados abaixo registram a validação inicial de 01/10/2026.
 
 Validação local em 01/10/2026, Windows, JDK 21 e dois emuladores Android API 35:
 

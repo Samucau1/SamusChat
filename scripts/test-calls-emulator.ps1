@@ -46,6 +46,11 @@ function Request([string]$Method,[string]$Path,$Body,[string]$Token='') {
  if($null -ne $Body){$args.Body=$Body|ConvertTo-Json}
  return (Invoke-RestMethod @args).data
 }
+function Screenshot([string]$Serial,[string]$Name) {
+ $remote="/sdcard/$Name.png"
+ $null=AdbCmd $Serial @('shell','screencap','-p',$remote)
+ $null=AdbCmd $Serial @('pull',$remote,(Join-Path $results "$Name.png"))
+}
 if($Prepare) {
  if(!$ResetDisposableEmulators){throw 'Use only disposable emulators and explicitly pass -ResetDisposableEmulators.'}
  $accounts=@(@{username='CallTesterA';email='calla@local.test';password='LocalCallsTest42!'},@{username='CallTesterB';email='callb@local.test';password='LocalCallsTest42!'})
@@ -80,6 +85,10 @@ Tap $Caller 'Ligar'
 Tap $Callee 'Aceitar'
 $null=WaitText $Caller 'Em chamada' 65
 $null=WaitText $Callee 'Em chamada' 65
+$callerPid=(AdbCmd $Caller @('shell','pidof','com.samuschat')) -join ''
+$calleePid=(AdbCmd $Callee @('shell','pidof','com.samuschat')) -join ''
+if(!$callerPid -or !$calleePid){throw 'Call process missing'}
+Screenshot $Caller 'call-connected'
 Write-Output 'Both clients connected; testing controls and screen'
 Tap $Caller 'Silenciar'
 $null=WaitText $Caller 'Ativar microfone'
@@ -94,6 +103,8 @@ $null=AdbCmd $Caller @('push',$stress,'/data/local/tmp/call-touch-stress.sh')
 $null=AdbCmd $Caller @('shell','sh','/data/local/tmp/call-touch-stress.sh')
 $null=WaitText $Caller 'Silenciar'
 $null=WaitText $Callee 'Em chamada'
+if(((AdbCmd $Caller @('shell','pidof','com.samuschat')) -join '') -ne $callerPid -or
+   ((AdbCmd $Callee @('shell','pidof','com.samuschat')) -join '') -ne $calleePid){throw 'Call process restarted during mute stress'}
 function StartScreen {
  Tap $Caller 'Compartilhar tela'
  $null=WaitText $Caller 'Start' 20
@@ -118,6 +129,7 @@ function AudioCounts {
 }
 $allowed=AudioCounts
 if($allowed.samples -le 0){throw 'Allowed media was silent on receiver'}
+Screenshot $Callee 'screen-received'
 Write-Output 'Screen and device audio received; checking capture opt-out'
 $null=AdbCmd $Caller @('shell','am','force-stop','com.samuschat.calltest')
 $null=AdbCmd $Caller @('shell','am','start','-W','-n','com.samuschat.calltest/.ToneActivity','--ez','blocked','true')
@@ -152,6 +164,6 @@ foreach($serial in @($Caller,$Callee)) {
  $services=(AdbCmd $serial @('shell','dumpsys','activity','services','com.samuschat')) -join "`n"
  if($services -match 'ServiceRecord.*CallMediaService'){throw "Call service remained active on $serial"}
 }
-$report=@{passed=$true;stressTouches=50;deviceAudio=$allowed;checks=@('authenticated contacts','invite/accept','connected on both Android clients','TURN relay','mute/unmute stress','screen decoded','device audio received','capture opt-out respected','stop and restart sharing','remote hangup while sharing','reverse invitation declined','foreground service stopped');time=(Get-Date).ToString('o')}
+$report=@{passed=$true;stressTouches=50;deviceAudio=$allowed;screenshots=@('call-connected.png','screen-received.png');checks=@('authenticated contacts','invite/accept','connected on both Android clients','TURN relay','mute/unmute stress','same processes after mute stress','screen decoded','device audio received','capture opt-out respected','stop and restart sharing','remote hangup while sharing','reverse invitation declined','foreground service stopped');time=(Get-Date).ToString('o')}
 $report|ConvertTo-Json|Set-Content $reportPath
 $report|ConvertTo-Json
