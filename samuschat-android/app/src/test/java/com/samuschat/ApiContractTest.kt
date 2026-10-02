@@ -12,6 +12,21 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class ApiContractTest {
+    @Test fun profileNameUpdateUsesAuthenticatedBackendContract() = runTest {
+        val server = MockWebServer()
+        try {
+            server.enqueue(MockResponse().setBody("""{"success":true,"data":{"id":1,"username":"Ana Silva","email":"ana@example.com"}}"""))
+            val api = Retrofit.Builder().baseUrl(server.url("/"))
+                .addConverterFactory(GsonConverterFactory.create()).build().create(ApiService::class.java)
+            assertEquals("Ana Silva", api.updateUsername("Bearer jwt", "Ana Silva").data().username)
+            val request = server.takeRequest()
+            assertEquals("PUT", request.method)
+            assertEquals("/api/users/me/username", request.requestUrl!!.encodedPath)
+            assertEquals("Ana Silva", request.requestUrl!!.queryParameter("newUsername"))
+            assertEquals("Bearer jwt", request.getHeader("Authorization"))
+        } finally { server.shutdown() }
+    }
+
     @Test fun loginAndHistoryUseBackendEnvelopeAndPagination() = runTest {
         val server = MockWebServer()
         try {

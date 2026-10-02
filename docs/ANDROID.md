@@ -2,11 +2,15 @@
 
 Aplicativo Kotlin/Jetpack Compose integrado ao back-end deste repositório. Inclui cadastro, login, restauração de sessão, logout, criação e entrada em servidores, seleção de canais de texto, histórico paginado, mensagens REST com atualização STOMP, exibição de anexos e registro de dispositivos Firebase.
 
-A etapa 14 adiciona o tema escuro inspirado no Discord, barra lateral de servidores e novos formulários. Crie servidores no **+ superior esquerdo** e abra a busca na **lupa superior direita**. A busca filtra seus servidores por nome ou ID (sem diferenciar acentos/maiúsculas); o painel também permite entrar em outro servidor pelo ID.
+A navegação no celular usa uma barra inferior com **Servidores**, **Amigos** (ao centro) e **Perfil**. Amigos é a tela inicial; Servidores abre o painel lateral com os servidores da conta e seus canais. A barra inferior também permanece disponível nas conversas. Crie servidores no **+ superior esquerdo** do painel e abra a busca na **lupa superior direita**.
+
+A tela Amigos inclui busca e Alex, um contato de demonstração. A conversa aceita mensagens locais para experimentar a interface; não cria usuários no servidor nem envia mensagens diretas reais. O histórico de teste é temporário.
+
+Em Perfil, o nome é carregado da conta e salvo pelo endpoint `PUT /api/users/me/username`. A foto é selecionada pelo seletor de documentos do Android e sua referência é persistida por conta neste dispositivo; ainda não há sincronização de avatar com o back-end. A opção de sair da conta está no Perfil.
 
 ## Executar
 
-Abra esta pasta no Android Studio. Use JDK 17 ou 21, SDK Android 35 e Build Tools 34.0.0. Configure `ANDROID_HOME` ou `sdk.dir` em `local.properties` (arquivo local ignorado pelo Git).
+Abra a pasta `samuschat-android/` no Android Studio. Execute os comandos abaixo a partir dessa pasta. Use JDK 17 ou 21, SDK Android 35 e Build Tools 34.0.0. Configure `ANDROID_HOME` ou `sdk.dir` em `local.properties` (arquivo local ignorado pelo Git).
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest :app:assembleDebug :app:lintDebug

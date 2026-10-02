@@ -66,4 +66,4 @@ Backend: `mvnw verify`, incluindo fan-out real com `RUN_REDIS_TESTS=true`. Andro
 
 No CI, o smoke test sobe a stack de produção e valida autenticação, migrações, roteamento e uploads compartilhados. Veja o checklist da [etapa 14](ETAPA_14.md) e os artifacts da execução correspondente no GitHub Actions.
 
-Próximas evoluções possíveis: telas de upload/moderação, descoberta pública com regras de visibilidade, reconexão automática e observabilidade. Alta disponibilidade entre hosts, failover Redis e chamadas de voz/vídeo não fazem parte da implementação atual.
+Próximas evoluções possíveis: telas de upload/moderação, descoberta pública com regras de visibilidade, reconexão automática e observabilidade. Alta disponibilidade entre hosts, failover Redis e vídeo da câmera não fazem parte da implementação atual. A evolução de [chamadas individuais de voz, tela e áudio do dispositivo](CHAMADAS_INDIVIDUAIS.md) está documentada com seus testes e limites.

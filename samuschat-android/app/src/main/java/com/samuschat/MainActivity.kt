@@ -1,7 +1,6 @@
 package com.samuschat
 
 import android.Manifest
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -16,11 +15,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavType
 import androidx.navigation.compose.*
-import androidx.navigation.navArgument
 import com.samuschat.data.push.ChatMessagingService
 import com.samuschat.ui.auth.*
 import com.samuschat.ui.server.*
@@ -54,17 +50,16 @@ class MainActivity : ComponentActivity() {
                                 ChatMessagingService.syncToken(app)
                                 if (Build.VERSION.SDK_INT >= 33) notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
                             }
-                            NavHost(nav, startDestination = "servers") {
-                                composable("servers") {
-                                    val vm: ServerViewModel = viewModel(factory = factory { ServerViewModel(app) })
-                                    ServerListScreen(vm, session!!.email, { id, name -> nav.navigate("chat/$id/${Uri.encode(name)}") }, {
-                                        scope.launch { ChatMessagingService.logout(app) }
-                                    })
-                                }
-                                composable("chat/{id}/{name}", arguments = listOf(navArgument("id") { type = NavType.LongType }, navArgument("name") { type = NavType.StringType })) { entry ->
-                                    val id = entry.arguments!!.getLong("id")
-                                    val vm: ChatViewModel = viewModel(factory = factory { ChatViewModel(app, id) })
-                                    ChatScreen(vm, entry.arguments!!.getString("name").orEmpty(), session!!.email) { nav.popBackStack() }
+                            NavHost(nav, startDestination = "home") {
+                                composable("home") {
+                                    val servers: ServerViewModel = viewModel(factory = factory { ServerViewModel(app) })
+                                    com.samuschat.ui.home.HomeScreen(app, session!!.email, servers,
+                                        onLogout = { scope.launch { ChatMessagingService.logout(app) } }) { id, name, back ->
+                                        key(id) {
+                                            val chat: ChatViewModel = viewModel(key = "chat-$id", factory = factory { ChatViewModel(app, id) })
+                                            ChatScreen(chat, name, session!!.email, back)
+                                        }
+                                    }
                                 }
                             }
                         } else {

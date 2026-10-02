@@ -14,6 +14,9 @@ android {
         versionName = "1.0"
         val apiUrl = providers.gradleProperty("apiBaseUrl").getOrElse("http://10.0.2.2:8080/")
         buildConfigField("String", "BASE_URL", "\"${apiUrl}\"")
+        val forceRelay = providers.gradleProperty("callsForceRelay").getOrElse("false")
+        require(forceRelay in listOf("true", "false"))
+        buildConfigField("boolean", "CALLS_FORCE_RELAY", forceRelay)
     }
     buildFeatures { compose = true; buildConfig = true }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.15" }
@@ -21,6 +24,7 @@ android {
     kotlinOptions { jvmTarget = "17" }
 }
 dependencies {
+    implementation("io.github.webrtc-sdk:android:137.7151.05")
     implementation(platform("androidx.compose:compose-bom:2024.02.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")

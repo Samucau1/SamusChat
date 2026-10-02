@@ -2,7 +2,7 @@ name: SamusChat CI/CD
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, 'feature/**']
   pull_request:
     branches: [main, develop]
   workflow_dispatch:
@@ -25,8 +25,9 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
       - uses: android-actions/setup-android@v3
-      - name: Install Android SDK
-        run: sdkmanager 'platforms;android-35' 'build-tools;34.0.0'
+        with:
+          # Override the action's default, which includes the unavailable legacy 'tools' package.
+          packages: 'platform-tools platforms;android-35 build-tools;34.0.0'
       - uses: gradle/actions/setup-gradle@v4
       - name: Verify Android
         working-directory: samuschat-android

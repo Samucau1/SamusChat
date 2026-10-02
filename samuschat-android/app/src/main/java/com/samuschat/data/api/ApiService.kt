@@ -5,9 +5,16 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiService {
+    @GET("api/calls/contacts") suspend fun callContacts(@Header("Authorization") token: String): Response<ApiResponse<List<com.samuschat.ui.call.CallContact>>>
+    @GET("api/calls/ice") suspend fun callIce(@Header("Authorization") token: String): Response<ApiResponse<List<com.samuschat.ui.call.IceServerConfig>>>
+    @GET("api/calls") suspend fun currentCalls(@Header("Authorization") token: String): Response<ApiResponse<List<com.samuschat.ui.call.CallSession>>>
+    @GET("api/calls/{id}") suspend fun call(@Header("Authorization") token: String, @Path("id") id: String): Response<ApiResponse<com.samuschat.ui.call.CallSession>>
+    @POST("api/calls") suspend fun inviteCall(@Header("Authorization") token: String, @Body request: com.samuschat.ui.call.CallInvite): Response<ApiResponse<com.samuschat.ui.call.CallSession>>
+    @POST("api/calls/{id}") suspend fun callAction(@Header("Authorization") token: String, @Path("id") id: String, @Body request: com.samuschat.ui.call.CallAction): Response<ApiResponse<com.samuschat.ui.call.CallSession>>
     @POST("api/auth/login") suspend fun login(@Body request: LoginRequest): Response<ApiResponse<TokenData>>
     @POST("api/auth/register") suspend fun register(@Body request: RegisterRequest): Response<ApiResponse<TokenData>>
     @GET("api/users/me") suspend fun profile(@Header("Authorization") token: String): Response<ApiResponse<User>>
+    @PUT("api/users/me/username") suspend fun updateUsername(@Header("Authorization") token: String, @Query("newUsername") username: String): Response<ApiResponse<User>>
     @GET("api/servers") suspend fun servers(@Header("Authorization") token: String): Response<ApiResponse<List<Server>>>
     @GET("api/servers/{id}") suspend fun server(@Header("Authorization") token: String, @Path("id") id: Long): Response<ApiResponse<Server>>
     @POST("api/servers") suspend fun createServer(@Header("Authorization") token: String, @Body request: ServerRequest): Response<ApiResponse<Server>>
