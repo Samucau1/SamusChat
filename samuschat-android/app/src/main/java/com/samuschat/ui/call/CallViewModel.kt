@@ -17,13 +17,16 @@ data class CallUiState(
     val contacts: List<CallContact> = emptyList(), val call: CallSession? = null,
     val busy: Boolean = false, val connected: Boolean = false, val muted: Boolean = false,
     val speaker: Boolean = false, val sharing: Boolean = false, val deviceAudio: Boolean = false,
-    val remoteSharing: Boolean = false, val error: String? = null, val notice: String? = null
+    val remoteSharing: Boolean = false, val error: String? = null, val notice: String? = null,
+    val room: CallRoom? = null, val roomName: String = "", val roomConnected: Set<String> = emptySet(), val roomSharing: Set<String> = emptySet()
 )
 
 class CallViewModel(private val app: SamusChatApplication, val email: String) : ViewModel() {
     private val mutable = MutableStateFlow(CallUiState())
     val state = mutable.asStateFlow()
     val remoteVideo = MutableStateFlow<VideoTrack?>(null)
+    val roomVideos = MutableStateFlow<Map<String, VideoTrack>>(emptyMap())
+    var roomRtc: RoomRtc? = null; private set
     var rtc: RtcCall? = null; private set
     private val mutex = Mutex()
     private var offerSent = false
@@ -40,10 +43,16 @@ class CallViewModel(private val app: SamusChatApplication, val email: String) : 
         refreshContacts()
         poll = viewModelScope.launch {
             while (isActive) {
-                if (foreground || mutable.value.call != null) {
+                if (foreground || mutable.value.call != null || mutable.value.room != null) {
                     try {
                         mutex.withLock {
                             val token = app.tokens.authorization()
+                            val room = mutable.value.room
+                            if (room != null) {
+                                handleRoom(app.api.callRoom(token, room.channelId).data())
+                                lastSuccess = System.currentTimeMillis()
+                                return@withLock
+                            }
                             val current = mutable.value.call
                             val next = if (current == null) app.api.currentCalls(token).data().firstOrNull()
                                 else app.api.call(token, current.id).data()
@@ -52,12 +61,12 @@ class CallViewModel(private val app: SamusChatApplication, val email: String) : 
                         }
                     } catch (cancelled: CancellationException) { throw cancelled }
                     catch (error: Exception) {
-                        if (mutable.value.call != null && (error is IllegalStateException || System.currentTimeMillis() - lastSuccess > 20000)) {
+                        if ((mutable.value.call != null || mutable.value.room != null) && (error is IllegalStateException || System.currentTimeMillis() - lastSuccess > 20000)) {
                             end(); mutable.value = mutable.value.copy(error = error.message ?: "Conexão perdida. A chamada foi encerrada.")
                         } else if (foreground) mutable.value = mutable.value.copy(error = error.message ?: "Falha ao atualizar chamadas")
                     }
                 }
-                delay(if (mutable.value.call == null) 5000 else 2000)
+                delay(if (mutable.value.call == null && mutable.value.room == null) 5000 else 2000)
             }
         }
     }
@@ -78,6 +87,7 @@ class CallViewModel(private val app: SamusChatApplication, val email: String) : 
         }
     }
     fun invite(contact: CallContact) = execute {
+        check(mutable.value.room == null) { "Saia do canal de chamada primeiro" }
         if (mutable.value.call != null) return@execute
         // Start while the user is interacting with the app, before a delayed remote acceptance.
         try {
@@ -102,6 +112,11 @@ class CallViewModel(private val app: SamusChatApplication, val email: String) : 
         }
     }
     fun end(decline: Boolean = false) {
+        mutable.value.room?.let { room ->
+            finish("Você saiu do canal")
+            viewModelScope.launch { runCatching { app.api.leaveCallRoom(app.tokens.authorization(), room.channelId).data() } }
+            return
+        }
         val current = mutable.value.call ?: return
         // Stop local capture immediately, even when the network is unavailable.
         dismissedId = current.id; finish(if (decline) "Chamada recusada" else "Chamada encerrada")
@@ -151,9 +166,55 @@ class CallViewModel(private val app: SamusChatApplication, val email: String) : 
         }
         if (call.caller == email && call.answer != null && !answerSet) { engine.remoteAnswer(call.answer); answerSet = true }
     }
-    fun mute() { val value = !mutable.value.muted; rtc?.mute(value); mutable.value = mutable.value.copy(muted = value) }
-    fun speaker() { val value = !mutable.value.speaker; rtc?.speaker(value); mutable.value = mutable.value.copy(speaker = value) }
+    fun joinRoom(id: Long, name: String) = execute {
+        check(mutable.value.call == null && mutable.value.room == null) { "Encerre a chamada atual primeiro" }
+        try {
+            service()
+            val room = app.api.joinCallRoom(app.tokens.authorization(), id).data()
+            mutable.value = mutable.value.copy(room = room, roomName = name)
+            roomRtc = RoomRtc(app, app.api.callIce(app.tokens.authorization()).data(),
+                onConnection = { peer, connected ->
+                    val previous = mutable.value.roomConnected
+                    mutable.value = mutable.value.copy(roomConnected = if (connected) previous + peer else previous - peer)
+                }, onVideo = { peer, track -> roomVideos.value = roomVideos.value + (peer to track) },
+                onRemoteSharing = { peer, shared -> val previous = mutable.value.roomSharing; mutable.value = mutable.value.copy(roomSharing = if (shared) previous + peer else previous - peer) },
+                onFailure = { message -> end(); mutable.value = mutable.value.copy(error = message) },
+                onSharingStopped = { mutable.value = mutable.value.copy(sharing = false) })
+            handleRoom(room)
+        } catch (e: Exception) {
+            runCatching { app.api.leaveCallRoom(app.tokens.authorization(), id).data() }
+            finish("Não foi possível entrar no canal"); throw e
+        }
+    }
+    private suspend fun handleRoom(room: CallRoom) {
+        val engine = roomRtc ?: return
+        mutable.value = mutable.value.copy(room = room, error = null)
+        val ids = room.sessions.map { it.id }.toSet()
+        roomVideos.value = roomVideos.value.filterKeys { it in ids }
+        mutable.value = mutable.value.copy(roomConnected = mutable.value.roomConnected.intersect(ids), roomSharing = mutable.value.roomSharing.intersect(ids))
+        engine.retain(ids)
+        for (call in room.sessions) {
+            val link = engine.link(call.id, call.caller == email)
+            if (!link.sent && (call.caller == email || call.offer != null)) {
+                val sdp = link.local(call.caller == email, if (call.callee == email) call.offer else null)
+                if (roomRtc !== engine) return
+                app.api.callAction(app.tokens.authorization(), call.id, CallAction(if (call.caller == email) "offer" else "answer", sdp)).data()
+                link.sent = true
+            }
+            if (call.caller == email && call.answer != null && !link.answerSet) link.answer(call.answer)
+        }
+    }
+    fun mute() { val value = !mutable.value.muted; rtc?.mute(value); roomRtc?.mute(value); mutable.value = mutable.value.copy(muted = value) }
+    fun speaker() { val value = !mutable.value.speaker; rtc?.speaker(value); roomRtc?.speaker(value); mutable.value = mutable.value.copy(speaker = value) }
     fun share(permission: Intent) = execute {
+        roomRtc?.let { engine ->
+            if (mutable.value.sharing) return@execute
+            service(screen = true)
+            if (roomRtc !== engine) return@execute
+            try { engine.share(permission); mutable.value = mutable.value.copy(sharing = true) }
+            catch (e: Exception) { engine.stopSharing(); throw e }
+            return@execute
+        }
         if (!CallPolicy.mayShare(mutable.value.connected, mutable.value.sharing)) return@execute
         val engine = rtc ?: return@execute
         service(screen = true)
@@ -161,7 +222,7 @@ class CallViewModel(private val app: SamusChatApplication, val email: String) : 
         try { engine.share(permission); mutable.value = mutable.value.copy(sharing = true) }
         catch (e: Exception) { engine.stopSharing(); throw e }
     }
-    fun stopSharing() { rtc?.stopSharing(); mutable.value = mutable.value.copy(sharing = false, deviceAudio = false) }
+    fun stopSharing() { rtc?.stopSharing(); roomRtc?.stopSharing(); mutable.value = mutable.value.copy(sharing = false, deviceAudio = false) }
     fun deviceAudio() = execute {
         val value = !mutable.value.deviceAudio
         rtc?.deviceSound(value); mutable.value = mutable.value.copy(deviceAudio = value)
@@ -179,6 +240,7 @@ class CallViewModel(private val app: SamusChatApplication, val email: String) : 
     private fun finish(notice: String) {
         connectionTimer?.cancel(); connectionTimer = null
         remoteVideo.value = null; rtc?.close(); rtc = null
+        roomVideos.value = emptyMap(); roomRtc?.close(); roomRtc = null
         CallMediaService.onReady = null; CallMediaService.onStopRequested = null
         app.stopService(Intent(app, CallMediaService::class.java))
         offerSent = false; answerSet = false; localSdp = null; acceptedLocally = false

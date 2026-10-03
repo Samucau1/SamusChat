@@ -34,4 +34,8 @@ public class RateLimitConfig {
         return buckets.computeIfAbsent("calls_" + ip, key -> Bucket.builder()
             .addLimit(Bandwidth.classic(180, Refill.intervally(180, Duration.ofMinutes(1)))).build());
     }
+    public Bucket resolveRoomBucket(String ip) {
+        return buckets.computeIfAbsent("rooms_" + ip, key -> Bucket.builder()
+            .addLimit(Bandwidth.classic(360, Refill.intervally(360, Duration.ofMinutes(1)))).build());
+    }
 }

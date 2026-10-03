@@ -2,6 +2,8 @@
 
 - [Chamadas individuais, compartilhamento de tela e áudio interno](CHAMADAS_INDIVIDUAIS.md)
 - [Regressão de chamadas e capturas da versão atual](REGRESSAO_CHAMADAS.md)
+- [Perfis, permissões e canais de chamada em grupo](CANAIS_DE_CHAMADA.md)
+- [Regressão da etapa de perfis e canais de chamada](REGRESSAO_CANAIS_DE_CHAMADA.md)
 
 - [Guia do projeto: instalação, execução e arquitetura](GUIA_PROJETO.md)
 - [Android: interface, contratos e testes](ANDROID.md)

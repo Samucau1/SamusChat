@@ -25,8 +25,12 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.samuschat.ui.call.CallPanel
 import com.samuschat.ui.call.CallViewModel
+import com.samuschat.ui.call.CallContact
+import com.samuschat.ui.call.FriendCallButton
+import com.samuschat.ui.call.CallRoomScreen
 
 @Composable
 fun HomeScreen(
@@ -43,26 +47,30 @@ fun HomeScreen(
     var tab by rememberSaveable { mutableStateOf("friends") }
     var channelId by rememberSaveable { mutableStateOf<Long?>(null) }
     var channelName by rememberSaveable { mutableStateOf("") }
+    var channelType by rememberSaveable { mutableStateOf("TEXT") }
+    var contactEmail by rememberSaveable { mutableStateOf<String?>(null) }
+    var contactName by rememberSaveable { mutableStateOf("") }
+    val callState by calls.state.collectAsStateWithLifecycle()
     var demoChat by rememberSaveable { mutableStateOf(false) }
     var demoMessages by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
     val drawer = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    BackHandler(drawer.isOpen || tab != "friends" || demoChat) {
+    BackHandler(drawer.isOpen || tab != "friends" || demoChat || contactEmail != null) {
         if (drawer.isOpen) scope.launch { drawer.close() }
-        else { tab = "friends"; demoChat = false }
+        else { tab = "friends"; demoChat = false; contactEmail = null }
     }
     ModalNavigationDrawer(
         drawerState = drawer,
         gesturesEnabled = drawer.isOpen,
         drawerContent = {
-            ModalDrawerSheet(modifier = Modifier.fillMaxWidth(0.92f), drawerContainerColor = PanelBackground) {
+            ModalDrawerSheet(drawerContainerColor = PanelBackground) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     IconButton(onClick = { scope.launch { drawer.close() } }) {
                         Icon(Icons.Default.Close, "Fechar servidores")
                     }
                 }
-                ServerListScreen(servers) { id, name ->
-                    channelId = id; channelName = name; tab = "servers"
+                ServerListScreen(servers, email) { id, name, type ->
+                    channelId = id; channelName = name; channelType = type; tab = "servers"
                     scope.launch { drawer.close() }
                 }
             }
@@ -76,7 +84,7 @@ fun HomeScreen(
                         onClick = { scope.launch { drawer.open() } },
                         icon = { Icon(Icons.Default.Menu, null) }, label = { Text("Servidores") })
                     NavigationBarItem(selected = tab == "friends" && !drawer.isOpen,
-                        onClick = { tab = "friends"; demoChat = false },
+                        onClick = { tab = "friends"; demoChat = false; contactEmail = null; calls.refreshContacts() },
                         icon = { Icon(Icons.Default.Face, null) }, label = { Text("Amigos") })
                     NavigationBarItem(selected = tab == "profile" && !drawer.isOpen,
                         onClick = { tab = "profile" },
@@ -85,15 +93,21 @@ fun HomeScreen(
             }
         ) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).background(ChatBackground)) {
-                CallPanel(calls, showContacts = tab == "friends" && !demoChat)
+                CallPanel(calls)
+                callState.error?.let { Text(it, Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.error) }
+                callState.room?.let { room ->
+                    if (tab != "servers" || channelId != room.channelId) TextButton(onClick = { channelId = room.channelId; channelName = callState.roomName; channelType = "VOICE"; tab = "servers" }) { Text("Voltar à chamada: ${callState.roomName}") }
+                }
                 Box(Modifier.weight(1f)) {
                 when {
                     tab == "profile" -> ProfileScreen(app, email) { calls.end(); onLogout() }
+                    tab == "servers" && channelId != null && channelType == "VOICE" -> CallRoomScreen(calls, channelId!!, channelName) { scope.launch { drawer.open() } }
                     tab == "servers" && channelId != null -> channelContent(channelId!!, channelName) {
                         scope.launch { drawer.open() }
                     }
                     demoChat -> DemoConversation(demoMessages, { demoMessages = ArrayList(demoMessages + it) }) { demoChat = false }
-                    else -> FriendsScreen { demoChat = true }
+                    contactEmail != null -> FriendProfile(CallContact(contactEmail!!, contactName), calls) { contactEmail = null }
+                    else -> FriendsScreen(callState.contacts, { contactEmail = it.email; contactName = it.username }, { calls.refreshContacts() }) { demoChat = true }
                 }
                 }
             }
@@ -102,12 +116,13 @@ fun HomeScreen(
 }
 
 @Composable
-private fun FriendsScreen(onChat: () -> Unit) {
+private fun FriendsScreen(contacts: List<CallContact>, onContact: (CallContact) -> Unit, onRefresh: () -> Unit, onChat: () -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         item {
             Text("Amigos", style = MaterialTheme.typography.headlineLarge)
             Text("Seu próximo papo começa aqui.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            TextButton(onClick = onRefresh) { Text("Atualizar contatos") }
         }
         item {
             OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(), singleLine = true,
@@ -130,7 +145,40 @@ private fun FriendsScreen(onChat: () -> Unit) {
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Abrir conversa com Alex")
                 }
             }
-        } else item { Text("Nenhum amigo encontrado.") }
+        }
+        item {
+            Text("CONTATOS", style = MaterialTheme.typography.labelMedium)
+            Text("Abra o perfil e toque no telefone para ligar. O destinatário precisa manter o app aberto.", style = MaterialTheme.typography.bodySmall)
+        }
+        items(contacts.filter { matchesFriend(it.username, query) || matchesFriend(it.email, query) }, key = { it.email }) { contact ->
+            Surface(onClick = { onContact(contact) }, color = PanelBackground, shape = MaterialTheme.shapes.large) {
+                Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    InitialAvatar(contact.username)
+                    Text(contact.username, Modifier.weight(1f).padding(horizontal = 12.dp))
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Abrir perfil de ${contact.username}")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FriendProfile(contact: CallContact, calls: CallViewModel, onBack: () -> Unit) {
+    Column(Modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxWidth().background(PanelBackground).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar aos amigos") }
+            Text(contact.username, Modifier.weight(1f).padding(horizontal = 8.dp), style = MaterialTheme.typography.titleLarge)
+            FriendCallButton(calls, contact)
+        }
+        Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            InitialAvatar(contact.username, size = 80.dp)
+            Spacer(Modifier.height(16.dp))
+            Text(contact.username, style = MaterialTheme.typography.headlineMedium)
+            Text(contact.email, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(24.dp))
+            Text("Toque no telefone no canto superior direito para iniciar uma chamada.")
+            Text("Qualquer conta cadastrada pode ligar e compartilhar a tela, sem precisar de um servidor em comum.", Modifier.padding(top = 12.dp))
+        }
     }
 }
 

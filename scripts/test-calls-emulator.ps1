@@ -11,9 +11,21 @@ New-Item -ItemType Directory -Force $results | Out-Null
 $reportPath=Join-Path $results 'result.json'
 if(Test-Path $reportPath){Remove-Item -LiteralPath $reportPath}
 function AdbCmd([string]$Serial,[string[]]$Arguments) {
- $value=& $Adb -s $Serial @Arguments
- if($LASTEXITCODE -ne 0){throw "ADB failed on $Serial"}
- return $value
+ for($attempt=0;$attempt -lt 4;$attempt++){
+  $previousPreference=$ErrorActionPreference
+  try {
+   $ErrorActionPreference='Continue'
+   $value=& $Adb -s $Serial @Arguments 2>&1
+   $code=$LASTEXITCODE
+  } finally {$ErrorActionPreference=$previousPreference}
+  if($code -eq 0){return @($value|ForEach-Object {[string]$_})}
+  $message=($value|ForEach-Object {[string]$_}) -join "`n"
+  # Retry only transport failures that occurred before the device command ran.
+  if($message -notmatch 'cannot connect to daemon|daemon still not running|device offline|device .*not found'){throw "ADB failed on ${Serial}: $message"}
+  Write-Warning "ADB transport unavailable on $Serial; retrying"
+  Start-Sleep -Seconds 2
+ }
+ throw "ADB transport failed repeatedly on $Serial"
 }
 function Ui([string]$Serial) {
  for($attempt=0;$attempt -lt 3;$attempt++) {
@@ -41,10 +53,17 @@ function Tap([string]$Serial,[string]$Text) {
  $null=AdbCmd $Serial @('shell','input','tap',"$([int](($c[0]+$c[2])/2))","$([int](($c[1]+$c[3])/2))")
 }
 function Request([string]$Method,[string]$Path,$Body,[string]$Token='') {
- $headers=@{};if($Token){$headers.Authorization="Bearer $Token"}
+ $headers=@{'X-Forwarded-For'='127.0.0.41'};if($Token){$headers.Authorization="Bearer $Token"}
  $args=@{Method=$Method;Uri="$Api$Path";Headers=$headers;ContentType='application/json'}
  if($null -ne $Body){$args.Body=$Body|ConvertTo-Json}
  return (Invoke-RestMethod @args).data
+}
+function TypeText([string]$Serial,[string]$Value) {
+ Start-Sleep -Milliseconds 400
+ foreach($character in $Value.ToCharArray()){
+  $null=AdbCmd $Serial @('shell','input','text',[string]$character)
+  Start-Sleep -Milliseconds 60
+ }
 }
 function Screenshot([string]$Serial,[string]$Name) {
  $remote="/sdcard/$Name.png"
@@ -53,12 +72,11 @@ function Screenshot([string]$Serial,[string]$Name) {
 }
 if($Prepare) {
  if(!$ResetDisposableEmulators){throw 'Use only disposable emulators and explicitly pass -ResetDisposableEmulators.'}
- $accounts=@(@{username='CallTesterA';email='calla@local.test';password='LocalCallsTest42!'},@{username='CallTesterB';email='callb@local.test';password='LocalCallsTest42!'})
+ $accounts=@(@{username='CallFreeA';email='freea@local.test';password='LocalCallsTest42!'},@{username='CallFreeB';email='freeb@local.test';password='LocalCallsTest42!'})
  $tokens=@()
  foreach($a in $accounts){try{$tokens+=(Request POST '/api/auth/login' @{email=$a.email;password=$a.password}).token}catch{$tokens+=(Request POST '/api/auth/register' $a).token}}
  foreach($token in $tokens){foreach($active in (Request GET '/api/calls' $null $token)){$null=Request POST "/api/calls/$($active.id)" @{action='end'} $token}}
- $server=Request POST '/api/servers' @{name='Calls regression';description='Disposable call test'} $tokens[0]
- $null=Request POST "/api/servers/$($server.id)/join" $null $tokens[1]
+ if(@(Request GET '/api/servers' $null $tokens[0]).Count -or @(Request GET '/api/servers' $null $tokens[1]).Count){throw 'Use accounts without server membership for the unrestricted-call regression'}
  for($i=0;$i -lt 2;$i++) {
   $serial=@($Caller,$Callee)[$i]
   Write-Output "Preparing $serial"
@@ -68,11 +86,16 @@ if($Prepare) {
   $null=AdbCmd $serial @('shell','pm','grant','com.samuschat','android.permission.POST_NOTIFICATIONS')
   $null=AdbCmd $serial @('shell','am','start','-W','-n','com.samuschat/.MainActivity')
   Tap $serial 'Email'
-  $null=AdbCmd $serial @('shell','input','text',$accounts[$i].email)
+  TypeText $serial $accounts[$i].email
   $null=AdbCmd $serial @('shell','input','keyevent','61')
-  $null=AdbCmd $serial @('shell','input','text',$accounts[$i].password)
+  TypeText $serial $accounts[$i].password
   $null=AdbCmd $serial @('shell','input','keyevent','4')
   Tap $serial 'Entrar'
+  $null=WaitText $serial 'Amigos'
+  Tap $serial 'Buscar amigos'
+  TypeText $serial $accounts[1-$i].username
+  $null=AdbCmd $serial @('shell','input','keyevent','4')
+  Tap $serial $accounts[1-$i].username
   $null=WaitText $serial 'Ligar'
  }
 }
@@ -81,6 +104,7 @@ if(!(Test-Path $tone)){throw 'Build :call-test-tone:assembleDebug with -PcallTes
 $null=AdbCmd $Caller @('install','-r',$tone)
 foreach($serial in @($Caller,$Callee)){$null=AdbCmd $serial @('logcat','-c')}
 Write-Output 'Inviting and accepting'
+Screenshot $Caller 'friend-call-profile'
 Tap $Caller 'Ligar'
 Tap $Callee 'Aceitar'
 $null=WaitText $Caller 'Em chamada' 65
@@ -159,11 +183,12 @@ Tap $Caller 'Recusar'
 $null=WaitText $Callee 'Ligar'
 foreach($serial in @($Caller,$Callee)) {
  $logs=(AdbCmd $serial @('logcat','-d','-s','CallStats:I','AndroidRuntime:E')) -join "`n"
- $logs|Set-Content (Join-Path $results "$serial-final.log")
+ $safeSerial=$serial -replace '[^a-zA-Z0-9_-]','_'
+ $logs|Set-Content (Join-Path $results "$safeSerial-final.log")
  if($logs -match 'FATAL EXCEPTION'){throw "Crash during hangup on $serial"}
  $services=(AdbCmd $serial @('shell','dumpsys','activity','services','com.samuschat')) -join "`n"
  if($services -match 'ServiceRecord.*CallMediaService'){throw "Call service remained active on $serial"}
 }
-$report=@{passed=$true;stressTouches=50;deviceAudio=$allowed;screenshots=@('call-connected.png','screen-received.png');checks=@('authenticated contacts','invite/accept','connected on both Android clients','TURN relay','mute/unmute stress','same processes after mute stress','screen decoded','device audio received','capture opt-out respected','stop and restart sharing','remote hangup while sharing','reverse invitation declined','foreground service stopped');time=(Get-Date).ToString('o')}
+$report=@{passed=$true;stressTouches=50;deviceAudio=$allowed;screenshots=@('friend-call-profile.png','call-connected.png','screen-received.png');checks=@('authenticated contacts','invite/accept','connected on both Android clients','TURN relay','mute/unmute stress','same processes after mute stress','screen decoded','device audio received','capture opt-out respected','stop and restart sharing','remote hangup while sharing','reverse invitation declined','foreground service stopped');time=(Get-Date).ToString('o')}
 $report|ConvertTo-Json|Set-Content $reportPath
 $report|ConvertTo-Json
