@@ -1,14 +1,14 @@
 # Chamadas individuais, tela e áudio do dispositivo
 
-Implementação na branch `feature/individual-calls`, separada da `main`. A versão inicial permite ligar para outra pessoa que participe de um dos seus servidores. O contato Alex continua sendo apenas demonstração e não recebe chamadas.
+Implementação inicial na branch `feature/individual-calls`, evoluída em `feature/call-channels`. Agora qualquer conta cadastrada pode ligar para outra conta, sem exigir um servidor em comum. O contato Alex continua sendo apenas demonstração e não recebe chamadas. A etapa de [perfis e canais de chamada em grupo](CANAIS_DE_CHAMADA.md) descreve o novo design e suas permissões.
 
 ## Funcionamento
 
-Na aba Amigos, a seção **Chamadas individuais** lista os contatos reais. Com os dois aplicativos abertos e autenticados, toque em **Ligar** e aceite no outro aparelho. A permissão de microfone é solicitada antes de iniciar ou aceitar. Durante a ligação há controles de microfone, viva-voz, compartilhamento de tela e encerramento.
+Na aba Amigos, abra o perfil de um contato real e toque no telefone no canto superior direito. Com os dois aplicativos abertos e autenticados, aceite no outro aparelho. A permissão de microfone é solicitada antes de iniciar ou aceitar. Durante a ligação há controles de microfone, viva-voz, compartilhamento de tela pelo botão de câmera e encerramento.
 
 **Compartilhar tela** abre a autorização do Android. A captura começa somente após essa autorização; cada nova sessão solicita uma nova permissão. Em Android 10 ou superior, o controle **Áudio do dispositivo** pode enviar também o som dos aplicativos que permitem captura. Parar o compartilhamento interrompe tela e áudio interno, preservando a ligação. Encerrar ou sair da conta libera os recursos de mídia. A notificação da chamada também oferece Encerrar.
 
-O destinatário precisa manter o aplicativo aberto para receber o convite nesta versão. Chamadas já iniciadas utilizam serviço em primeiro plano e podem continuar enquanto outro aplicativo é exibido. Não foram adicionados chamadas de grupo, vídeo da câmera, histórico, gravação ou notificações push de chamadas.
+O destinatário precisa manter o aplicativo aberto para receber o convite nesta versão. Chamadas já iniciadas utilizam serviço em primeiro plano e podem continuar enquanto outro aplicativo é exibido. Chamadas de grupo são oferecidas nos canais de chamada dos servidores. Vídeo da câmera, histórico, gravação e notificações push de chamadas ainda não foram adicionados.
 
 ## Capturas da versão atual
 
@@ -16,9 +16,11 @@ Capturas reais de dois emuladores Android API 35 em 02/10/2026, usando apenas co
 
 | Ligação conectada | Transmissão recebida |
 | --- | --- |
-| ![Ligação conectada com controles de microfone, viva-voz e tela](images/call-connected.png) | ![Receptor mostrando a superfície colorida do aplicativo de teste transmitida por WebRTC](images/screen-received.png) |
+| ![Ligação conectada com controles de microfone, viva-voz e tela](images/individual-camera-call.png) | ![Receptor mostrando a superfície colorida do aplicativo de teste transmitida por WebRTC](images/individual-screen-received.png) |
 
 A superfície verde pertence ao aplicativo separado `call-test-tone`, que alterna cores e reproduz um tom de 440 Hz. Os contadores de quadros decodificados e de amostras recebidas complementam a captura visual; um print sozinho não comprova a transmissão de áudio.
+
+O [relatório da etapa atual](REGRESSAO_CANAIS_DE_CHAMADA.md) registra esta execução; os [perfis e canais de chamada](CANAIS_DE_CHAMADA.md#capturas-reais) têm capturas adicionais. As imagens `call-connected.png` e `screen-received.png` preservam a etapa anterior.
 
 ## Arquitetura da chamada
 
@@ -51,7 +53,7 @@ Todos os endpoints exigem o JWT da conta:
 
 | Endpoint | Finalidade |
 | --- | --- |
-| `GET /api/calls/contacts` | Até 100 contatos de servidores compartilhados |
+| `GET /api/calls/contacts` | Até 100 outras contas cadastradas, sem exigir servidor em comum |
 | `GET /api/calls/ice` | Configuração STUN/TURN e credenciais TURN temporárias |
 | `POST /api/calls` | Convite com `callee` e `requestId` UUID |
 | `GET /api/calls` | Chamadas não encerradas da conta e atualização de presença |
@@ -129,7 +131,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-calls-emulator.
   -Caller emulator-5554 -Callee emulator-5556 -Prepare -ResetDisposableEmulators
 ```
 
-`-Prepare -ResetDisposableEmulators` reinstala o APK, limpa os dados do SamusChat nesses emuladores e prepara contas locais e um servidor compartilhado. O teste espera os textos do diálogo de autorização do Android em inglês. Sem `-Prepare`, reutiliza os aplicativos autenticados. Ele limpa os buffers de log dos emuladores para não aceitar evidência antiga. Relatórios ficam em `samuschat-android/app/build/call-e2e/`, fora do Git.
+`-Prepare -ResetDisposableEmulators` reinstala o APK, limpa os dados do SamusChat nesses emuladores e prepara contas locais sem servidores em comum, abrindo os perfis com o telefone. O teste espera os textos do diálogo de autorização do Android em inglês. Sem `-Prepare`, reutiliza os aplicativos autenticados e com os perfis abertos. Ele limpa os buffers de log dos emuladores para não aceitar evidência antiga. Relatórios ficam em `samuschat-android/app/build/call-e2e/`, fora do Git.
 
 ## Resultados e limites
 

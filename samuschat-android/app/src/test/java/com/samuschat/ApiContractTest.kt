@@ -12,6 +12,32 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class ApiContractTest {
+    @Test fun callRoomIncludesParticipantsAndPrivatePeerSessions() = runTest {
+        val server = MockWebServer()
+        try {
+            server.enqueue(MockResponse().setBody("""{"success":true,"data":{"channelId":9,"capacity":6,"participants":[{"email":"a@test","username":"A"},{"email":"b@test","username":"B"}],"sessions":[{"id":"pair","caller":"a@test","callee":"b@test","state":"CONNECTING","channelId":9}]}}"""))
+            val api = Retrofit.Builder().baseUrl(server.url("/")).addConverterFactory(GsonConverterFactory.create()).build().create(ApiService::class.java)
+            val room = api.joinCallRoom("Bearer jwt", 9).data()
+            assertEquals(2, room.participants.size)
+            assertEquals(9L, room.sessions.single().channelId)
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            assertEquals("/api/channels/9/call/join", request.path)
+            assertEquals("Bearer jwt", request.getHeader("Authorization"))
+        } finally { server.shutdown() }
+    }
+    @Test fun createsVoiceChannelsThroughAuthenticatedServerEndpoint() = runTest {
+        val server = MockWebServer()
+        try {
+            server.enqueue(MockResponse().setBody("""{"success":true,"data":{"id":9,"name":"Sala","type":"VOICE","createdAt":"2026-10-02"}}"""))
+            val api = Retrofit.Builder().baseUrl(server.url("/")).addConverterFactory(GsonConverterFactory.create()).build().create(ApiService::class.java)
+            assertEquals("VOICE", api.createChannel("Bearer jwt", 3, ChannelRequest("Sala", "VOICE")).data().type)
+            val request = server.takeRequest()
+            assertEquals("/api/servers/3/channels", request.path)
+            assertEquals("Bearer jwt", request.getHeader("Authorization"))
+            assertTrue(request.body.readUtf8().contains("\"type\":\"VOICE\""))
+        } finally { server.shutdown() }
+    }
     @Test fun profileNameUpdateUsesAuthenticatedBackendContract() = runTest {
         val server = MockWebServer()
         try {

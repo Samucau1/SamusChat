@@ -76,9 +76,12 @@ public class ServerService {
         Server server = findServer(serverId);
         permissionService.requireAdmin(serverId, email);
 
+        String type = request.getType() == null ? "TEXT" : request.getType();
+        if (!type.equals("TEXT") && !type.equals("VOICE")) throw new IllegalArgumentException("Tipo de canal invalido");
+
         Channel channel = new Channel();
         channel.setName(request.getName().trim());
-        channel.setType(request.getType() != null ? request.getType() : "TEXT");
+        channel.setType(type);
         channel.setServer(server);
         channelRepository.save(channel);
 
@@ -101,13 +104,13 @@ public class ServerService {
     }
 
     private void validateServerName(String name) {
-        if (name == null || name.isBlank()) {
+        if (name == null || name.isBlank() || name.trim().length() > 255) {
             throw new RuntimeException("Nome do servidor e obrigatorio");
         }
     }
 
     private void validateChannelName(String name) {
-        if (name == null || name.isBlank()) {
+        if (name == null || name.isBlank() || name.trim().length() > 255) {
             throw new RuntimeException("Nome do canal e obrigatorio");
         }
     }

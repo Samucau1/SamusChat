@@ -5,6 +5,10 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiService {
+    @POST("api/channels/{id}/call/join") suspend fun joinCallRoom(@Header("Authorization") token: String, @Path("id") id: Long): Response<ApiResponse<com.samuschat.ui.call.CallRoom>>
+    @GET("api/channels/{id}/call") suspend fun callRoom(@Header("Authorization") token: String, @Path("id") id: Long): Response<ApiResponse<com.samuschat.ui.call.CallRoom>>
+    @POST("api/channels/{id}/call/leave") suspend fun leaveCallRoom(@Header("Authorization") token: String, @Path("id") id: Long): Response<ApiResponse<String>>
+    @POST("api/servers/{id}/channels") suspend fun createChannel(@Header("Authorization") token: String, @Path("id") id: Long, @Body request: ChannelRequest): Response<ApiResponse<Channel>>
     @GET("api/calls/contacts") suspend fun callContacts(@Header("Authorization") token: String): Response<ApiResponse<List<com.samuschat.ui.call.CallContact>>>
     @GET("api/calls/ice") suspend fun callIce(@Header("Authorization") token: String): Response<ApiResponse<List<com.samuschat.ui.call.IceServerConfig>>>
     @GET("api/calls") suspend fun currentCalls(@Header("Authorization") token: String): Response<ApiResponse<List<com.samuschat.ui.call.CallSession>>>

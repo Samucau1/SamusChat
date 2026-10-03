@@ -12,6 +12,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.path
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -26,24 +32,17 @@ import androidx.compose.ui.window.DialogProperties
 import org.webrtc.SurfaceViewRenderer
 
 @Composable
-fun CallPanel(model: CallViewModel, showContacts: Boolean = true) {
+fun CallPanel(model: CallViewModel) {
     val state by model.state.collectAsStateWithLifecycle()
     val video by model.remoteVideo.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
-    var pending by remember { mutableStateOf<CallContact?>(null) }
-    var accepting by remember { mutableStateOf(false) }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) { if (accepting) model.accept() else pending?.let(model::invite) } else model.permissionDenied()
-        pending = null; accepting = false
+        if (granted) model.accept() else model.permissionDenied()
     }
-    val projection = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) result.data?.let(model::share)
-    }
-    fun microphone(contact: CallContact? = null) {
-        pending = contact; accepting = contact == null
+    fun microphone() {
         if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            if (contact == null) model.accept() else model.invite(contact)
+            model.accept()
         } else permission.launch(Manifest.permission.RECORD_AUDIO)
     }
     DisposableEffect(owner, model) {
@@ -55,24 +54,6 @@ fun CallPanel(model: CallViewModel, showContacts: Boolean = true) {
         owner.lifecycle.addObserver(observer)
         onDispose { owner.lifecycle.removeObserver(observer) }
     }
-    if (showContacts) Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
-        state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        state.notice?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Chamadas individuais", style = MaterialTheme.typography.titleMedium)
-            TextButton(onClick = { model.refreshContacts() }, enabled = !state.busy) { Text("Atualizar") }
-        }
-        Text("Contatos dos seus servidores. Mantenha o app aberto para receber chamadas.", style = MaterialTheme.typography.bodySmall)
-        if (state.contacts.isEmpty()) Text("Entre em um servidor com outra pessoa para ligar.", style = MaterialTheme.typography.bodySmall)
-        Column(Modifier.heightIn(max = 150.dp).verticalScroll(rememberScrollState())) {
-            state.contacts.forEach { contact ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(contact.username, Modifier.weight(1f).padding(top = 12.dp))
-                    TextButton(onClick = { microphone(contact) }, enabled = state.call == null && !state.busy) { Text("Ligar") }
-                }
-            }
-        }
-    }
     state.call?.let { call ->
         Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false, usePlatformDefaultWidth = false)) {
             Surface(Modifier.fillMaxWidth().padding(16.dp), shape = MaterialTheme.shapes.large) {
@@ -82,7 +63,7 @@ fun CallPanel(model: CallViewModel, showContacts: Boolean = true) {
                     state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     if (state.remoteSharing && video != null && model.rtc != null) {
                         val track = video!!; val egl = model.rtc!!.egl.eglBaseContext
-                        AndroidView(factory = { ctx -> SurfaceViewRenderer(ctx).apply { init(egl, null); setEnableHardwareScaler(true); track.addSink(this) } },
+                        AndroidView(factory = { ctx -> SurfaceViewRenderer(ctx).apply { init(egl, null); setEnableHardwareScaler(true); setScalingType(org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FIT); track.addSink(this) } },
                             modifier = Modifier.fillMaxWidth().height(240.dp), onRelease = { track.removeSink(it); it.release() })
                     }
                     if (CallPolicy.mayAccept(call, model.email)) {
@@ -94,8 +75,7 @@ fun CallPanel(model: CallViewModel, showContacts: Boolean = true) {
                                 TextButton(onClick = model::mute) { Text(if (state.muted) "Ativar microfone" else "Silenciar") }
                                 TextButton(onClick = model::speaker) { Text(if (state.speaker) "Desligar viva-voz" else "Viva-voz") }
                             }
-                            if (state.sharing) OutlinedButton(onClick = model::stopSharing) { Text("Parar compartilhamento") }
-                            else Button(onClick = { projection.launch(context.getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent()) }, enabled = !state.busy) { Text("Compartilhar tela") }
+                            ScreenShareButton(model)
                             if (state.sharing && Build.VERSION.SDK_INT >= 29) {
                                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                     Switch(checked = state.deviceAudio, onCheckedChange = { model.deviceAudio() }, enabled = !state.busy)
@@ -110,4 +90,40 @@ fun CallPanel(model: CallViewModel, showContacts: Boolean = true) {
             }
         }
     }
+}
+
+private val ScreenCamera = ImageVector.Builder("ScreenCamera", 24.dp, 24.dp, 24f, 24f).apply {
+    path(fill = SolidColor(Color.Black)) {
+        moveTo(3f, 5f); lineTo(16f, 5f); lineTo(16f, 10f); lineTo(22f, 6f)
+        lineTo(22f, 18f); lineTo(16f, 14f); lineTo(16f, 19f); lineTo(3f, 19f); close()
+    }
+}.build()
+
+@Composable
+fun ScreenShareButton(model: CallViewModel) {
+    val state by model.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val projection = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) result.data?.let(model::share)
+    }
+    FilledTonalButton(onClick = {
+        if (state.sharing) model.stopSharing()
+        else projection.launch(context.getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent())
+    }, enabled = !state.busy) {
+        Icon(ScreenCamera, null); Spacer(Modifier.width(8.dp))
+        Text(if (state.sharing) "Parar compartilhamento" else "Compartilhar tela")
+    }
+}
+
+@Composable
+fun FriendCallButton(model: CallViewModel, contact: CallContact) {
+    val state by model.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) model.invite(contact) else model.permissionDenied()
+    }
+    IconButton(onClick = {
+        if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) model.invite(contact)
+        else permission.launch(Manifest.permission.RECORD_AUDIO)
+    }, enabled = !state.busy && state.call == null && state.room == null) { Icon(Icons.Default.Phone, "Ligar") }
 }

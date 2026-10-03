@@ -26,13 +26,14 @@ import com.samuschat.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ServerListScreen(viewModel: ServerViewModel, onChannelClick: (Long, String) -> Unit) {
+fun ServerListScreen(viewModel: ServerViewModel, email: String, onChannelClick: (Long, String, String) -> Unit) {
     val servers by viewModel.servers.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
     var sheet by rememberSaveable { mutableStateOf<String?>(null) }
     var name by rememberSaveable { mutableStateOf("") }
+    var channelType by rememberSaveable { mutableStateOf("TEXT") }
     var query by rememberSaveable { mutableStateOf("") }
     var inviteId by rememberSaveable { mutableStateOf("") }
     val current = servers.firstOrNull { it.id == selectedId } ?: servers.firstOrNull()
@@ -93,15 +94,19 @@ fun ServerListScreen(viewModel: ServerViewModel, onChannelClick: (Long, String) 
                         }
                     }
                     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("CANAIS DE TEXTO", Modifier.weight(1f), style = MaterialTheme.typography.labelSmall,
+                        Text("CANAIS", Modifier.weight(1f), style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (current.ownerEmail == email) IconButton(onClick = { name = ""; channelType = "TEXT"; openSheet("channel") }, enabled = !busy) {
+                            Icon(Icons.Default.Add, "Criar canal")
+                        }
                         IconButton(onClick = { viewModel.refresh() }, enabled = !busy) {
                             Icon(Icons.Default.Refresh, "Atualizar servidores", Modifier.size(20.dp))
                         }
                     }
                     LazyColumn(contentPadding = PaddingValues(horizontal = 10.dp)) {
+                        item { Text("CANAIS DE CHAT", Modifier.padding(12.dp), style = MaterialTheme.typography.labelSmall) }
                         items(current.channels.filter { it.type == "TEXT" }, key = { it.id }) { channel ->
-                            Surface(onClick = { onChannelClick(channel.id, channel.name) },
+                            Surface(onClick = { onChannelClick(channel.id, channel.name, channel.type) },
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
                                 color = ChatBackground, shape = RoundedCornerShape(8.dp)) {
                                 Row(Modifier.padding(horizontal = 12.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -115,6 +120,17 @@ fun ServerListScreen(viewModel: ServerViewModel, onChannelClick: (Long, String) 
                             Text("Este servidor ainda não tem canais de texto.", Modifier.padding(12.dp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
+                        item { Text("CANAIS DE CHAMADA", Modifier.padding(12.dp), style = MaterialTheme.typography.labelSmall) }
+                        items(current.channels.filter { it.type == "VOICE" }, key = { it.id }) { channel ->
+                            Surface(onClick = { onChannelClick(channel.id, channel.name, channel.type) }, modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), color = ChatBackground, shape = RoundedCornerShape(8.dp)) {
+                                Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Phone, null)
+                                    Text(channel.name, Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.titleMedium)
+                                    Icon(Icons.Default.KeyboardArrowRight, null)
+                                }
+                            }
+                        }
+                        if (current.channels.none { it.type == "VOICE" }) item { Text("Nenhum canal de chamada ainda.", Modifier.padding(12.dp)) }
                     }
                 } else {
                     Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center) {
@@ -136,15 +152,24 @@ fun ServerListScreen(viewModel: ServerViewModel, onChannelClick: (Long, String) 
                 verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 item {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(if (sheet == "create") "Crie seu servidor" else "Procurar servidor",
+                        Text(when (sheet) { "create" -> "Crie seu servidor"; "channel" -> "Criar canal"; else -> "Procurar servidor" },
                             Modifier.weight(1f), style = MaterialTheme.typography.headlineMedium)
                         IconButton(onClick = { sheet = null }, enabled = !busy) { Icon(Icons.Default.Close, "Fechar") }
                     }
-                    Text(if (sheet == "create") "Um lugar só seu para reunir a galera." else "Encontre seus servidores ou entre usando um ID.",
+                    Text(when (sheet) { "create" -> "Um lugar só seu para reunir a galera."; "channel" -> "Escolha um canal de chat ou chamada."; else -> "Encontre seus servidores ou entre usando um ID." },
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 error?.let { item { ErrorNotice(it) } }
-                if (sheet == "create") {
+                if (sheet == "channel" && current != null) {
+                    item { OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text("Nome do canal") }, singleLine = true, enabled = !busy) }
+                    item {
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            FilterChip(selected = channelType == "TEXT", onClick = { channelType = "TEXT" }, label = { Text("Chat") })
+                            FilterChip(selected = channelType == "VOICE", onClick = { channelType = "VOICE" }, label = { Text("Chamada") })
+                        }
+                    }
+                    item { Button(onClick = { viewModel.createChannel(current.id, name, channelType) { name = ""; sheet = null } }, enabled = !busy && name.trim().isNotEmpty() && name.trim().length <= 255) { Text("Salvar canal") } }
+                } else if (sheet == "create") {
                     item {
                         OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text("Nome do servidor") },
                             placeholder = { Text("Ex.: Cantinho dos games") }, singleLine = true, enabled = !busy)
