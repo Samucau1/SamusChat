@@ -10,8 +10,8 @@ android {
         applicationId = "com.samuschat"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1.0"
         val apiUrl = providers.gradleProperty("apiBaseUrl").getOrElse("http://10.0.2.2:8080/")
         buildConfigField("String", "BASE_URL", "\"${apiUrl}\"")
         val googleClientId = providers.gradleProperty("googleClientId").getOrElse("")
