@@ -12,6 +12,39 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class ApiContractTest {
+    @Test fun recoveryPreservesLeadingZerosAndUsesAuthorizationOnlyForReset() = runTest {
+        val server = MockWebServer()
+        try {
+            val api = Retrofit.Builder().baseUrl(server.url("/")).addConverterFactory(GsonConverterFactory.create()).build().create(ApiService::class.java)
+            server.enqueue(MockResponse().setBody("""{"success":true,"data":"Solicitado"}"""))
+            assertEquals("Solicitado", api.requestRecovery(RecoveryEmail("test@example.com")).data())
+            assertEquals("/api/auth/password/request", server.takeRequest().path)
+            server.enqueue(MockResponse().setBody("""{"success":true,"data":{"resetToken":"authorization"}}"""))
+            val token = api.verifyRecovery(RecoveryCode("test@example.com", "0012")).data().resetToken
+            val verifyRequest = server.takeRequest()
+            assertEquals("/api/auth/password/verify", verifyRequest.path)
+            assertEquals("0012", com.google.gson.JsonParser().parse(verifyRequest.body.readUtf8()).asJsonObject["code"].asString)
+            server.enqueue(MockResponse().setBody("""{"success":true,"data":"Atualizada"}"""))
+            assertEquals("Atualizada", api.resetPassword(RecoveryReset("test@example.com", token, "new-password")).data())
+            val resetRequest = server.takeRequest()
+            assertEquals("/api/auth/password/reset", resetRequest.path)
+            assertEquals("authorization", com.google.gson.JsonParser().parse(resetRequest.body.readUtf8()).asJsonObject["resetToken"].asString)
+            assertNull(resetRequest.getHeader("Authorization"))
+        } finally { server.shutdown() }
+    }
+    @Test fun googleLoginUsesVerifiedIdTokenContract() = runTest {
+        val server = MockWebServer()
+        try {
+            val api = Retrofit.Builder().baseUrl(server.url("/")).addConverterFactory(GsonConverterFactory.create()).build().create(ApiService::class.java)
+            server.enqueue(MockResponse().setBody("""{"success":true,"data":{"token":"session"}}"""))
+            assertEquals("session", api.googleLogin(GoogleLogin("google-id-token", "current-password")).data().token)
+            val request = server.takeRequest()
+            assertEquals("/api/auth/google", request.path)
+            val body = com.google.gson.JsonParser().parse(request.body.readUtf8()).asJsonObject
+            assertEquals("google-id-token", body["idToken"].asString)
+            assertEquals("current-password", body["password"].asString)
+        } finally { server.shutdown() }
+    }
     @Test fun callRoomIncludesParticipantsAndPrivatePeerSessions() = runTest {
         val server = MockWebServer()
         try {

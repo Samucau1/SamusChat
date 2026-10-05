@@ -4,9 +4,11 @@ Aplicativo Android em Kotlin/Jetpack Compose e API Java/Spring Boot para convers
 
 A navegação no celular tem **Servidores**, **Amigos** e **Perfil** na barra inferior. Servidores abre o painel lateral; Amigos inclui uma conversa de demonstração; Perfil permite alterar o nome da conta e escolher uma foto local.
 
-Qualquer conta cadastrada pode ligar para outra conta pelo telefone no perfil do contato, sem precisar de um servidor em comum. O botão de câmera compartilha a tela. Servidores oferecem canais de chat e salas de chamada com vários participantes. Os dois usuários precisam manter o aplicativo aberto para receber um convite individual.
+Ao tocar em um amigo, a conversa privada abre com o campo de mensagem disponível e o telefone no topo para ligar, sem precisar de um servidor em comum. O botão de câmera compartilha a tela. Servidores oferecem canais de chat e salas de chamada com vários participantes. Os dois usuários precisam manter o aplicativo aberto para receber um convite individual.
 
 ## Documentação
+
+- [Mensagens privadas entre amigos](docs/MENSAGENS_PRIVADAS.md)
 
 - [Chamadas individuais, tela e áudio do dispositivo](docs/CHAMADAS_INDIVIDUAIS.md)
 - [Nova etapa: perfis, permissões e canais de chamada](docs/CANAIS_DE_CHAMADA.md)
@@ -17,3 +19,5 @@ Qualquer conta cadastrada pode ligar para outra conta pelo telefone no perfil do
 - [Regressão e teste de toques do novo design](docs/REGRESSAO_NAVEGACAO.md)
 
 Na raiz, execute `./setup.ps1` para iniciar os serviços e a API. Abra `samuschat-android/` no Android Studio para executar o aplicativo.
+
+- [Recuperacao de senha, login Google e relatorio de testes](docs/AUTENTICACAO.md)

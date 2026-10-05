@@ -52,6 +52,7 @@ public class AuthService {
         return jwtUtil.generateToken(user.getEmail());
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public String login(LoginRequest request) {
         String email = sanitizer.sanitize(request.getEmail());
 
@@ -59,7 +60,7 @@ public class AuthService {
             throw new RuntimeException("Email invalido");
         }
 
-        User user = userRepository.findByEmail(email.toLowerCase())
+        User user = userRepository.lockedByEmail(email.toLowerCase())
                 .orElseThrow(() -> new RuntimeException("Credenciais invalidas"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {

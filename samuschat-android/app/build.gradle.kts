@@ -14,6 +14,9 @@ android {
         versionName = "1.0"
         val apiUrl = providers.gradleProperty("apiBaseUrl").getOrElse("http://10.0.2.2:8080/")
         buildConfigField("String", "BASE_URL", "\"${apiUrl}\"")
+        val googleClientId = providers.gradleProperty("googleClientId").getOrElse("")
+        require(googleClientId.matches(Regex("[A-Za-z0-9._-]*")))
+        buildConfigField("String", "GOOGLE_CLIENT_ID", "\"${googleClientId}\"")
         val forceRelay = providers.gradleProperty("callsForceRelay").getOrElse("false")
         require(forceRelay in listOf("true", "false"))
         buildConfigField("boolean", "CALLS_FORCE_RELAY", forceRelay)
@@ -24,6 +27,9 @@ android {
     kotlinOptions { jvmTarget = "17" }
 }
 dependencies {
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
     implementation("io.github.webrtc-sdk:android:137.7151.05")
     implementation(platform("androidx.compose:compose-bom:2024.02.00"))
     implementation("androidx.compose.ui:ui")

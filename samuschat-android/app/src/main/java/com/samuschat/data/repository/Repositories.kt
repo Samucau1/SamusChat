@@ -16,6 +16,13 @@ fun <T> Response<ApiResponse<T>>.checked(): ApiResponse<T> {
 }
 fun <T> Response<ApiResponse<T>>.data(): T = checked().data ?: error("Resposta sem dados")
 class AuthRepository(private val api: ApiService, private val tokens: TokenManager) {
+    suspend fun requestRecovery(email: String) = api.requestRecovery(RecoveryEmail(email.trim())).data()
+    suspend fun verifyRecovery(email: String, code: String) = api.verifyRecovery(RecoveryCode(email.trim(), code)).data().resetToken
+    suspend fun resetPassword(email: String, token: String, password: String) = api.resetPassword(RecoveryReset(email.trim(), token, password)).data()
+    suspend fun googleLogin(idToken: String, password: String?) {
+        val token = api.googleLogin(GoogleLogin(idToken, password)).data().token
+        tokens.saveSession(token, api.profile("Bearer $token").data().email)
+    }
     suspend fun login(email: String, password: String) {
         val token = api.login(LoginRequest(email.trim(), password)).data().token
         tokens.saveSession(token, api.profile("Bearer $token").data().email)

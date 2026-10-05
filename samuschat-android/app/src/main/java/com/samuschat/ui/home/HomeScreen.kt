@@ -106,7 +106,7 @@ fun HomeScreen(
                         scope.launch { drawer.open() }
                     }
                     demoChat -> DemoConversation(demoMessages, { demoMessages = ArrayList(demoMessages + it) }) { demoChat = false }
-                    contactEmail != null -> FriendProfile(CallContact(contactEmail!!, contactName), calls) { contactEmail = null }
+                    contactEmail != null -> key(contactEmail) { DirectConversation(app, email, CallContact(contactEmail!!, contactName), calls) { contactEmail = null } }
                     else -> FriendsScreen(callState.contacts, { contactEmail = it.email; contactName = it.username }, { calls.refreshContacts() }) { demoChat = true }
                 }
                 }
@@ -148,36 +148,16 @@ private fun FriendsScreen(contacts: List<CallContact>, onContact: (CallContact) 
         }
         item {
             Text("CONTATOS", style = MaterialTheme.typography.labelMedium)
-            Text("Abra o perfil e toque no telefone para ligar. O destinatário precisa manter o app aberto.", style = MaterialTheme.typography.bodySmall)
+            Text("Toque em um amigo para abrir a conversa. Para receber uma ligação, mantenha o app aberto.", style = MaterialTheme.typography.bodySmall)
         }
         items(contacts.filter { matchesFriend(it.username, query) || matchesFriend(it.email, query) }, key = { it.email }) { contact ->
             Surface(onClick = { onContact(contact) }, color = PanelBackground, shape = MaterialTheme.shapes.large) {
                 Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     InitialAvatar(contact.username)
                     Text(contact.username, Modifier.weight(1f).padding(horizontal = 12.dp))
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Abrir perfil de ${contact.username}")
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Abrir conversa com ${contact.username}")
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun FriendProfile(contact: CallContact, calls: CallViewModel, onBack: () -> Unit) {
-    Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth().background(PanelBackground).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar aos amigos") }
-            Text(contact.username, Modifier.weight(1f).padding(horizontal = 8.dp), style = MaterialTheme.typography.titleLarge)
-            FriendCallButton(calls, contact)
-        }
-        Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            InitialAvatar(contact.username, size = 80.dp)
-            Spacer(Modifier.height(16.dp))
-            Text(contact.username, style = MaterialTheme.typography.headlineMedium)
-            Text(contact.email, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(24.dp))
-            Text("Toque no telefone no canto superior direito para iniciar uma chamada.")
-            Text("Qualquer conta cadastrada pode ligar e compartilhar a tela, sem precisar de um servidor em comum.", Modifier.padding(top = 12.dp))
         }
     }
 }

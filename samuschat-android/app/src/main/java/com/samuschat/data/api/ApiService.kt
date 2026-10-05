@@ -5,6 +5,12 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiService {
+    @GET("api/direct-messages") suspend fun directMessages(@Header("Authorization") token: String, @Query("contact") contact: String, @Query("page") page: Int): Response<ApiResponse<List<DirectMessage>>>
+    @POST("api/direct-messages") suspend fun sendDirectMessage(@Header("Authorization") token: String, @Query("contact") contact: String, @Body request: MessageRequest): Response<ApiResponse<DirectMessage>>
+    @POST("api/auth/password/request") suspend fun requestRecovery(@Body request: RecoveryEmail): Response<ApiResponse<String>>
+    @POST("api/auth/password/verify") suspend fun verifyRecovery(@Body request: RecoveryCode): Response<ApiResponse<ResetAuthorization>>
+    @POST("api/auth/password/reset") suspend fun resetPassword(@Body request: RecoveryReset): Response<ApiResponse<String>>
+    @POST("api/auth/google") suspend fun googleLogin(@Body request: GoogleLogin): Response<ApiResponse<TokenData>>
     @POST("api/channels/{id}/call/join") suspend fun joinCallRoom(@Header("Authorization") token: String, @Path("id") id: Long): Response<ApiResponse<com.samuschat.ui.call.CallRoom>>
     @GET("api/channels/{id}/call") suspend fun callRoom(@Header("Authorization") token: String, @Path("id") id: Long): Response<ApiResponse<com.samuschat.ui.call.CallRoom>>
     @POST("api/channels/{id}/call/leave") suspend fun leaveCallRoom(@Header("Authorization") token: String, @Path("id") id: Long): Response<ApiResponse<String>>

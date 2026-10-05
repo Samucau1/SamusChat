@@ -29,6 +29,12 @@ fun LoginScreen(viewModel: AuthViewModel, onGoToRegister: () -> Unit) = AuthForm
 
 @Composable
 internal fun AuthForm(register: Boolean, viewModel: AuthViewModel, onSwitch: () -> Unit) {
+    var recovering by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    if (recovering) {
+        RecoveryScreen(viewModel) { recovering = false; viewModel.closeRecovery() }
+        return
+    }
     var username by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -65,6 +71,8 @@ internal fun AuthForm(register: Boolean, viewModel: AuthViewModel, onSwitch: () 
                     Button(onClick = submit, enabled = valid && !busy, modifier = Modifier.fillMaxWidth()) {
                         Text(if (busy) "Aguarde…" else if (register) "Criar conta" else "Entrar", Modifier.padding(8.dp))
                     }
+                    if (!register) TextButton(onClick = { viewModel.closeRecovery(); recovering = true }, enabled = !busy) { Text("Esqueci minha senha") }
+                    OutlinedButton(onClick = { viewModel.google(context, password) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("Entrar com Google") }
                     TextButton(onClick = onSwitch, enabled = !busy, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                         Text(if (register) "Já tenho uma conta" else "Criar uma conta")
                     }
