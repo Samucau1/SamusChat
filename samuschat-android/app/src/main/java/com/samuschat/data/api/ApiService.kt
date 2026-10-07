@@ -5,6 +5,10 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiService {
+    @Multipart
+    @POST("api/channels/{id}/upload")
+    suspend fun uploadAttachment(@Header("Authorization") token: String, @Path("id") id: Long,
+        @Part file: okhttp3.MultipartBody.Part, @Part("content") content: okhttp3.RequestBody?): Response<ApiResponse<Message>>
     @GET("api/direct-messages") suspend fun directMessages(@Header("Authorization") token: String, @Query("contact") contact: String, @Query("page") page: Int): Response<ApiResponse<List<DirectMessage>>>
     @POST("api/direct-messages") suspend fun sendDirectMessage(@Header("Authorization") token: String, @Query("contact") contact: String, @Body request: MessageRequest): Response<ApiResponse<DirectMessage>>
     @POST("api/auth/password/request") suspend fun requestRecovery(@Body request: RecoveryEmail): Response<ApiResponse<String>>

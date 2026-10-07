@@ -39,6 +39,8 @@ class ServerRepository(private val api: ApiService, private val tokens: TokenMan
     suspend fun createChannel(id: Long, name: String, type: String) = api.createChannel(tokens.authorization(), id, ChannelRequest(name.trim(), type)).data()
 }
 class MessageRepository(private val api: ApiService, private val tokens: TokenManager) {
+    suspend fun upload(id: Long, file: okhttp3.MultipartBody.Part, content: okhttp3.RequestBody?) =
+        api.uploadAttachment(tokens.authorization(), id, file, content).data()
     suspend fun history(id: Long, page: Int) = api.messages(tokens.authorization(), id, page, Constants.PAGE_SIZE).data()
     suspend fun send(id: Long, content: String) = api.send(tokens.authorization(), id, MessageRequest(content)).data()
 }

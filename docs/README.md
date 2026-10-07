@@ -1,5 +1,7 @@
 # Documentação do SamusChat
 
+- [Envio de anexos nos canais de texto do Android](ANEXOS_ANDROID.md)
+
 - [Regressão da API, Android e desktop — 06/10/2026](REGRESSAO_API_DESKTOP_ANDROID.md)
 
 - [Prévia da tela compartilhada no Android](PREVIA_COMPARTILHAMENTO.md)

@@ -6,12 +6,38 @@ import com.samuschat.data.repository.*
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.junit.Assert.*
 import org.junit.Test
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class ApiContractTest {
+    @Test fun uploadsMultipartWithOptionalCaptionAndAuthorization() = runTest {
+        val server = MockWebServer()
+        try {
+            val api = Retrofit.Builder().baseUrl(server.url("/"))
+                .addConverterFactory(GsonConverterFactory.create()).build().create(ApiService::class.java)
+            for (caption in listOf("Legenda do arquivo", null)) {
+                server.enqueue(MockResponse().setBody("""{"success":true,"data":{"id":71,"content":null,"senderEmail":"a@test","senderUsername":"A","channelId":9,"attachmentUrl":"/uploads/test.txt","attachmentType":"FILE","createdAt":"2026-10-06T10:00:00"}}"""))
+                val file = okhttp3.MultipartBody.Part.createFormData("file", "test.txt",
+                    "Arquivo de teste".toRequestBody("text/plain".toMediaType()))
+                val text = caption?.toRequestBody("text/plain".toMediaType())
+                assertEquals("FILE", api.uploadAttachment("Bearer jwt", 9, file, text).data().attachmentType)
+                val request = server.takeRequest()
+                assertEquals("POST", request.method)
+                assertEquals("/api/channels/9/upload", request.path)
+                assertEquals("Bearer jwt", request.getHeader("Authorization"))
+                assertTrue(request.getHeader("Content-Type")!!.startsWith("multipart/form-data; boundary="))
+                val body = request.body.readUtf8()
+                assertTrue(body.contains("name=\"file\"; filename=\"test.txt\""))
+                assertTrue(body.contains("Arquivo de teste"))
+                assertEquals(caption != null, body.contains("name=\"content\""))
+                if (caption != null) assertTrue(body.contains(caption))
+            }
+        } finally { server.shutdown() }
+    }
     @Test fun recoveryPreservesLeadingZerosAndUsesAuthorizationOnlyForReset() = runTest {
         val server = MockWebServer()
         try {

@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.samuschat.data.model.Message
 import com.samuschat.util.Constants
-import java.net.URI
+import com.samuschat.util.attachmentUrl
 
 @Composable
 fun MessageBubble(message: Message, isOwnMessage: Boolean) {
@@ -26,7 +26,7 @@ fun MessageBubble(message: Message, isOwnMessage: Boolean) {
             }
             message.content?.takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.bodyLarge) }
             message.attachmentUrl?.let { path ->
-                val url = runCatching { URI(Constants.BASE_URL).resolve(path).toString() }.getOrNull()
+                val url = attachmentUrl(Constants.BASE_URL, path)
                 if (url != null && (url.startsWith("https://") || url.startsWith("http://"))) {
                     if (message.attachmentType == "IMAGE") AsyncImage(url, "Imagem enviada por ${message.senderUsername}",
                         Modifier.padding(top = 8.dp).sizeIn(maxWidth = 280.dp, maxHeight = 220.dp))

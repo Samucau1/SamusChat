@@ -8,6 +8,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Add
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.samuschat.data.repository.AttachmentPolicy
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -25,10 +29,17 @@ import com.samuschat.ui.theme.*
 @Composable
 fun ChatScreen(viewModel: ChatViewModel, channelName: String, email: String, onBack: () -> Unit) {
     val messages by viewModel.messages.collectAsStateWithLifecycle()
-    val busy by viewModel.busy.collectAsStateWithLifecycle()
+    val taskBusy by viewModel.busy.collectAsStateWithLifecycle()
+    val selectingAttachment by viewModel.selectingAttachment.collectAsStateWithLifecycle()
+    val busy = taskBusy || selectingAttachment
     val error by viewModel.error.collectAsStateWithLifecycle()
     val connectionError by viewModel.connectionError.collectAsStateWithLifecycle()
     val hasMore by viewModel.hasMore.collectAsStateWithLifecycle()
+    val attachment by viewModel.attachment.collectAsStateWithLifecycle()
+    val uploading by viewModel.uploading.collectAsStateWithLifecycle()
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { viewModel.selectAttachment(it) }
+    }
     var draft by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
     val owner = LocalLifecycleOwner.current
@@ -74,13 +85,25 @@ fun ChatScreen(viewModel: ChatViewModel, channelName: String, email: String, onB
             items(messages, key = { it.id }) { MessageBubble(it, it.senderEmail == email) }
         }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+        attachment?.let { selected ->
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(selected.name, maxLines = 2, style = MaterialTheme.typography.bodyMedium)
+                    Text(if (uploading) "Enviando anexo…" else "Anexo selecionado • até 10 MB", style = MaterialTheme.typography.labelSmall)
+                }
+                TextButton(onClick = viewModel::removeAttachment, enabled = !busy) { Text("Remover") }
+            }
+        }
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.Bottom) {
+            IconButton(onClick = { picker.launch(AttachmentPolicy.types) }, enabled = !busy) {
+                Icon(Icons.Default.Add, "Adicionar anexo")
+            }
             OutlinedTextField(draft, { draft = it }, modifier = Modifier.weight(1f),
                 placeholder = { Text("Conversar em #$channelName") }, maxLines = 4, enabled = !busy,
                 shape = MaterialTheme.shapes.large, isError = draft.length > 2000)
             Spacer(Modifier.width(8.dp))
             FilledIconButton(onClick = { viewModel.send(draft) { draft = "" } },
-                modifier = Modifier.padding(bottom = 4.dp), enabled = !busy && draft.isNotBlank() && draft.length <= 2000) {
+                modifier = Modifier.padding(bottom = 4.dp), enabled = !busy && (draft.isNotBlank() || attachment != null) && draft.length <= 2000) {
                 Icon(Icons.Default.Send, "Enviar mensagem")
             }
         }

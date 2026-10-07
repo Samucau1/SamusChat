@@ -36,7 +36,7 @@ Cadastre o aplicativo `com.samuschat` no seu projeto Firebase e coloque `google-
 - O back-end publica mensagens REST, uploads e STOMP após o commit da transação. Mensagens são unificadas por ID no cliente para evitar duplicação entre histórico, REST e WebSocket.
 - Histórico mantém ordenação cronológica e páginas de 50 mensagens. Erros de envio preservam o texto digitado. A conexão acompanha o ciclo de vida da tela; há reconexão manual com recarga do histórico.
 - As dependências são fornecidas por um container na Application e factories de ViewModel, sem necessidade de Hilt.
-- A interface desta etapa exibe anexos existentes; upload, moderação e gerenciamento de membros não possuem telas próprias.
+- Os canais de texto permitem [selecionar e enviar anexos](ANEXOS_ANDROID.md), com legenda opcional e limite de 10 MB. Moderação e gerenciamento de membros ainda não possuem telas próprias.
 
 ## Validação manual em dois dispositivos
 

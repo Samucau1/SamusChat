@@ -115,6 +115,27 @@ class FileControllerTests {
                 .andExpect(jsonPath("$.data[0].attachmentType").value("IMAGE"));
     }
 
+    @Test
+    void uploadTextWithoutCaptionIsReadableAndPresentInHistory() throws Exception {
+        String token = registerAndLogin();
+        long channelId = createServerAndGetGeneralChannelId(token);
+        byte[] bytes = "Anexo de teste".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        MockMultipartFile file = new MockMultipartFile("file", "teste.txt", "text/plain", bytes);
+        MvcResult result = mockMvc.perform(multipart("/api/channels/{channelId}/upload", channelId)
+                        .file(file).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.attachmentType").value("FILE"))
+                .andReturn();
+        String url = objectMapper.readTree(result.getResponse().getContentAsString())
+                .get("data").get("attachmentUrl").asText();
+        mockMvc.perform(get(java.net.URI.create(url).getPath()))
+                .andExpect(status().isOk()).andExpect(content().bytes(bytes));
+        mockMvc.perform(get("/api/channels/{channelId}/messages", channelId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].attachmentUrl").value(url));
+    }
+
     private String registerAndLogin() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
