@@ -1,5 +1,7 @@
 # Documentação do SamusChat
 
+- [Regressão de anexos e teclado antes do push](REGRESSAO_ANEXOS_TECLADO.md)
+
 - [Envio de anexos nos canais de texto do Android](ANEXOS_ANDROID.md)
 
 - [Regressão da API, Android e desktop — 06/10/2026](REGRESSAO_API_DESKTOP_ANDROID.md)
