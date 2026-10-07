@@ -136,8 +136,11 @@ function StartScreen {
  if($single.Count){Tap $Caller 'A single app';Tap $Caller 'Entire screen'}
  Tap $Caller 'Start'
  $null=WaitText $Caller 'Parar compartilhamento'
+ $null=WaitText $Caller 'Sua tela • prévia'
 }
 StartScreen
+Start-Sleep -Seconds 2
+Screenshot $Caller 'screen-local-preview'
 $switch=(Ui $Caller).SelectNodes('//node')|Where-Object {$_.checkable -eq 'true'}|Select-Object -First 1
 if(!$switch){throw 'Device audio switch missing'}
 $coords=[regex]::Matches($switch.bounds,'\d+')|ForEach-Object {[int]$_.Value}
@@ -164,15 +167,17 @@ $after=AudioCounts
 if($after.packets -le $before.packets -or $after.samples -ne $before.samples){throw 'Capture opt-out failed or stream stopped'}
 $null=AdbCmd $Caller @('shell','am','force-stop','com.samuschat.calltest')
 $null=AdbCmd $Caller @('shell','am','start','-W','-n','com.samuschat/.MainActivity')
-$a=(AdbCmd $Caller @('logcat','-d','-s','CallStats:I','AndroidRuntime:E')) -join "`n"
-$b=(AdbCmd $Callee @('logcat','-d','-s','CallStats:I','AndroidRuntime:E')) -join "`n"
+$a=(AdbCmd $Caller @('logcat','-d','-s','CallStats:I','ScreenPreview:I','AndroidRuntime:E')) -join "`n"
+$b=(AdbCmd $Callee @('logcat','-d','-s','CallStats:I','ScreenPreview:I','AndroidRuntime:E')) -join "`n"
 $a|Set-Content (Join-Path $results 'caller.log')
 $b|Set-Content (Join-Path $results 'callee.log')
 if($a -notmatch 'localCandidate=relay' -or $b -notmatch 'localCandidate=relay'){throw 'TURN relay not observed on both clients'}
 if($b -notmatch 'frames=[1-9][0-9]*'){throw 'No decoded screen frames on receiver'}
+if($a -notmatch 'firstFrame local=true' -or $b -notmatch 'firstFrame local=false'){throw 'Screen not rendered in sender preview or receiver'}
 if($a -match 'FATAL EXCEPTION' -or $b -match 'FATAL EXCEPTION'){throw 'Android crash detected'}
 Tap $Caller 'Parar compartilhamento'
 $null=WaitText $Caller 'Compartilhar tela'
+if(@(Find $Caller 'Sua tela • prévia').Count){throw 'Local preview still visible after stopping screen share'}
 StartScreen
 Start-Sleep -Seconds 3
 Tap $Callee 'Encerrar'
@@ -189,6 +194,6 @@ foreach($serial in @($Caller,$Callee)) {
  $services=(AdbCmd $serial @('shell','dumpsys','activity','services','com.samuschat')) -join "`n"
  if($services -match 'ServiceRecord.*CallMediaService'){throw "Call service remained active on $serial"}
 }
-$report=@{passed=$true;stressTouches=50;deviceAudio=$allowed;screenshots=@('friend-call-profile.png','call-connected.png','screen-received.png');checks=@('authenticated contacts','invite/accept','connected on both Android clients','TURN relay','mute/unmute stress','same processes after mute stress','screen decoded','device audio received','capture opt-out respected','stop and restart sharing','remote hangup while sharing','reverse invitation declined','foreground service stopped');time=(Get-Date).ToString('o')}
+$report=@{passed=$true;stressTouches=50;deviceAudio=$allowed;screenshots=@('friend-call-profile.png','call-connected.png','screen-received.png','screen-local-preview.png');checks=@('authenticated contacts','invite/accept','connected on both Android clients','TURN relay','mute/unmute stress','same processes after mute stress','screen decoded','screen rendered in local preview and receiver','local preview removed after stop','device audio received','capture opt-out respected','stop and restart sharing','remote hangup while sharing','reverse invitation declined','foreground service stopped');time=(Get-Date).ToString('o')}
 $report|ConvertTo-Json|Set-Content $reportPath
 $report|ConvertTo-Json

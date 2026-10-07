@@ -4,6 +4,8 @@ Implementação inicial na branch `feature/individual-calls`, evoluída em `feat
 
 ## Funcionamento
 
+Quem compartilha também vê **Sua tela • prévia** dentro da chamada. A prévia usa a mesma faixa de vídeo enviada ao outro participante, sem uma segunda captura. Se os dois compartilharem, cada um poderá ver a própria prévia e a tela recebida; o painel permite rolagem. Parar o compartilhamento ou encerrar a ligação remove a prévia.
+
 Na aba Amigos, abra o perfil de um contato real e toque no telefone no canto superior direito. Com os dois aplicativos abertos e autenticados, aceite no outro aparelho. A permissão de microfone é solicitada antes de iniciar ou aceitar. Durante a ligação há controles de microfone, viva-voz, compartilhamento de tela pelo botão de câmera e encerramento.
 
 **Compartilhar tela** abre a autorização do Android. A captura começa somente após essa autorização; cada nova sessão solicita uma nova permissão. Em Android 10 ou superior, o controle **Áudio do dispositivo** pode enviar também o som dos aplicativos que permitem captura. Parar o compartilhamento interrompe tela e áudio interno, preservando a ligação. Encerrar ou sair da conta libera os recursos de mídia. A notificação da chamada também oferece Encerrar.

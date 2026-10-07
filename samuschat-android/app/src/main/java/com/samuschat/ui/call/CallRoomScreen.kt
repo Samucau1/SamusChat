@@ -14,9 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import org.webrtc.SurfaceViewRenderer
 
 @Composable
 fun CallRoomScreen(model: CallViewModel, id: Long, name: String, onBack: () -> Unit) {
@@ -47,13 +45,14 @@ fun CallRoomScreen(model: CallViewModel, id: Long, name: String, onBack: () -> U
                 items(room.participants, key = { it.email }) { participant ->
                     val link = room.sessions.firstOrNull { it.peer(model.email) == participant.email }
                     Text(participant.username + when { participant.email == model.email -> " (você)"; link?.id in state.roomConnected -> " • conectado"; else -> " • conectando" })
-                    val track = videos[link?.id]
                     val engine = model.roomRtc
-                    if (link?.id in state.roomSharing && track != null && engine != null) {
-                        Text("Tela de ${participant.username}", style = MaterialTheme.typography.labelMedium)
-                        AndroidView(factory = { ctx -> SurfaceViewRenderer(ctx).apply {
-                            init(engine.egl.eglBaseContext, null); setScalingType(org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FIT); track.addSink(this)
-                        } }, modifier = Modifier.fillMaxWidth().height(220.dp), onRelease = { track.removeSink(it); it.release() })
+                    val local = participant.email == model.email
+                    val sharing = if (local) state.sharing else link?.id in state.roomSharing
+                    val track = if (local) engine?.localVideo else videos[link?.id]
+                    if (sharing && track != null && engine != null) {
+                        Text(if (local) "Sua tela • prévia" else "Tela de ${participant.username}", style = MaterialTheme.typography.labelMedium)
+                        ScreenShareVideo(track, engine.egl.eglBaseContext,
+                            Modifier.fillMaxWidth().height(220.dp), local = local)
                     }
                 }
             }

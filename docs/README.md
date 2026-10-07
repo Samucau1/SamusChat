@@ -1,5 +1,7 @@
 # Documentação do SamusChat
 
+- [Prévia da tela compartilhada no Android](PREVIA_COMPARTILHAMENTO.md)
+
 - [Desktop: plano, tecnologias, entradas e protótipo MVC](DESKTOP_MVC.md)
 - [Inicialização automática: Docker, API, emulador e aplicativo](INICIALIZACAO_AUTOMATICA.md)
 

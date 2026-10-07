@@ -34,6 +34,8 @@ class RoomRtc(
     private val microphone: AudioTrack
     private val videoSource: VideoSource
     private val screenTrack: VideoTrack
+    /** One capture shared by the local preview and every participant's sender. */
+    val localVideo: VideoTrack get() = screenTrack
     private val peers = linkedMapOf<String, Link>()
     private var screen: ScreenCapturerAndroid? = null
     private var texture: SurfaceTextureHelper? = null

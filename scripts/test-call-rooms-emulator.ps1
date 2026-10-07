@@ -101,6 +101,9 @@ $null=AdbCmd $owner @('push',$stress,'/data/local/tmp/room-mute-stress.sh');$nul
 Tap $owner 'Compartilhar tela';$null=WaitText $owner 'Start'
 if(@(Find $owner 'A single app').Count){Tap $owner 'A single app';Tap $owner 'Entire screen'}
 Tap $owner 'Start';$null=WaitText $owner 'Parar compartilhamento'
+$null=WaitText $owner 'Sua tela • prévia'
+Start-Sleep -Seconds 2
+Screenshot $owner 'room-sender-preview'
 $tone=Join-Path $root 'samuschat-android/call-test-tone/build/outputs/apk/debug/call-test-tone-debug.apk'
 $null=AdbCmd $owner @('install','-r',$tone)
 $null=AdbCmd $owner @('shell','am','start','-W','-n','com.samuschat.calltest/.ToneActivity','--ez','blocked','false')
@@ -108,7 +111,7 @@ Start-Sleep -Seconds 12
 foreach($i in 1..2){$serial=$Serials[$i];$null=WaitText $serial 'Tela de RoomTesterA';Screenshot $serial "room-receiver-$i"}
 foreach($serial in $Serials){
  if(((AdbCmd $serial @('shell','pidof','com.samuschat')) -join '') -ne $pids[$serial]){throw "Process restarted on $serial"}
- $logs=(AdbCmd $serial @('logcat','-d','-s','RoomStats:I','AndroidRuntime:E')) -join "`n"
+ $logs=(AdbCmd $serial @('logcat','-d','-s','RoomStats:I','ScreenPreview:I','AndroidRuntime:E')) -join "`n"
  $safeSerial=$serial -replace '[^a-zA-Z0-9_-]','_'
  $logs|Set-Content (Join-Path $output "$safeSerial-media.log")
  if($logs -match 'FATAL EXCEPTION'){throw "Crash on $serial"}
@@ -118,10 +121,13 @@ foreach($serial in $Serials){
   if($logs -notmatch ("peer="+[regex]::Escape($peer)+'.*kind=audio packets=[1-9][0-9]*')){throw "No microphone packets from peer $peer on $serial"}
  }
  if($serial -ne $owner -and $logs -notmatch 'frames=[1-9][0-9]*'){throw "Screen not decoded on $serial"}
+ $expectedLocal=if($serial -eq $owner){'true'}else{'false'}
+ if($logs -notmatch "firstFrame local=$expectedLocal"){throw "Screen not rendered on $serial (local=$expectedLocal)"}
 }
 $null=AdbCmd $owner @('shell','am','force-stop','com.samuschat.calltest')
 $null=AdbCmd $owner @('shell','am','start','-W','-n','com.samuschat/.MainActivity')
 Tap $owner 'Parar compartilhamento'
+if(@(Find $owner 'Sua tela • prévia').Count){throw 'Local preview still visible after stopping screen share'}
 foreach($serial in $Serials){Tap $serial 'Sair da chamada';$null=WaitText $serial 'Entrar na chamada'}
 foreach($serial in $Serials){
  $services=(AdbCmd $serial @('shell','dumpsys','activity','services','com.samuschat')) -join "`n"
@@ -129,5 +135,5 @@ foreach($serial in $Serials){
  $crashes=(AdbCmd $serial @('logcat','-d','-b','crash')) -join "`n"
  if($crashes -match 'com.samuschat'){throw "Crash buffer contains SamusChat on $serial"}
 }
-$result=@{passed=$true;participants=3;muteTouches=50;serverId=$server.id;channelId=$voice.id;checks=@('chat and voice channels created in UI','three participants connected','two TURN links per client','microphone packets from both peers','same processes after mute stress','screen decoded on both receivers','sharing stopped','all participants left','foreground services stopped');time=(Get-Date).ToString('o')}
+$result=@{passed=$true;participants=3;muteTouches=50;serverId=$server.id;channelId=$voice.id;checks=@('chat and voice channels created in UI','three participants connected','two TURN links per client','microphone packets from both peers','same processes after mute stress','screen decoded on both receivers','screen rendered in local preview and both receivers','local preview removed after stop','sharing stopped','all participants left','foreground services stopped');time=(Get-Date).ToString('o')}
 $result|ConvertTo-Json|Set-Content $resultFile;$result|ConvertTo-Json

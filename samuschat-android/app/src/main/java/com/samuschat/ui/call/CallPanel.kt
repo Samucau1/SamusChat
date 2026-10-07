@@ -23,13 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import org.webrtc.SurfaceViewRenderer
 
 @Composable
 fun CallPanel(model: CallViewModel) {
@@ -61,10 +59,17 @@ fun CallPanel(model: CallViewModel) {
                     Text(call.peer(model.email), style = MaterialTheme.typography.titleLarge)
                     Text(when { state.connected -> "Em chamada"; call.state == "RINGING" -> if (call.callee == model.email) "Chamada recebida" else "Chamando…"; else -> "Conectando…" })
                     state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                    if (state.remoteSharing && video != null && model.rtc != null) {
-                        val track = video!!; val egl = model.rtc!!.egl.eglBaseContext
-                        AndroidView(factory = { ctx -> SurfaceViewRenderer(ctx).apply { init(egl, null); setEnableHardwareScaler(true); setScalingType(org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FIT); track.addSink(this) } },
-                            modifier = Modifier.fillMaxWidth().height(240.dp), onRelease = { track.removeSink(it); it.release() })
+                    model.rtc?.let { engine ->
+                        if (state.sharing) {
+                            Text("Sua tela • prévia", style = MaterialTheme.typography.labelMedium)
+                            ScreenShareVideo(engine.localVideo, engine.egl.eglBaseContext,
+                                Modifier.fillMaxWidth().height(240.dp), local = true)
+                        }
+                        if (state.remoteSharing) video?.let { track ->
+                            Text("Tela de ${call.peer(model.email)}", style = MaterialTheme.typography.labelMedium)
+                            ScreenShareVideo(track, engine.egl.eglBaseContext,
+                                Modifier.fillMaxWidth().height(240.dp))
+                        }
                     }
                     if (CallPolicy.mayAccept(call, model.email)) {
                         Button(onClick = { microphone() }, enabled = !state.busy) { Text("Aceitar") }

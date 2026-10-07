@@ -14,6 +14,8 @@ Qualquer membro do servidor pode entrar na sala, conversar, silenciar o microfon
 
 ## Capturas reais
 
+Quem transmite também vê **Sua tela • prévia** na própria linha de participante. A captura é a mesma enviada a todos os demais participantes conectados da sala. As telas dos outros continuam identificadas pelo nome; use a rolagem da lista para acompanhar várias transmissões. Parar a captura remove a prévia e comunica o fim do compartilhamento aos outros clientes. Participantes que entram durante a transmissão recebem a faixa e o estado atual pelo fluxo existente da sala.
+
 Contas fictícias em emuladores Android API 35. A superfície colorida recebida pertence ao aplicativo independente de teste `call-test-tone`.
 
 | Perfil com telefone | Chamada individual com botão de câmera |
