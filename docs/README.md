@@ -1,5 +1,7 @@
 # Documentação do SamusChat
 
+- [Regressão da API, Android e desktop — 06/10/2026](REGRESSAO_API_DESKTOP_ANDROID.md)
+
 - [Prévia da tela compartilhada no Android](PREVIA_COMPARTILHAMENTO.md)
 
 - [Desktop: plano, tecnologias, entradas e protótipo MVC](DESKTOP_MVC.md)
