@@ -1,5 +1,8 @@
 # Documentação do SamusChat
 
+- [Desktop: plano, tecnologias, entradas e protótipo MVC](DESKTOP_MVC.md)
+- [Inicialização automática: Docker, API, emulador e aplicativo](INICIALIZACAO_AUTOMATICA.md)
+
 - [Chamadas individuais, compartilhamento de tela e áudio interno](CHAMADAS_INDIVIDUAIS.md)
 - [Regressão de chamadas e capturas da versão atual](REGRESSAO_CHAMADAS.md)
 - [Perfis, permissões e canais de chamada em grupo](CANAIS_DE_CHAMADA.md)

@@ -1,5 +1,9 @@
 # SamusChat
 
+O protótipo para computador está em [samuschat-desktop/](samuschat-desktop/README.md), com TypeScript, React e CSS e dados fictícios. Consulte o [plano MVC, tecnologias e entradas](docs/DESKTOP_MVC.md).
+
+Para iniciar Docker, banco, API, emulador e abrir o app Android com um comando, execute `.\iniciar-samuschat.ps1` ou abra `iniciar-samuschat.cmd`. Veja a [inicialização automática](docs/INICIALIZACAO_AUTOMATICA.md).
+
 Aplicativo Android em Kotlin/Jetpack Compose e API Java/Spring Boot para conversar em servidores e canais.
 
 A navegação no celular tem **Servidores**, **Amigos** e **Perfil** na barra inferior. Servidores abre o painel lateral; Amigos inclui uma conversa de demonstração; Perfil permite alterar o nome da conta e escolher uma foto local.
