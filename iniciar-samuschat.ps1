@@ -98,15 +98,30 @@ try {
     } 240 'inicializacao do Android'
 
     Write-Host '[5/5] Abrindo SamusChat...'
+    $taskAndroidProject = Join-Path $taskRoot 'samuschat-android'
+    $taskApk = Join-Path $taskAndroidProject 'app/build/outputs/apk/debug/app-debug.apk'
+    Write-Host 'Verificando o build atual do aplicativo...'
+    Push-Location $taskAndroidProject
+    try {
+        $taskGradleArguments = @(':app:assembleDebug', '-PapiBaseUrl=http://10.0.2.2:8080/', '-PcallsForceRelay=false')
+        if ($Rebuild) { $taskGradleArguments += '--rerun-tasks' }
+        & .\gradlew.bat @taskGradleArguments
+        if ($LASTEXITCODE -ne 0) { throw 'Falha ao gerar APK. O aplicativo instalado nao foi substituido.' }
+    } finally { Pop-Location }
     $taskInstalled = (Invoke-Device @('shell', 'pm', 'path', 'com.samuschat')) -join ''
-    if ($Rebuild -or -not $taskInstalled.Contains('package:')) {
-        $taskAndroidProject = Join-Path $taskRoot 'samuschat-android'
-        Push-Location $taskAndroidProject
-        try {
-            & .\gradlew.bat :app:assembleDebug '-PapiBaseUrl=http://10.0.2.2:8080/'
-            if ($LASTEXITCODE -ne 0) { throw 'Falha ao gerar APK.' }
-        } finally { Pop-Location }
-        Invoke-Device @('install', '-r', (Join-Path $taskAndroidProject 'app/build/outputs/apk/debug/app-debug.apk')) | Out-Host
+    $taskNeedsInstall = $true
+    if (-not $Rebuild -and $taskInstalled -match '^package:(/data/app/[A-Za-z0-9_~=/+.-]+/base\.apk)$') {
+        $taskInstalledPath = $Matches[1]
+        $taskDeviceHash = (Invoke-Device @('shell', 'sha256sum', $taskInstalledPath)) -join ''
+        if ($taskDeviceHash -match '^([a-fA-F0-9]{64})\s') {
+            $taskNeedsInstall = $Matches[1] -ne (Get-FileHash -LiteralPath $taskApk -Algorithm SHA256).Hash
+        }
+    }
+    if ($taskNeedsInstall) {
+        Write-Host 'Atualizando APK no emulador, preservando os dados da conta...'
+        Invoke-Device @('install', '-r', $taskApk) | Out-Host
+    } else {
+        Write-Host 'O aplicativo instalado ja corresponde ao build atual.'
     }
     # Confirma conectividade TCP a partir do proprio Android antes de abrir o app.
     Invoke-Device @('shell', 'toybox', 'nc', '-w', '3', '10.0.2.2', '8080', '</dev/null') | Out-Null
