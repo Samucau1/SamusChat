@@ -81,7 +81,7 @@ fun DirectConversation(app: SamusChatApplication, email: String, contact: CallCo
                 }) { Text("Carregar mensagens anteriores") }
             }
         }
-        Row(Modifier.padding(12.dp)) {
+        Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 4.dp)) {
             OutlinedTextField(draft, { draft = it }, Modifier.weight(1f), maxLines = 4, enabled = !sending,
                 placeholder = { Text("Conversar com ${contact.username}") }, isError = draft.length > 2000)
             IconButton(enabled = !sending && draft.isNotBlank() && draft.length <= 2000, onClick = {

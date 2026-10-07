@@ -14,9 +14,13 @@ import java.io.OutputStream
 
 object AttachmentPolicy {
     const val MAX_BYTES = 10L * 1024 * 1024
-    val types = arrayOf("image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf", "text/plain")
+    val images = arrayOf("image/jpeg", "image/png", "image/gif", "image/webp")
+    val documents = arrayOf("application/pdf", "text/plain", "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    val videos = arrayOf("video/mp4", "video/webm", "video/3gpp")
+    val types = images + documents + videos
     fun validate(type: String?, size: Long?) {
-        require(type in types) { "Escolha uma imagem JPG, PNG, GIF ou WebP, um PDF ou um TXT." }
+        require(type in types) { "Escolha uma imagem, PDF, TXT, DOC, DOCX ou vídeo MP4, WebM ou 3GP." }
         require(size == null || size <= MAX_BYTES) { "O arquivo deve ter no máximo 10 MB." }
         require(size == null || size != 0L) { "O arquivo está vazio." }
     }

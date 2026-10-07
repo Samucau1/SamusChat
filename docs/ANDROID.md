@@ -4,6 +4,10 @@ Aplicativo Kotlin/Jetpack Compose integrado ao back-end deste repositório. Incl
 
 A navegação no celular usa uma barra inferior com **Servidores**, **Amigos** (ao centro) e **Perfil**. Amigos é a tela inicial; Servidores abre o painel lateral com os servidores da conta e seus canais. A barra inferior também permanece disponível nas conversas. Crie servidores no **+ superior esquerdo** do painel e abra a busca na **lupa superior direita**.
 
+Ao abrir o teclado, a barra inferior fica oculta para manter o campo de mensagem logo acima dele; ela reaparece ao fechar o teclado. O espaço do teclado é aplicado no layout principal e consumido pelas telas internas para evitar afastamento adicional. Ajuste validado visualmente no emulador em 06/10/2026, com teclado aberto e fechado; APK e lint aprovados.
+
+Tocar fora do campo em foco fecha o teclado e remove o foco, preservando o rascunho. O comportamento reutilizável está em `ui/components/KeyboardDismiss.kt`: observa o gesto sem consumir os eventos dos botões e compara o toque com os limites do campo em foco. Tocar dentro mantém a edição. Validado no emulador com toque interno, toque externo, preservação de texto e envio local na conversa de demonstração. Regressão antes do commit: 30 testes Android e 112 testes da API aprovados, incluindo Redis real; nenhuma falha, erro ou teste ignorado. APK gerado e lint com zero erros e 16 avisos.
+
 A tela Amigos inclui busca e Alex, um contato de demonstração. A conversa aceita mensagens locais para experimentar a interface; não cria usuários no servidor nem envia mensagens diretas reais. O histórico de teste é temporário.
 
 Em Perfil, o nome é carregado da conta e salvo pelo endpoint `PUT /api/users/me/username`. A foto é selecionada pelo seletor de documentos do Android e sua referência é persistida por conta neste dispositivo; ainda não há sincronização de avatar com o back-end. A opção de sair da conta está no Perfil.

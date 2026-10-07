@@ -8,10 +8,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Send
-import androidx.compose.material.icons.filled.Add
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import com.samuschat.data.repository.AttachmentPolicy
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -94,10 +92,8 @@ fun ChatScreen(viewModel: ChatViewModel, channelName: String, email: String, onB
                 TextButton(onClick = viewModel::removeAttachment, enabled = !busy) { Text("Remover") }
             }
         }
-        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.Bottom) {
-            IconButton(onClick = { picker.launch(AttachmentPolicy.types) }, enabled = !busy) {
-                Icon(Icons.Default.Add, "Adicionar anexo")
-            }
+        Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.Bottom) {
+            AttachmentMenu(enabled = !busy, onSelect = { picker.launch(it) })
             OutlinedTextField(draft, { draft = it }, modifier = Modifier.weight(1f),
                 placeholder = { Text("Conversar em #$channelName") }, maxLines = 4, enabled = !busy,
                 shape = MaterialTheme.shapes.large, isError = draft.length > 2000)

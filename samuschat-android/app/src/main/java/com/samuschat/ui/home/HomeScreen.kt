@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.samuschat.SamusChatApplication
 import com.samuschat.ui.components.InitialAvatar
+import com.samuschat.ui.components.dismissKeyboardOnOutsideTap
 import com.samuschat.ui.server.ServerListScreen
 import com.samuschat.ui.server.ServerViewModel
 import com.samuschat.ui.theme.*
@@ -32,6 +33,7 @@ import com.samuschat.ui.call.CallContact
 import com.samuschat.ui.call.FriendCallButton
 import com.samuschat.ui.call.CallRoomScreen
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun HomeScreen(
     app: SamusChatApplication,
@@ -77,8 +79,10 @@ fun HomeScreen(
         }
     ) {
         Scaffold(
+            modifier = Modifier.imePadding().dismissKeyboardOnOutsideTap(),
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             bottomBar = {
+                if (!WindowInsets.isImeVisible) {
                 NavigationBar(containerColor = RailBackground, windowInsets = WindowInsets(0, 0, 0, 0)) {
                     NavigationBarItem(selected = drawer.isOpen || tab == "servers",
                         onClick = { scope.launch { drawer.open() } },
@@ -90,9 +94,10 @@ fun HomeScreen(
                         onClick = { tab = "profile" },
                         icon = { Icon(Icons.Default.Person, null) }, label = { Text("Perfil") })
                 }
+                }
             }
         ) { padding ->
-            Column(Modifier.fillMaxSize().padding(padding).background(ChatBackground)) {
+            Column(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).background(ChatBackground)) {
                 CallPanel(calls)
                 callState.error?.let { Text(it, Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.error) }
                 callState.room?.let { room ->
@@ -191,7 +196,7 @@ private fun DemoConversation(messages: List<String>, onSend: (String) -> Unit, o
             item { Text("As mensagens desta demonstração não são enviadas a uma pessoa real.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
-        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(draft, { draft = it }, Modifier.weight(1f), maxLines = 4,
                 placeholder = { Text("Conversar com Alex") }, isError = draft.length > 2000)
             IconButton(onClick = { if (canSendDemoMessage(draft)) { onSend(draft.trim()); draft = "" } }, enabled = canSendDemoMessage(draft)) {
