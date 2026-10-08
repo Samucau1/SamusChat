@@ -16,11 +16,12 @@ import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.samuschat.ui.theme.*
 
-internal val CallBackground = Color(0xFF1E1F22)
-internal val CallCard = Color(0xFF2B2D31)
-internal val CallGreen = Color(0xFF23A55A)
-internal val CallRed = Color(0xFFDA373C)
+internal val CallBackground = RailBackground
+internal val CallCard = PanelBackground
+internal val CallGreen = LiveGreen
+internal val CallRed = DangerRed
 
 private val Microphone = ImageVector.Builder("Microphone", 24.dp, 24.dp, 24f, 24f).apply {
     path(fill = SolidColor(Color.Black)) {
@@ -48,10 +49,10 @@ private val HangUp = ImageVector.Builder("HangUp", 24.dp, 24.dp, 24f, 24f).apply
 }.build()
 
 @Composable
-internal fun CallControl(label: String, description: String, icon: ImageVector, color: Color = Color(0xFF383A40), enabled: Boolean = true, onClick: () -> Unit) {
+internal fun CallControl(label: String, description: String, icon: ImageVector, color: Color = ControlBackground, enabled: Boolean = true, onClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         FilledIconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(48.dp), shape = CircleShape,
-            colors = IconButtonDefaults.filledIconButtonColors(containerColor = color, contentColor = Color.White)) {
+            colors = IconButtonDefaults.filledIconButtonColors(containerColor = color, contentColor = if (color == CallGreen) Color.Black else Color.White)) {
             Icon(icon, description)
         }
         Text(label, color = Color(0xFFDBDEE1), style = MaterialTheme.typography.labelSmall,
@@ -68,9 +69,9 @@ internal fun CallControls(model: CallViewModel, connected: Boolean) {
                 style = MaterialTheme.typography.labelMedium)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.Top) {
                 CallControl(if (state.muted) "Ativar mic" else "Microfone", if (state.muted) "Ativar microfone" else "Silenciar microfone",
-                    Microphone, color = if (state.muted) CallRed else Color(0xFF383A40), enabled = state.call != null || state.room != null, onClick = model::mute)
+                    Microphone, color = if (state.muted) CallRed else ControlBackground, enabled = state.call != null || state.room != null, onClick = model::mute)
                 CallControl(if (state.speaker) "Viva-voz" else "Celular", if (state.speaker) "Desligar viva-voz" else "Ativar viva-voz", Speaker,
-                    color = if (state.speaker) Color(0xFF5865F2) else Color(0xFF383A40), enabled = state.call != null || state.room != null, onClick = model::speaker)
+                    color = if (state.speaker) Blurple else ControlBackground, enabled = state.call != null || state.room != null, onClick = model::speaker)
                 ScreenShareButton(model, compact = true, connected = connected)
                 CallControl("Encerrar", "Encerrar chamada", HangUp, color = CallRed, onClick = { model.end() })
             }
@@ -90,7 +91,7 @@ internal fun CallParticipant(name: String, status: String, sharing: Boolean = fa
     Surface(color = CallCard, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Surface(color = Color(0xFF5865F2), shape = CircleShape, modifier = Modifier.size(48.dp)) {
+                Surface(color = Blurple, shape = CircleShape, modifier = Modifier.size(48.dp)) {
                     Box(contentAlignment = Alignment.Center) { Text(name.take(1).uppercase(), color = Color.White, style = MaterialTheme.typography.titleLarge) }
                 }
                 Column(Modifier.weight(1f)) {

@@ -13,6 +13,8 @@ $taskEmulator = Join-Path $taskSdk 'emulator/emulator.exe'
 $taskSerial = "emulator-$Port"
 $taskLogs = Join-Path $taskRoot 'logs'
 $taskBackend = $null
+$taskEmulatorProcess = $null
+$taskEmulatorClock = $null
 $taskOldAndroidHome = $env:ANDROID_HOME
 $taskOldAvdHome = $env:ANDROID_AVD_HOME
 
@@ -22,6 +24,9 @@ function Wait-Ready([scriptblock]$Probe, [int]$Seconds, [string]$Description) {
         if (& $Probe) { return }
         if ($taskBackend -and $taskBackend.HasExited) {
             throw 'A API encerrou antes de ficar pronta. Consulte logs/api.stdout.log e logs/api.stderr.log.'
+        }
+        if ($taskEmulatorProcess -and $taskEmulatorProcess.HasExited) {
+            throw 'O emulador encerrou durante a inicializacao. Consulte logs/emulator.stderr.log e logs/emulator.stdout.log.'
         }
         Start-Sleep -Seconds 2
     } while ((Get-Date) -lt $taskDeadline)
@@ -75,6 +80,23 @@ try {
     $taskAvds = @(& $taskEmulator -list-avds)
     if ($LASTEXITCODE -ne 0 -or $Avd -notin $taskAvds) { throw "AVD nao encontrado: $Avd" }
 
+    Write-Host 'Preparando emulador em paralelo aos servicos...'
+    $taskEmulatorClock = [System.Diagnostics.Stopwatch]::StartNew()
+    $taskDeviceLines = @(& $taskAdb devices)
+    if ($LASTEXITCODE -ne 0) { throw 'Nao foi possivel consultar o ADB.' }
+    if (-not ($taskDeviceLines -match "^$taskSerial\s")) {
+        $taskEmulatorProcess = Start-Process -FilePath $taskEmulator -ArgumentList @(
+            '-avd', $Avd, '-port', "$Port", '-gpu', 'auto', '-no-boot-anim'
+        ) -WindowStyle Normal -PassThru `
+            -RedirectStandardOutput (Join-Path $taskLogs 'emulator.stdout.log') `
+            -RedirectStandardError (Join-Path $taskLogs 'emulator.stderr.log')
+    } else {
+        $taskCurrentAvd = (& $taskAdb -s $taskSerial emu avd name 2>$null | Select-Object -First 1)
+        if ($LASTEXITCODE -eq 0 -and $taskCurrentAvd -ne $Avd) {
+            throw "A porta $Port pertence a outro AVD ($taskCurrentAvd). Escolha outra porta com -Port."
+        }
+    }
+
     Write-Host '[1/5] Preparando Docker...'
     if (-not (Test-Docker)) {
         $taskDockerDesktop = Join-Path $env:ProgramFiles 'Docker/Docker/Docker Desktop.exe'
@@ -101,18 +123,10 @@ try {
         Wait-Ready { Test-Api } 240 'API em localhost:8080'
     }
 
-    Write-Host '[4/5] Preparando emulador...'
-    $taskDeviceLines = @(& $taskAdb devices)
-    if ($LASTEXITCODE -ne 0) { throw 'Nao foi possivel consultar o ADB.' }
-    if (-not ($taskDeviceLines -match "^$taskSerial\s")) {
-        Start-Process -FilePath $taskEmulator -ArgumentList @('-avd', $Avd, '-port', "$Port") -WindowStyle Normal
-    } else {
-        $taskCurrentAvd = (& $taskAdb -s $taskSerial emu avd name 2>$null | Select-Object -First 1)
-        if ($LASTEXITCODE -eq 0 -and $taskCurrentAvd -ne $Avd) {
-            throw "A porta $Port pertence a outro AVD ($taskCurrentAvd). Escolha outra porta com -Port."
-        }
-    }
+    Write-Host '[4/5] Aguardando Android ficar pronto...'
     Wait-Ready { Test-AndroidBoot } 240 'inicializacao do Android'
+    $taskEmulatorClock.Stop()
+    Write-Host ("Android pronto apos {0:N0} s desde a verificacao inicial (servicos preparados nesse intervalo)." -f $taskEmulatorClock.Elapsed.TotalSeconds)
 
     Write-Host '[5/5] Abrindo SamusChat...'
     $taskAndroidProject = Join-Path $taskRoot 'samuschat-android'

@@ -10,11 +10,11 @@ Tambem e possivel dar dois cliques em `iniciar-samuschat.cmd`. O launcher aplica
 
 ## O que o launcher faz
 
-1. Verifica o SDK local e o AVD `SamusChat_Validacao`.
+1. Verifica o SDK local e o AVD `SamusChat_Validacao`. Reutiliza o emulador na porta 5554 ou inicia sua janela imediatamente, em paralelo ao preparo dos servicos, com graficos automaticos (`-gpu auto`) e sem animacao de boot.
 2. Abre Docker Desktop em segundo plano, se necessario, e espera o engine.
 3. Executa `setup.ps1 -NoRun` para preparar PostgreSQL e Redis, preservando os volumes existentes.
 4. Reutiliza a API se `/actuator/health` retornar `UP`. Caso a porta 8080 esteja livre, inicia `setup.ps1` em segundo plano. Aguarda a API ficar saudavel antes de continuar.
-5. Reutiliza o emulador na porta 5554 ou inicia o AVD e espera `sys.boot_completed=1`.
+5. Espera o emulador iniciado na primeira etapa informar `sys.boot_completed=1`. Mostra o tempo decorrido desde a verificacao inicial, incluindo o preparo dos servicos em paralelo.
 6. Executa o build incremental do APK debug para incluir as alteracoes atuais, usando a API normal na porta 8080 e sem forcar TURN relay. Compara SHA-256 do APK gerado com o instalado; instala com `adb install -r` somente quando houver diferenca ou o app estiver ausente. Verifica conectividade TCP pelo Android e abre `com.samuschat/.MainActivity`.
 
 O comando pode ser repetido: reutiliza os servicos saudaveis e o emulador existente. Nao apaga dados, nao recria contas e nao realiza login automaticamente. Se uma sessao estiver expirada, sera necessario entrar novamente. Os servicos permanecem ativos ao fechar o aplicativo ou o launcher.
@@ -35,6 +35,8 @@ O launcher sempre verifica o build atual, mesmo quando o app ja esta instalado. 
 
 Logs da API iniciada pelo launcher ficam em `logs/api.stdout.log` e `logs/api.stderr.log` (ignorados pelo Git). Se ela ja estiver em execucao em outro terminal, seus logs continuam nesse terminal. Ha limites de espera para Docker (180 s), API (240 s) e Android (240 s); erros interrompem a abertura do aplicativo com uma mensagem.
 
+Logs do emulador iniciado pelo launcher ficam em `logs/emulator.stdout.log` e `logs/emulator.stderr.log`. O launcher detecta quando esse processo encerra durante uma espera. Quick Boot continua habilitado; feche normalmente a janela do emulador para permitir salvar seu estado. A primeira abertura depois de uma mudanca de graficos pode exigir boot completo. Com pouca memoria livre, Docker, IDE, Gradle e emulador podem disputar recursos; feche programas desnecessarios antes de iniciar o ambiente.
+
 ## Limites e uso no Android Studio
 
 Abrir diretamente o app no emulador ou clicar em Run no Android Studio nao executa automaticamente este launcher. Use o launcher como ponto de entrada para iniciar o ambiente; depois o Run pode atualizar o aplicativo normalmente. A interface de PC em `samuschat-desktop/` continua independente e e iniciada com `npm run dev`.
@@ -44,6 +46,8 @@ Automacao ligada ao Run do Android Studio pode ser adicionada depois como ferram
 Para parar PostgreSQL/Redis sem apagar seus dados: `docker compose stop`. Feche o emulador pela janela. A API iniciada em segundo plano permanece ligada; identifique o processo Java do SamusChat na porta 8080 antes de encerra-lo, para nao afetar outros projetos.
 
 ## Validacao realizada
+
+Na otimização da abertura, o emulador foi iniciado com `-gpu auto -no-boot-anim`: o log confirmou WHPX operacional, renderizacao na NVIDIA GeForce RTX 3050 Laptop GPU e boot completo em 28.058 ms. O ADB confirmou `sys.boot_completed=1`. A sintaxe e o teste dos probes do launcher passaram. Depois, a execucao completa do launcher com as etapas antecipadas passou reutilizando servicos e emulador: build incremental, instalacao do APK, conectividade pelo Android e abertura do app confirmados. O tempo de 28 segundos mede apenas o boot do Android, sem build ou preparo da API; nao foi repetida a inicializacao com todos os servicos desligados.
 
 Em 07/10/2026, as consultas de disponibilidade do Docker e de boot do Android foram ajustadas para tratar erros esperados de inicializacao como uma tentativa ainda sem sucesso. No Windows PowerShell, stderr de programas nativos pode interromper o script com `NativeCommandError` quando `ErrorActionPreference` e `Stop`, mesmo com redirecionamento. As consultas agora tratam esses erros localmente, mantendo a interrupcao por falhas nas demais etapas. A sintaxe e os cenarios simulados de falha com stderr e sucesso foram validados; a inicializacao completa com Docker desligado ainda precisa ser conferida.
 

@@ -42,7 +42,7 @@ internal fun AuthForm(register: Boolean, viewModel: AuthViewModel, onSwitch: () 
     val error by viewModel.error.collectAsStateWithLifecycle()
     val submit = { viewModel.submit(register, username, email, password); Unit }
     val valid = email.isNotBlank() && password.isNotBlank() && (!register || username.isNotBlank())
-    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF353A70), RailBackground)))) {
+    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF252A68), RailBackground)))) {
         Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(28.dp),
             verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             Surface(color = Blurple, shape = RoundedCornerShape(22.dp)) {

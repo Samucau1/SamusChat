@@ -27,6 +27,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.samuschat.ui.theme.ControlBackground
 
 @Composable
 fun CallPanel(model: CallViewModel) {
@@ -81,7 +82,7 @@ fun CallPanel(model: CallViewModel) {
                         if (CallPolicy.mayAccept(call, model.email)) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 OutlinedButton(onClick = { model.end(decline = true) }, modifier = Modifier.weight(1f)) { Text("Recusar", color = CallRed) }
-                                Button(onClick = { microphone() }, enabled = !state.busy, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = CallGreen)) { Text("Aceitar") }
+                                Button(onClick = { microphone() }, enabled = !state.busy, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = CallGreen, contentColor = Color.Black)) { Text("Aceitar") }
                             }
                         } else {
                             CallControls(model, connected = state.connected)
@@ -115,7 +116,7 @@ fun ScreenShareButton(model: CallViewModel, compact: Boolean = false, connected:
     if (compact) {
         CallControl(if (state.sharing) "Parar tela" else "Transmitir",
         if (state.sharing) "Parar transmissão" else "Compartilhar tela do celular", ScreenPhone,
-        color = if (state.sharing) CallGreen else Color(0xFF383A40),
+        color = if (state.sharing) CallGreen else ControlBackground,
         enabled = !state.busy && (connected || state.sharing), onClick = shareAction)
     } else FilledTonalButton(onClick = shareAction, enabled = !state.busy && (connected || state.sharing)) {
         Icon(ScreenPhone, null); Spacer(Modifier.width(8.dp))

@@ -82,7 +82,7 @@ fun ServerListScreen(viewModel: ServerViewModel, email: String, onChannelClick: 
             }
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 if (current != null) {
-                    Box(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(Color(0xFF414780), PanelBackground)))
+                    Box(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(Color(0xFF252A68), PanelBackground)))
                         .padding(horizontal = 20.dp, vertical = 24.dp)) {
                         Column {
                             Text(current.name, style = MaterialTheme.typography.headlineMedium)
