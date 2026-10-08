@@ -1,5 +1,13 @@
 # Documentação do SamusChat
 
+- [Relatório de hoje com imagens (Word) — 08/10/2026](SamusChat_Relatorio_2026-10-08.docx)
+- [Regressão antes do commit e push — 08/10/2026](REGRESSAO_PUBLICACAO_2026-10-08.md)
+
+- [Regressao de midia e estabilidade aprovada em emuladores — 08/10/2026](REGRESSAO_MIDIA_ESTABILIDADE_2026-10-08.md)
+
+- [Validacao de chamadas, transmissao e estabilidade](VALIDACAO_CHAMADAS_TRANSMISSAO_ESTABILIDADE.md)
+- [Estudo de hospedagem, celulares reais e atualizacoes](ESTUDO_HOSPEDAGEM_CELULARES_ATUALIZACOES.md)
+
 - [Regressao da paleta e launcher — 07/10/2026](REGRESSAO_PALETA_LAUNCHER_2026-10-07.md)
 
 - [Regressao da interface de chamadas, API e Postman — 07/10/2026](REGRESSAO_INTERFACE_CHAMADAS_2026-10-07.md)

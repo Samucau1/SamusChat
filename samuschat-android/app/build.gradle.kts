@@ -8,6 +8,7 @@ android {
     compileSdk = 35
     defaultConfig {
         applicationId = "com.samuschat"
+        manifestPlaceholders["appLabel"] = "SamusChat"
         minSdk = 26
         targetSdk = 35
         versionCode = 2
@@ -20,6 +21,15 @@ android {
         val forceRelay = providers.gradleProperty("callsForceRelay").getOrElse("false")
         require(forceRelay in listOf("true", "false"))
         buildConfigField("boolean", "CALLS_FORCE_RELAY", forceRelay)
+    }
+    buildTypes {
+        create("validation") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".validation"
+            versionNameSuffix = "-validation"
+            matchingFallbacks += listOf("debug")
+            manifestPlaceholders["appLabel"] = "SamusChat Teste"
+        }
     }
     buildFeatures { compose = true; buildConfig = true }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.15" }
