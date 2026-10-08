@@ -5,7 +5,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -54,42 +53,39 @@ fun CallPanel(model: CallViewModel) {
     }
     state.call?.let { call ->
         Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false, usePlatformDefaultWidth = false)) {
-            Surface(Modifier.fillMaxWidth().padding(16.dp), shape = MaterialTheme.shapes.large) {
-                Column(Modifier.padding(20.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(call.peer(model.email), style = MaterialTheme.typography.titleLarge)
-                    Text(when { state.connected -> "Em chamada"; call.state == "RINGING" -> if (call.callee == model.email) "Chamada recebida" else "Chamando…"; else -> "Conectando…" })
-                    state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                    model.rtc?.let { engine ->
-                        if (state.sharing) {
-                            Text("Sua tela • prévia", style = MaterialTheme.typography.labelMedium)
-                            ScreenShareVideo(engine.localVideo, engine.egl.eglBaseContext,
-                                Modifier.fillMaxWidth().height(240.dp), local = true)
-                        }
-                        if (state.remoteSharing) video?.let { track ->
-                            Text("Tela de ${call.peer(model.email)}", style = MaterialTheme.typography.labelMedium)
-                            ScreenShareVideo(track, engine.egl.eglBaseContext,
-                                Modifier.fillMaxWidth().height(240.dp))
-                        }
-                    }
-                    if (CallPolicy.mayAccept(call, model.email)) {
-                        Button(onClick = { microphone() }, enabled = !state.busy) { Text("Aceitar") }
-                        OutlinedButton(onClick = { model.end(decline = true) }) { Text("Recusar") }
-                    } else {
-                        if (state.connected) {
-                            Row {
-                                TextButton(onClick = model::mute) { Text(if (state.muted) "Ativar microfone" else "Silenciar") }
-                                TextButton(onClick = model::speaker) { Text(if (state.speaker) "Desligar viva-voz" else "Viva-voz") }
-                            }
-                            ScreenShareButton(model)
-                            if (state.sharing && Build.VERSION.SDK_INT >= 29) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    Switch(checked = state.deviceAudio, onCheckedChange = { model.deviceAudio() }, enabled = !state.busy)
-                                    Text("Áudio do dispositivo", Modifier.padding(top = 12.dp))
+            Surface(Modifier.fillMaxSize(), color = CallBackground, contentColor = Color.White) {
+                BoxWithConstraints(Modifier.fillMaxSize().systemBarsPadding()) {
+                    Column(Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + maxHeight * 0.15f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Text(call.peer(model.email), style = MaterialTheme.typography.titleLarge)
+                            Text(when { state.connected -> "Em chamada"; call.state == "RINGING" -> if (call.callee == model.email) "Chamada recebida" else "Chamando…"; else -> "Conectando…" })
+                            state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                            CallParticipant(call.peer(model.email), if (state.connected) "Em chamada" else "Aguardando conexão", state.remoteSharing)
+                            model.rtc?.let { engine ->
+                                if (state.sharing) {
+                                    CallParticipant("Sua tela", "Prévia da transmissão", sharing = true) {
+                                        Text("Sua tela • prévia", style = MaterialTheme.typography.labelMedium)
+                                        ScreenShareVideo(engine.localVideo, engine.egl.eglBaseContext,
+                                            Modifier.fillMaxWidth().height(240.dp), local = true)
+                                    }
                                 }
-                                Text("Alguns aplicativos bloqueiam a captura de áudio.", style = MaterialTheme.typography.bodySmall)
+                                if (state.remoteSharing) video?.let { track ->
+                                    CallParticipant(call.peer(model.email), "Transmitindo tela", sharing = true) {
+                                        Text("Tela de ${call.peer(model.email)}", style = MaterialTheme.typography.labelMedium)
+                                        ScreenShareVideo(track, engine.egl.eglBaseContext,
+                                            Modifier.fillMaxWidth().height(240.dp))
+                                    }
+                                }
                             }
                         }
-                        Button(onClick = { model.end() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text("Encerrar") }
+                        if (CallPolicy.mayAccept(call, model.email)) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                OutlinedButton(onClick = { model.end(decline = true) }, modifier = Modifier.weight(1f)) { Text("Recusar", color = CallRed) }
+                                Button(onClick = { microphone() }, enabled = !state.busy, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = CallGreen)) { Text("Aceitar") }
+                            }
+                        } else {
+                            CallControls(model, connected = state.connected)
+                        }
                     }
                 }
             }
@@ -97,25 +93,32 @@ fun CallPanel(model: CallViewModel) {
     }
 }
 
-private val ScreenCamera = ImageVector.Builder("ScreenCamera", 24.dp, 24.dp, 24f, 24f).apply {
-    path(fill = SolidColor(Color.Black)) {
-        moveTo(3f, 5f); lineTo(16f, 5f); lineTo(16f, 10f); lineTo(22f, 6f)
-        lineTo(22f, 18f); lineTo(16f, 14f); lineTo(16f, 19f); lineTo(3f, 19f); close()
+private val ScreenPhone = ImageVector.Builder("ScreenPhone", 24.dp, 24.dp, 24f, 24f).apply {
+    path(fill = SolidColor(Color.Black), pathFillType = androidx.compose.ui.graphics.PathFillType.EvenOdd) {
+        moveTo(6f, 1f); lineTo(18f, 1f); lineTo(18f, 23f); lineTo(6f, 23f); close()
+        moveTo(8f, 4f); lineTo(8f, 19f); lineTo(16f, 19f); lineTo(16f, 4f); close()
+        moveTo(11f, 20f); lineTo(13f, 20f); lineTo(13f, 22f); lineTo(11f, 22f); close()
     }
 }.build()
 
 @Composable
-fun ScreenShareButton(model: CallViewModel) {
+fun ScreenShareButton(model: CallViewModel, compact: Boolean = false, connected: Boolean = true) {
     val state by model.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val projection = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) result.data?.let(model::share)
     }
-    FilledTonalButton(onClick = {
+    val shareAction: () -> Unit = {
         if (state.sharing) model.stopSharing()
         else projection.launch(context.getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent())
-    }, enabled = !state.busy) {
-        Icon(ScreenCamera, null); Spacer(Modifier.width(8.dp))
+    }
+    if (compact) {
+        CallControl(if (state.sharing) "Parar tela" else "Transmitir",
+        if (state.sharing) "Parar transmissão" else "Compartilhar tela do celular", ScreenPhone,
+        color = if (state.sharing) CallGreen else Color(0xFF383A40),
+        enabled = !state.busy && (connected || state.sharing), onClick = shareAction)
+    } else FilledTonalButton(onClick = shareAction, enabled = !state.busy && (connected || state.sharing)) {
+        Icon(ScreenPhone, null); Spacer(Modifier.width(8.dp))
         Text(if (state.sharing) "Parar compartilhamento" else "Compartilhar tela")
     }
 }

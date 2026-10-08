@@ -45,6 +45,8 @@ Para parar PostgreSQL/Redis sem apagar seus dados: `docker compose stop`. Feche 
 
 ## Validacao realizada
 
+Em 07/10/2026, as consultas de disponibilidade do Docker e de boot do Android foram ajustadas para tratar erros esperados de inicializacao como uma tentativa ainda sem sucesso. No Windows PowerShell, stderr de programas nativos pode interromper o script com `NativeCommandError` quando `ErrorActionPreference` e `Stop`, mesmo com redirecionamento. As consultas agora tratam esses erros localmente, mantendo a interrupcao por falhas nas demais etapas. A sintaxe e os cenarios simulados de falha com stderr e sucesso foram validados; a inicializacao completa com Docker desligado ainda precisa ser conferida.
+
 Em 06/10/2026, a sintaxe PowerShell foi validada e o launcher foi executado com sucesso em dois cenarios: reutilizando API/emulador ativos e iniciando a API desligada em segundo plano. Em ambos, a saude da API foi confirmada, a conectividade TCP pelo Android passou e a atividade SamusChat abriu. Inicializacao com Docker/emulador desligados e recompilacao com `-Rebuild` ainda nao foram exercitadas pelo launcher.
 
 Na correcao da atualizacao automatica, foi identificado que o AVD pessoal ainda usava o APK instalado em 05/10, anterior a previa de tela. O APK atual foi instalado com `adb install -r`, sem limpar os dados. A sintaxe do launcher atualizado foi validada, e uma execucao completa confirmou build incremental, igualdade SHA-256 com o APK instalado, ausencia de reinstalacao desnecessaria e abertura do aplicativo. Isso comprova a atualizacao do APK; a renderizacao da previa em uma chamada requer o teste de compartilhamento no app.

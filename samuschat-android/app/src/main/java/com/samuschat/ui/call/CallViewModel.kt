@@ -152,6 +152,9 @@ class CallViewModel(private val app: SamusChatApplication, val email: String) : 
                 onVideo = { remoteVideo.value = it },
                 onRemoteSharing = { mutable.value = mutable.value.copy(remoteSharing = it) },
                 onSharingStopped = { mutable.value = mutable.value.copy(sharing = false, deviceAudio = false) })
+            // Apply controls selected while the private call was still ringing.
+            rtc?.mute(mutable.value.muted)
+            rtc?.speaker(mutable.value.speaker)
             watchConnection()
         }
         val engine = rtc ?: return

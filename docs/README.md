@@ -1,5 +1,8 @@
 # Documentação do SamusChat
 
+- [Regressao da interface de chamadas, API e Postman — 07/10/2026](REGRESSAO_INTERFACE_CHAMADAS_2026-10-07.md)
+- [Colecao Postman: metodos HTTP e ciclo de chamadas](postman/README.md)
+
 - [Regressão de anexos e teclado antes do push](REGRESSAO_ANEXOS_TECLADO.md)
 
 - [Envio de anexos nos canais de texto do Android](ANEXOS_ANDROID.md)

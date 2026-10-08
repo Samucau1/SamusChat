@@ -35,6 +35,27 @@ function Test-Api {
     } catch { return $false }
 }
 
+function Test-Docker {
+    # Windows PowerShell converte stderr nativo em NativeCommandError.
+    # Durante a inicializacao, engine indisponivel e um resultado esperado.
+    $ErrorActionPreference = 'SilentlyContinue'
+    $PSNativeCommandUseErrorActionPreference = $false
+    try {
+        & docker info --format '{{.ServerVersion}}' *> $null
+        return $LASTEXITCODE -eq 0
+    } catch { return $false }
+}
+
+function Test-AndroidBoot {
+    # O ADB pode retornar stderr enquanto o emulador ainda esta offline.
+    $ErrorActionPreference = 'SilentlyContinue'
+    $PSNativeCommandUseErrorActionPreference = $false
+    try {
+        $taskBoot = & $taskAdb -s $taskSerial shell getprop sys.boot_completed 2>$null
+        return $LASTEXITCODE -eq 0 -and ($taskBoot -join '').Trim() -eq '1'
+    } catch { return $false }
+}
+
 function Invoke-Device([string[]]$DeviceArguments) {
     $taskResult = & $taskAdb -s $taskSerial @DeviceArguments
     if ($LASTEXITCODE -ne 0) { throw "Falha no ADB: $($DeviceArguments -join ' ')" }
@@ -55,12 +76,11 @@ try {
     if ($LASTEXITCODE -ne 0 -or $Avd -notin $taskAvds) { throw "AVD nao encontrado: $Avd" }
 
     Write-Host '[1/5] Preparando Docker...'
-    & docker info --format '{{.ServerVersion}}' *> $null
-    if ($LASTEXITCODE -ne 0) {
+    if (-not (Test-Docker)) {
         $taskDockerDesktop = Join-Path $env:ProgramFiles 'Docker/Docker/Docker Desktop.exe'
         if (-not (Test-Path -LiteralPath $taskDockerDesktop)) { throw 'Docker Desktop nao encontrado.' }
         Start-Process -FilePath $taskDockerDesktop -WindowStyle Hidden
-        Wait-Ready { & docker info --format '{{.ServerVersion}}' *> $null; return $LASTEXITCODE -eq 0 } 180 'Docker'
+        Wait-Ready { Test-Docker } 180 'Docker'
     }
 
     Write-Host '[2/5] Preparando PostgreSQL e Redis...'
@@ -92,10 +112,7 @@ try {
             throw "A porta $Port pertence a outro AVD ($taskCurrentAvd). Escolha outra porta com -Port."
         }
     }
-    Wait-Ready {
-        $taskBoot = & $taskAdb -s $taskSerial shell getprop sys.boot_completed 2>$null
-        return $LASTEXITCODE -eq 0 -and ($taskBoot -join '').Trim() -eq '1'
-    } 240 'inicializacao do Android'
+    Wait-Ready { Test-AndroidBoot } 240 'inicializacao do Android'
 
     Write-Host '[5/5] Abrindo SamusChat...'
     $taskAndroidProject = Join-Path $taskRoot 'samuschat-android'

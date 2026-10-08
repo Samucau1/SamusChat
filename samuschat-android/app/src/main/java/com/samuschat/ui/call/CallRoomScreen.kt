@@ -24,44 +24,42 @@ fun CallRoomScreen(model: CallViewModel, id: Long, name: String, onBack: () -> U
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) model.joinRoom(id, name) else model.permissionDenied()
     }
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Row {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar aos servidores") }
-            Text(name, Modifier.weight(1f).padding(12.dp), style = MaterialTheme.typography.titleLarge)
-        }
-        state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        if (state.room?.channelId != id) {
-            Text("Canal de chamada", style = MaterialTheme.typography.headlineMedium)
-            Text("Entre para conversar e compartilhar sua tela com os membros deste servidor.")
-            Button(onClick = {
-                if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) model.joinRoom(id, name)
-                else permission.launch(Manifest.permission.RECORD_AUDIO)
-            }, enabled = !state.busy && state.call == null && state.room == null) { Text("Entrar na chamada") }
-            if (state.room != null || state.call != null) Text("Encerre a chamada atual antes de entrar neste canal.")
-        } else {
-            val room = state.room!!
-            Text("${room.participants.size}/${room.capacity} participantes", style = MaterialTheme.typography.titleMedium)
-            LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(room.participants, key = { it.email }) { participant ->
-                    val link = room.sessions.firstOrNull { it.peer(model.email) == participant.email }
-                    Text(participant.username + when { participant.email == model.email -> " (você)"; link?.id in state.roomConnected -> " • conectado"; else -> " • conectando" })
-                    val engine = model.roomRtc
-                    val local = participant.email == model.email
-                    val sharing = if (local) state.sharing else link?.id in state.roomSharing
-                    val track = if (local) engine?.localVideo else videos[link?.id]
-                    if (sharing && track != null && engine != null) {
-                        Text(if (local) "Sua tela • prévia" else "Tela de ${participant.username}", style = MaterialTheme.typography.labelMedium)
-                        ScreenShareVideo(track, engine.egl.eglBaseContext,
-                            Modifier.fillMaxWidth().height(220.dp), local = local)
+    Surface(color = CallBackground, contentColor = androidx.compose.ui.graphics.Color.White, modifier = Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().systemBarsPadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row {
+                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar aos servidores") }
+                Text(name, Modifier.weight(1f).padding(12.dp), style = MaterialTheme.typography.titleLarge)
+            }
+            state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            if (state.room?.channelId != id) {
+                Text("Canal de chamada", style = MaterialTheme.typography.headlineMedium)
+                Text("Entre para conversar e compartilhar sua tela com os membros deste servidor.")
+                Button(onClick = {
+                    if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) model.joinRoom(id, name)
+                    else permission.launch(Manifest.permission.RECORD_AUDIO)
+                }, enabled = !state.busy && state.call == null && state.room == null) { Text("Entrar na chamada") }
+                if (state.room != null || state.call != null) Text("Encerre a chamada atual antes de entrar neste canal.")
+            } else {
+                val room = state.room!!
+                Text("${room.participants.size}/${room.capacity} participantes", style = MaterialTheme.typography.titleMedium)
+                LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(room.participants, key = { it.email }) { participant ->
+                        val link = room.sessions.firstOrNull { it.peer(model.email) == participant.email }
+                        val engine = model.roomRtc
+                        val local = participant.email == model.email
+                        val sharing = if (local) state.sharing else link?.id in state.roomSharing
+                        val track = if (local) engine?.localVideo else videos[link?.id]
+                        CallParticipant(participant.username, when { local -> "Você • conectado"; link?.id in state.roomConnected -> "Conectado"; else -> "Conectando…" }, sharing) {
+                            if (sharing && track != null && engine != null) {
+                                Text(if (local) "Sua tela • prévia" else "Tela de ${participant.username}", style = MaterialTheme.typography.labelMedium)
+                                ScreenShareVideo(track, engine.egl.eglBaseContext,
+                                    Modifier.fillMaxWidth().height(220.dp), local = local)
+                            }
+                        }
                     }
                 }
+                CallControls(model, connected = true)
             }
-            Row {
-                TextButton(onClick = model::mute) { Text(if (state.muted) "Ativar microfone" else "Silenciar") }
-                TextButton(onClick = model::speaker) { Text(if (state.speaker) "Desligar viva-voz" else "Viva-voz") }
-            }
-            ScreenShareButton(model)
-            OutlinedButton(onClick = { model.end() }) { Text("Sair da chamada") }
         }
     }
 }
