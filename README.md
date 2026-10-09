@@ -1,6 +1,6 @@
 # SamusChat
 
-O protótipo para computador está em [samuschat-desktop/](samuschat-desktop/README.md), com TypeScript, React e CSS e dados fictícios. Consulte o [plano MVC, tecnologias e entradas](docs/DESKTOP_MVC.md).
+O MVP para computador está em [samuschat-desktop/](samuschat-desktop/README.md), com TypeScript, React e CSS integrado à mesma API do Android. Inclui autenticação, servidores, chat, anexos e chamadas individuais. Consulte o [plano MVC](docs/DESKTOP_MVC.md) e o [guia da integração desktop](docs/DESKTOP_API.md).
 
 Para iniciar Docker, banco, API, emulador e abrir o app Android com um comando, execute `.\iniciar-samuschat.ps1` ou abra `iniciar-samuschat.cmd`. Veja a [inicialização automática](docs/INICIALIZACAO_AUTOMATICA.md).
 

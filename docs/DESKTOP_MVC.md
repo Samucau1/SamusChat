@@ -2,6 +2,8 @@
 
 Data: 06/10/2026.
 
+Atualização em 09/10/2026: o protótipo evoluiu para um MVP integrado à API. O texto abaixo preserva o planejamento e o escopo da primeira versão; o comportamento atual está no [guia da integração desktop](DESKTOP_API.md).
+
 ## Objetivo e escopo
 
 Criar primeiro um front para computador, com dados fictícios e navegação funcional, mantendo a identidade do Android. Validar essa interface antes de conectar à API existente. O destino final inclui navegador e aplicativo instalado; nesta etapa a execução é local no navegador, sem publicação ou instalador.
