@@ -1,8 +1,8 @@
 {
   "info": {
-    "name": "SamusChat - Regressao HTTP e chamadas",
+    "name": "SamusChat - Regressao API Android e Desktop",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Executar apenas em API descartavel de teste. Cria duas contas e um servidor. GET, POST, PUT e DELETE; sinalizacao de chamada privada e sala. Nao comprova midia WebRTC."
+    "description": "Executar apenas em API descartavel H2. Cria contas ficticias, servidor e canais. Inclui CRUD, mensagens privadas, anexos e sinalizacao de chamadas. Nao comprova midia WebRTC real."
   },
   "variable": [
     {
@@ -19,8 +19,11 @@
           "if (pm.info.requestName === 'Saude') {",
           "  pm.collectionVariables.set('runId', pm.variables.replaceIn('{{$guid}}').replace(/-/g, '').slice(0, 16));",
           "  pm.collectionVariables.set('callId', pm.variables.replaceIn('{{$guid}}'));",
-          "  ['tokenA', 'tokenB', 'serverId', 'textId', 'voiceId', 'messageId'].forEach(key => pm.collectionVariables.unset(key));",
-          "}"
+          "  ['tokenA', 'tokenB', 'serverId', 'textId', 'voiceId', 'messageId', 'desktopPrivateId', 'desktopReplyId', 'desktopUploadPath'].forEach(key => pm.collectionVariables.unset(key));",
+          "  const run = pm.collectionVariables.get('runId');",
+          "  pm.collectionVariables.set('testClientSuffix', (parseInt(run.slice(0, 2), 16) % 254 + 1) + '.' + (parseInt(run.slice(2, 4), 16) % 254 + 1));",
+          "}",
+          "pm.request.headers.upsert({key: 'X-Forwarded-For', value: '198.20.' + pm.collectionVariables.get('testClientSuffix')});"
         ]
       }
     }
@@ -1133,6 +1136,341 @@
               "pm.test('Envelope da API', () => pm.expect(pm.response.json().success).to.eql(true));"
             ]
           }
+        }
+      ]
+    },
+    {
+      "name": "MVP Desktop - privados e anexos",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Distinct simulated client; keeps existing API rate limits enabled.",
+              "pm.request.headers.upsert({key: 'X-Forwarded-For', value: '198.21.' + pm.collectionVariables.get('testClientSuffix')});"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "Desktop - enviar privado A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/direct-messages?contact=regressionb{{runId}}@example.test",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"content\":\"Mensagem privada desktop {{runId}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Envelope da API', () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "if (pm.response.code === 200) pm.collectionVariables.set('desktopPrivateId', pm.response.json().data.id);",
+                  "pm.test('Destinatario correto', () => pm.expect(pm.response.json().data.recipientEmail).to.eql('regressionb' + pm.collectionVariables.get('runId') + '@example.test'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desktop - historico privado B",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenB}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/direct-messages?contact=regressiona{{runId}}@example.test&page=0"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Envelope da API', () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "pm.test('Privado recebido sem duplicata', () => pm.expect(pm.response.json().data.filter(m => m.id === Number(pm.collectionVariables.get('desktopPrivateId'))).length).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desktop - responder privado B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenB}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/direct-messages?contact=regressiona{{runId}}@example.test",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"content\":\"Resposta privada desktop {{runId}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Envelope da API', () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "if (pm.response.code === 200) pm.collectionVariables.set('desktopReplyId', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desktop - historico privado A",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/direct-messages?contact=regressionb{{runId}}@example.test&page=0"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Envelope da API', () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "pm.test('Resposta recebida', () => pm.expect(pm.response.json().data.some(m => m.id === Number(pm.collectionVariables.get('desktopReplyId')))).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desktop - rejeitar privado vazio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/direct-messages?contact=regressionb{{runId}}@example.test",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"content\":\"   \"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Envelope de erro', () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desktop - pagina privada anterior",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/direct-messages?contact=regressionb{{runId}}@example.test&page=1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Envelope da API', () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "pm.test('Pagina anterior vazia neste cenario', () => pm.expect(pm.response.json().data).to.eql([]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desktop - rejeitar envio anonimo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/channels/{{textId}}/messages",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"content\":\"Nao deve ser salva\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Envelope de erro', () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desktop - enviar anexo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/channels/{{textId}}/upload",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "docs/postman/fixtures/desktop-anexo.txt"
+                },
+                {
+                  "key": "content",
+                  "type": "text",
+                  "value": "Anexo desktop {{runId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Envelope da API', () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "pm.test('Anexo FILE', () => pm.expect(pm.response.json().data.attachmentType).to.eql('FILE'));",
+                  "if (pm.response.code === 200) pm.collectionVariables.set('desktopUploadPath', pm.response.json().data.attachmentUrl.replace(/^https?:\\/\\/[^/]+/, ''));",
+                  "pm.test('Caminho de upload', () => pm.expect(pm.collectionVariables.get('desktopUploadPath')).to.match(/^\\/uploads\\//));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desktop - baixar anexo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}{{desktopUploadPath}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Conteudo do arquivo preservado', () => pm.expect(pm.response.text().trim()).to.eql('SamusChat desktop - arquivo de regressao HTTP.'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desktop - servidor existente acessivel",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenB}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/servers/{{serverId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Envelope da API', () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "pm.test('Mesmo servidor para o segundo cliente', () => pm.expect(pm.response.json().data.id).to.eql(Number(pm.collectionVariables.get('serverId'))));"
+                ]
+              }
+            }
+          ]
         }
       ]
     }

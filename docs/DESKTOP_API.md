@@ -2,6 +2,8 @@
 
 O front desktop agora utiliza a mesma API Spring Boot, PostgreSQL, Redis, contratos REST e STOMP do Android. A interface mantém a paleta e usa barra de servidores, lista lateral e conversa em colunas. Nenhuma alteração de contrato do backend foi necessária.
 
+Aceite manual em 09/10/2026: o usuário informou que conseguiu localizar e carregar servidores já existentes no banco por meio da pesquisa e validou a primeira entrega para PC. O fluxo foi exercitado no navegador com a API local. Esse relato não equivale a aprovar os cenários externos, instalador ou todas as combinações de mídia. A regressão de publicação está no [relatório do aceite desktop](REGRESSAO_ACEITE_DESKTOP_2026-10-09.md).
+
 ## Funcionalidades
 
 - Login/cadastro por email e senha, restauração de sessão na mesma aba, logout e edição do nome no backend.

@@ -1,6 +1,7 @@
 # Documentação do SamusChat
 
 - [MVP desktop integrado à mesma API do Android](DESKTOP_API.md)
+- [Aceite desktop e regressao API/Postman — 09/10/2026](REGRESSAO_ACEITE_DESKTOP_2026-10-09.md)
 
 - [Relatório de hoje com imagens (Word) — 08/10/2026](SamusChat_Relatorio_2026-10-08.docx)
 - [Regressão antes do commit e push — 08/10/2026](REGRESSAO_PUBLICACAO_2026-10-08.md)
