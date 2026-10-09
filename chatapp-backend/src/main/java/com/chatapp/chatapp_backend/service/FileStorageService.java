@@ -23,7 +23,9 @@ public class FileStorageService {
 
     private static final List<String> ALLOWED_TYPES = List.of(
             "image/jpeg", "image/png", "image/gif", "image/webp",
-            "application/pdf", "text/plain"
+            "application/pdf", "text/plain", "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "video/mp4", "video/webm", "video/3gpp"
     );
 
     private static final long MAX_SIZE = 10 * 1024 * 1024;

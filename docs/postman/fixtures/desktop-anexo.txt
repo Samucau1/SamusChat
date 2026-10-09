@@ -1,0 +1,1 @@
+SamusChat desktop - arquivo de regressao HTTP.

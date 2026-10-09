@@ -1,7 +1,36 @@
 # Documentação do SamusChat
 
+- [MVP desktop integrado à mesma API do Android](DESKTOP_API.md)
+- [Aceite desktop e regressao API/Postman — 09/10/2026](REGRESSAO_ACEITE_DESKTOP_2026-10-09.md)
+
+- [Relatório de hoje com imagens (Word) — 08/10/2026](SamusChat_Relatorio_2026-10-08.docx)
+- [Regressão antes do commit e push — 08/10/2026](REGRESSAO_PUBLICACAO_2026-10-08.md)
+
+- [Regressao de midia e estabilidade aprovada em emuladores — 08/10/2026](REGRESSAO_MIDIA_ESTABILIDADE_2026-10-08.md)
+
+- [Validacao de chamadas, transmissao e estabilidade](VALIDACAO_CHAMADAS_TRANSMISSAO_ESTABILIDADE.md)
+- [Estudo de hospedagem, celulares reais e atualizacoes](ESTUDO_HOSPEDAGEM_CELULARES_ATUALIZACOES.md)
+
+- [Regressao da paleta e launcher — 07/10/2026](REGRESSAO_PALETA_LAUNCHER_2026-10-07.md)
+
+- [Regressao da interface de chamadas, API e Postman — 07/10/2026](REGRESSAO_INTERFACE_CHAMADAS_2026-10-07.md)
+- [Colecao Postman: metodos HTTP e ciclo de chamadas](postman/README.md)
+
+- [Regressão de anexos e teclado antes do push](REGRESSAO_ANEXOS_TECLADO.md)
+
+- [Envio de anexos nos canais de texto do Android](ANEXOS_ANDROID.md)
+
+- [Regressão da API, Android e desktop — 06/10/2026](REGRESSAO_API_DESKTOP_ANDROID.md)
+
+- [Prévia da tela compartilhada no Android](PREVIA_COMPARTILHAMENTO.md)
+
+- [Desktop: plano, tecnologias, entradas e protótipo MVC](DESKTOP_MVC.md)
+- [Inicialização automática: Docker, API, emulador e aplicativo](INICIALIZACAO_AUTOMATICA.md)
+
 - [Chamadas individuais, compartilhamento de tela e áudio interno](CHAMADAS_INDIVIDUAIS.md)
 - [Regressão de chamadas e capturas da versão atual](REGRESSAO_CHAMADAS.md)
+- [Perfis, permissões e canais de chamada em grupo](CANAIS_DE_CHAMADA.md)
+- [Regressão da etapa de perfis e canais de chamada](REGRESSAO_CANAIS_DE_CHAMADA.md)
 
 - [Guia do projeto: instalação, execução e arquitetura](GUIA_PROJETO.md)
 - [Android: interface, contratos e testes](ANDROID.md)

@@ -49,10 +49,10 @@ class CallApiTests {
         invite();api.perform(get("/api/calls/"+id).with(user("outsider@call.test"))).andExpect(status().isUnauthorized());
         action("outsider","end",null).andExpect(status().isUnauthorized());action("a","accept",null).andExpect(status().isUnauthorized());
     }
-    @Test void contactsAndInvitesRequireSharedServer()throws Exception{
-        api.perform(get("/api/calls/contacts").with(user("a@call.test"))).andExpect(jsonPath("$.data.length()").value(1));
+    @Test void anyRegisteredAccountCanCallWithoutSharedServer()throws Exception{
+        api.perform(get("/api/calls/contacts").with(user("a@call.test"))).andExpect(jsonPath("$.data.length()").value(2));
         api.perform(post("/api/calls").with(user("outsider@call.test")).contentType("application/json")
-            .content(json.writeValueAsString(Map.of("callee","b@call.test","requestId",id)))).andExpect(status().isUnauthorized());
+            .content(json.writeValueAsString(Map.of("callee","b@call.test","requestId",id)))).andExpect(status().isOk());
     }
     @Test void busyAndDecline()throws Exception{
         invite();api.perform(post("/api/calls").with(user("b@call.test")).contentType("application/json")

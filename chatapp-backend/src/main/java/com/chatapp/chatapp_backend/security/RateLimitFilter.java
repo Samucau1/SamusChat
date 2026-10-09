@@ -39,7 +39,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         Bucket bucket = path.startsWith("/api/auth")
                 ? rateLimitConfig.resolveAuthBucket(ip)
-                : path.startsWith("/api/calls") ? rateLimitConfig.resolveCallBucket(ip) : rateLimitConfig.resolveBucket(ip);
+                : path.startsWith("/api/calls") ? rateLimitConfig.resolveCallBucket(ip)
+                : path.matches("/api/channels/[0-9]+/call(?:/.*)?") ? rateLimitConfig.resolveRoomBucket(ip) : rateLimitConfig.resolveBucket(ip);
 
         ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 

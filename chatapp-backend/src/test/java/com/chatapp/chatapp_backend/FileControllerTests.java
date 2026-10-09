@@ -115,6 +115,56 @@ class FileControllerTests {
                 .andExpect(jsonPath("$.data[0].attachmentType").value("IMAGE"));
     }
 
+    @Test
+    void uploadTextWithoutCaptionIsReadableAndPresentInHistory() throws Exception {
+        String token = registerAndLogin();
+        long channelId = createServerAndGetGeneralChannelId(token);
+        byte[] bytes = "Anexo de teste".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        MockMultipartFile file = new MockMultipartFile("file", "teste.txt", "text/plain", bytes);
+        MvcResult result = mockMvc.perform(multipart("/api/channels/{channelId}/upload", channelId)
+                        .file(file).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.attachmentType").value("FILE"))
+                .andReturn();
+        String url = objectMapper.readTree(result.getResponse().getContentAsString())
+                .get("data").get("attachmentUrl").asText();
+        mockMvc.perform(get(java.net.URI.create(url).getPath()))
+                .andExpect(status().isOk()).andExpect(content().bytes(bytes));
+        mockMvc.perform(get("/api/channels/{channelId}/messages", channelId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].attachmentUrl").value(url));
+    }
+
+    @Test
+    void uploadDocumentsAndVideosIsReadableAndPresentInHistory() throws Exception {
+        String token = registerAndLogin();
+        long channelId = createServerAndGetGeneralChannelId(token);
+        String[][] formats = {
+            {"application/msword", "teste.doc"},
+            {"application/vnd.openxmlformats-officedocument.wordprocessingml.document", "teste.docx"},
+            {"video/mp4", "teste.mp4"}, {"video/webm", "teste.webm"}, {"video/3gpp", "teste.3gp"}
+        };
+        for (String[] format : formats) {
+            byte[] bytes = new byte[] {0, 1, 2, 3, 4};
+            MockMultipartFile file = new MockMultipartFile("file", format[1], format[0], bytes);
+            MvcResult result = mockMvc.perform(multipart("/api/channels/{channelId}/upload", channelId)
+                            .file(file).param("content", "Anexo " + format[1])
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.attachmentType").value("FILE"))
+                    .andReturn();
+            String url = objectMapper.readTree(result.getResponse().getContentAsString())
+                    .get("data").get("attachmentUrl").asText();
+            mockMvc.perform(get(java.net.URI.create(url).getPath()))
+                    .andExpect(status().isOk()).andExpect(content().bytes(bytes));
+            mockMvc.perform(get("/api/channels/{channelId}/messages", channelId)
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].attachmentUrl").value(org.hamcrest.Matchers.hasItem(url)));
+        }
+    }
+
     private String registerAndLogin() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

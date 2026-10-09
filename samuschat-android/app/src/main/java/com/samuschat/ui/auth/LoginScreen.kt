@@ -29,6 +29,12 @@ fun LoginScreen(viewModel: AuthViewModel, onGoToRegister: () -> Unit) = AuthForm
 
 @Composable
 internal fun AuthForm(register: Boolean, viewModel: AuthViewModel, onSwitch: () -> Unit) {
+    var recovering by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    if (recovering) {
+        RecoveryScreen(viewModel) { recovering = false; viewModel.closeRecovery() }
+        return
+    }
     var username by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -36,7 +42,7 @@ internal fun AuthForm(register: Boolean, viewModel: AuthViewModel, onSwitch: () 
     val error by viewModel.error.collectAsStateWithLifecycle()
     val submit = { viewModel.submit(register, username, email, password); Unit }
     val valid = email.isNotBlank() && password.isNotBlank() && (!register || username.isNotBlank())
-    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF353A70), RailBackground)))) {
+    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF252A68), RailBackground)))) {
         Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(28.dp),
             verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             Surface(color = Blurple, shape = RoundedCornerShape(22.dp)) {
@@ -65,6 +71,8 @@ internal fun AuthForm(register: Boolean, viewModel: AuthViewModel, onSwitch: () 
                     Button(onClick = submit, enabled = valid && !busy, modifier = Modifier.fillMaxWidth()) {
                         Text(if (busy) "Aguarde…" else if (register) "Criar conta" else "Entrar", Modifier.padding(8.dp))
                     }
+                    if (!register) TextButton(onClick = { viewModel.closeRecovery(); recovering = true }, enabled = !busy) { Text("Esqueci minha senha") }
+                    OutlinedButton(onClick = { viewModel.google(context, password) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("Entrar com Google") }
                     TextButton(onClick = onSwitch, enabled = !busy, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                         Text(if (register) "Já tenho uma conta" else "Criar uma conta")
                     }

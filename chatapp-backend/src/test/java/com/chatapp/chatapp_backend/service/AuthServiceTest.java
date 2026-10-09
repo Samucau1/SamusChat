@@ -92,7 +92,7 @@ class AuthServiceTest {
         LoginRequest request = login("123456");
         request.setEmail("SAMUS@test.com");
         validLogin(request);
-        when(users.findByEmail("samus@test.com")).thenReturn(Optional.of(user()));
+        when(users.lockedByEmail("samus@test.com")).thenReturn(Optional.of(user()));
         when(passwords.matches("123456", "bcrypt-hash")).thenReturn(true);
         when(jwt.generateToken("samus@test.com")).thenReturn("signed-token");
         assertThat(service.login(request)).isEqualTo("signed-token");
@@ -103,7 +103,7 @@ class AuthServiceTest {
     void wrongPasswordReturnsGenericErrorAndDoesNotIssueToken() {
         LoginRequest request = login("wrong-password");
         validLogin(request);
-        when(users.findByEmail(request.getEmail())).thenReturn(Optional.of(user()));
+        when(users.lockedByEmail(request.getEmail())).thenReturn(Optional.of(user()));
         assertThatThrownBy(() -> service.login(request)).hasMessage("Credenciais invalidas");
         verify(passwords).matches("wrong-password", "bcrypt-hash");
         verifyNoInteractions(jwt);
@@ -113,7 +113,7 @@ class AuthServiceTest {
     void unknownEmailReturnsTheSameGenericError() {
         LoginRequest request = login("123456");
         validLogin(request);
-        when(users.findByEmail(request.getEmail())).thenReturn(Optional.empty());
+        when(users.lockedByEmail(request.getEmail())).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.login(request)).hasMessage("Credenciais invalidas");
         verifyNoInteractions(passwords, jwt);
     }

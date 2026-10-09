@@ -36,6 +36,8 @@ class RtcCall(
     private val audioTrack: AudioTrack
     private val videoSource: VideoSource
     private val videoTrack: VideoTrack
+    /** The same captured frames sent to the peer, also available for local preview. */
+    val localVideo: VideoTrack get() = videoTrack
     private var screen: ScreenCapturerAndroid? = null
     private var texture: SurfaceTextureHelper? = null
     private var channel: DataChannel? = null
