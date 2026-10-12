@@ -18,4 +18,6 @@ Testes reais de navegador: inicie `./scripts/start-desktop-test-api.ps1` na raiz
 Veja o [plano, tecnologias, entradas e arquitetura](../docs/DESKTOP_MVC.md).
 Veja também [funcionalidades, limites e testes da integração](../docs/DESKTOP_API.md).
 
-Veja [personalização compartilhada com Android, canais de chamada e transmissão PC a 900p/30 fps](../docs/PERSONALIZACAO_PC_ANDROID.md). A regressão inclui testes dos contratos REST, perfil/GIF, servidor, membros, salas e rascunhos; todos usam contas fictícias em H2 ou respostas simuladas.
+Veja [personalização compartilhada com Android e canais de chamada](../docs/PERSONALIZACAO_PC_ANDROID.md). A regressão inclui testes dos contratos REST, perfil/GIF, servidor, membros, salas e rascunhos; todos usam contas fictícias em H2 ou respostas simuladas.
+
+A transmissão permite escolher de 750p a 2160p e 30 ou 60 fps, com ajuste por estatísticas nativas sem descer abaixo de 750p/30 fps. Veja [configuração, feedback e limites de hardware](../docs/TRANSMISSAO_PC_HARDWARE.md) e [regressão](../docs/REGRESSAO_TRANSMISSAO_PC_HARDWARE_2026-10-12.md).

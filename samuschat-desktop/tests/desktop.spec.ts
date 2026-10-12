@@ -75,6 +75,9 @@ test('chamada individual: convite, aceite, mídia WebRTC, microfone e encerramen
     await expect(other.getByRole('button', { name: 'Aceitar', exact: true })).toBeVisible(); await other.getByRole('button', { name: 'Aceitar', exact: true }).click(); await expect(page.locator('.call-panel strong')).toHaveText('Em chamada', { timeout: 30000 }); await expect(other.locator('.call-panel strong')).toHaveText('Em chamada', { timeout: 30000 });
     await page.getByRole('button', { name: 'Silenciar microfone' }).click(); await expect(page.getByRole('button', { name: 'Ativar microfone' })).toHaveAttribute('aria-pressed', 'true');
     await page.getByRole('button', { name: 'Ativar microfone' }).click();
+    await page.getByLabel('Resolução da transmissão', { exact: true }).selectOption('900');
+    await page.getByLabel('FPS da transmissão', { exact: true }).selectOption('30');
+    await page.getByLabel('Ajustar ao desempenho', { exact: true }).uncheck();
     // Exercise real WebRTC track replacement with a synthetic screen source;
     // the native browser picker remains a manual hardware test.
     await page.evaluate(() => {

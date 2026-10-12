@@ -1,6 +1,8 @@
+import { useScreenFeedback } from './useScreenFeedback';
+import type { ScreenPreferences } from './useScreenPreferences';
 import { useEffect, useRef, useState } from 'react';
 import { ApiRepository, type CallSession } from '../models/apiRepository';
-import { constrainScreen, constrainSender, screenCaptureOptions } from '../models/screenShare';
+import { constrainScreen, constrainSender, screenCaptureOptions, preferEfficientEncoder } from '../models/screenShare';
 
 const terminal = (state: string) => ['ENDED', 'DECLINED', 'EXPIRED'].includes(state);
 export async function gathered(peer: RTCPeerConnection) {
@@ -13,11 +15,14 @@ export async function gathered(peer: RTCPeerConnection) {
     peer.addEventListener('icegatheringstatechange', changed); peer.addEventListener('connectionstatechange', closed); changed();
   });
 }
-export function useCallController(api: ApiRepository, email: string, onError: (error: unknown) => void) {
+export function useCallController(api: ApiRepository, email: string, onError: (error: unknown) => void, preferences: ScreenPreferences) {
   const [call, setCall] = useState<CallSession | null>(null);
   const [status, setStatus] = useState('');
   const [muted, setMuted] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [screenStarting, setScreenStarting] = useState(false);
+  const screenProfile = useRef(preferences.profile);
+  const preferencesRef = useRef(preferences); preferencesRef.current = preferences;
   const [remoteSharing, setRemoteSharing] = useState(false);
   const [remote, setRemote] = useState<MediaStream | null>(null);
   const [preview, setPreview] = useState<MediaStream | null>(null);
@@ -35,6 +40,7 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
   const generation = useRef(0);
   const working = useRef(false);
   const errorRef = useRef(onError); errorRef.current = onError;
+  const feedback = useScreenFeedback(sharing, preferences.automatic, screenProfile, () => screen.current?.getVideoTracks()[0], () => videoSender.current ? [videoSender.current] : []);
   function update(value: CallSession | null) { ref.current = value; if (alive.current) setCall(value); }
   function cleanup() {
     generation.current++; peer.current?.close(); peer.current = null;
@@ -66,6 +72,7 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
     const blank = canvas.captureStream(1); placeholder.current = blank;
     blank.getVideoTracks()[0].enabled = false;
     videoSender.current = connection.addTrack(blank.getVideoTracks()[0], blank);
+    preferEfficientEncoder(connection, videoSender.current, preferencesRef.current.hardware);
     connection.ondatachannel = event => attach(event.channel);
     if (caller) attach(connection.createDataChannel('call-control'));
     connection.ontrack = event => {
@@ -150,14 +157,15 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
       if (screen.current) { await stopSharing(); return; }
       const sender = videoSender.current; const currentGeneration = generation.current;
       if (!sender) return;
-      const stream = await navigator.mediaDevices.getDisplayMedia(screenCaptureOptions());
+      const chosen = preferences.profile; preferences.choose(chosen.height, chosen.frameRate); screenProfile.current = chosen; setScreenStarting(true);
+      const stream = await navigator.mediaDevices.getDisplayMedia(screenCaptureOptions(chosen));
       captured = stream;
       const track = stream.getVideoTracks()[0];
       if (!track) throw new Error('A captura não forneceu vídeo.');
-      await constrainScreen(track);
+      await constrainScreen(track, chosen);
       if (!alive.current || generation.current !== currentGeneration || sender !== videoSender.current) { stream.getTracks().forEach(track => track.stop()); return; }
       await sender.replaceTrack(track);
-      await constrainSender(sender);
+      await constrainSender(sender, chosen);
       if (!alive.current || generation.current !== currentGeneration || track.readyState === 'ended') { stream.getTracks().forEach(track => track.stop()); return; }
       screen.current = stream;
       track.onended = () => { if (screen.current === stream) void stopSharing(); };
@@ -167,8 +175,8 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
       captured?.getTracks().forEach(track => track.stop());
       if (captured && alive.current) await stopSharing();
       if (alive.current && !(problem instanceof DOMException && problem.name === 'NotAllowedError')) errorRef.current(problem);
-    } finally { sharingWorking.current = false; }
+    } finally { sharingWorking.current = false; if (alive.current) setScreenStarting(false); }
   }
-  return { call, status, muted, sharing, remoteSharing, remote, preview: previewVisible ? preview : null, previewVisible, setPreviewVisible, busy, invite, accept, end, toggleMute, share };
+  return { feedback, screenStarting, call, status, muted, sharing, remoteSharing, remote, preview: previewVisible ? preview : null, previewVisible, setPreviewVisible, busy, invite, accept, end, toggleMute, share };
 }
 export type CallController = ReturnType<typeof useCallController>;

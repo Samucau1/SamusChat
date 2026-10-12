@@ -1,14 +1,19 @@
+import { useScreenFeedback } from './useScreenFeedback';
+import type { ScreenPreferences } from './useScreenPreferences';
 import { useEffect, useRef, useState } from 'react';
 import { ApiRepository, type CallSession, type VoiceRoom } from '../models/apiRepository';
-import { constrainScreen, constrainSender, screenCaptureOptions } from '../models/screenShare';
+import { constrainScreen, constrainSender, screenCaptureOptions, preferEfficientEncoder } from '../models/screenShare';
 import { gathered } from './useCallController';
 
 interface Peer { connection: RTCPeerConnection; sender: RTCRtpSender; stream: MediaStream; control?: RTCDataChannel; sharing: boolean; email: string; }
-export function useVoiceRoomController(api: ApiRepository, email: string, onError: (error: unknown) => void) {
+export function useVoiceRoomController(api: ApiRepository, email: string, onError: (error: unknown) => void, preferences: ScreenPreferences) {
   const [room, setRoom] = useState<VoiceRoom | null>(null);
   const [busy, setBusy] = useState(false);
   const [muted, setMuted] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [screenStarting, setScreenStarting] = useState(false);
+  const screenProfile = useRef(preferences.profile);
+  const preferencesRef = useRef(preferences); preferencesRef.current = preferences;
   const [remote, setRemote] = useState<{ id: string; email: string; stream: MediaStream; sharing: boolean }[]>([]);
   const current = useRef<VoiceRoom | null>(null);
   const peers = useRef(new Map<string, Peer>());
@@ -21,6 +26,7 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
   const working = useRef(false);
   const sharingWorking = useRef(false);
   const errorRef = useRef(onError); errorRef.current = onError;
+  const feedback = useScreenFeedback(sharing, preferences.automatic, screenProfile, () => screen.current?.getVideoTracks()[0], () => [...peers.current.values()].map(item => item.sender));
   const updateRemote = () => setRemote([...peers.current].map(([id, peer]) => ({ id, email: peer.email, stream: new MediaStream(peer.stream.getTracks()), sharing: peer.sharing })));
   function cleanup() {
     epoch.current++;
@@ -46,6 +52,7 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
     const mic = microphone.current!; connection.addTrack(mic.getAudioTracks()[0], mic);
     const video = screen.current ?? blank.current!;
     const sender = connection.addTrack(video.getVideoTracks()[0], video);
+    preferEfficientEncoder(connection, sender, preferencesRef.current.hardware);
     const peer: Peer = { connection, sender, stream: new MediaStream(), sharing: false, email: session.caller === email ? session.callee : session.caller };
     peers.current.set(session.id, peer);
     connection.ondatachannel = event => attach(peer, event.channel);
@@ -53,7 +60,7 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
     connection.ontrack = event => { if (active.current && peers.current.get(session.id) === peer) { peer.stream.addTrack(event.track); updateRemote(); } };
     connection.onconnectionstatechange = () => {
       if (connection.connectionState === 'failed' && active.current) errorRef.current(new Error(`Mídia interrompida com ${peer.email}. Saia e entre no canal novamente.`));
-      if (connection.connectionState === 'connected' && screen.current) void constrainSender(peer.sender).catch(errorRef.current);
+      if (connection.connectionState === 'connected' && screen.current) void constrainSender(peer.sender, screenProfile.current).catch(errorRef.current);
     };
     return peer;
   }
@@ -79,7 +86,7 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
       }
     }
     if (screen.current && peers.current.size !== previousSize) for (const peer of peers.current.values()) {
-      await constrainSender(peer.sender);
+      await constrainSender(peer.sender, screenProfile.current);
     }
   }
   useEffect(() => {
@@ -130,19 +137,20 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
     try {
       if (screen.current) { await stopSharing(); return; }
       const generation = epoch.current;
-      captured = await navigator.mediaDevices.getDisplayMedia(screenCaptureOptions());
-      const track = captured.getVideoTracks()[0]; await constrainScreen(track);
+      const chosen = preferences.profile; preferences.choose(chosen.height, chosen.frameRate); screenProfile.current = chosen; setScreenStarting(true);
+      captured = await navigator.mediaDevices.getDisplayMedia(screenCaptureOptions(chosen));
+      const track = captured.getVideoTracks()[0]; await constrainScreen(track, chosen);
       if (!active.current || epoch.current !== generation) { captured.getTracks().forEach(track => track.stop()); return; }
       screen.current = captured;
       for (const peer of peers.current.values()) {
-        await peer.sender.replaceTrack(track); await constrainSender(peer.sender);
+        await peer.sender.replaceTrack(track); await constrainSender(peer.sender, screenProfile.current);
         if (peer.control?.readyState === 'open') peer.control.send('screen:on');
       }
       track.onended = () => { if (screen.current?.getVideoTracks()[0] === track) void stopSharing(); };
       setSharing(true);
     } catch (problem) { captured?.getTracks().forEach(track => track.stop()); await stopSharing(); if (active.current && !(problem instanceof DOMException && problem.name === 'NotAllowedError')) errorRef.current(problem); }
-    finally { sharingWorking.current = false; }
+    finally { sharingWorking.current = false; if (active.current) setScreenStarting(false); }
   }
-  return { room, busy, muted, sharing, remote, join, leave, toggleMute, share };
+  return { feedback, screenStarting, room, busy, muted, sharing, remote, join, leave, toggleMute, share };
 }
 export type VoiceRoomController = ReturnType<typeof useVoiceRoomController>;

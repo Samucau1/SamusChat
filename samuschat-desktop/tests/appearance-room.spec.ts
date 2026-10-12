@@ -70,19 +70,52 @@ test('canal de chamada: dois clientes, áudio, tela a 30 fps e saída', async ({
     await expect(page.locator('.voice-room video')).toHaveCount(1, { timeout: 30000 });
     await page.getByRole('button', { name: 'Silenciar microfone do canal' }).click();
     await expect(page.getByRole('button', { name: 'Ativar microfone do canal' })).toHaveAttribute('aria-pressed', 'true');
+    await page.getByLabel('Resolução da transmissão', { exact: true }).selectOption('1080');
+    await page.getByLabel('FPS da transmissão', { exact: true }).selectOption('60');
+    await page.getByLabel('Ajustar ao desempenho', { exact: true }).uncheck();
     await page.evaluate(() => {
-      Object.defineProperty(navigator.mediaDevices, 'getDisplayMedia', { value: async () => {
-        const canvas = document.createElement('canvas'); canvas.width = 1600; canvas.height = 900;
-        const stream = canvas.captureStream(30), context = canvas.getContext('2d')!;
-        const timer = setInterval(() => { context.fillStyle = '#5865f2'; context.fillRect(0, 0, 1600, 900); }, 33);
+      // Simulate native encoder CPU feedback without creating actual overload.
+      const counters = new WeakMap<RTCRtpSender, { time: number; frames: number; encode: number }>();
+      Object.defineProperty(RTCRtpSender.prototype, 'getStats', { configurable: true, value: async function(this: RTCRtpSender) {
+        const settings = this.track?.getSettings(), fps = settings?.frameRate ?? 30, time = performance.now();
+        const previous = counters.get(this) ?? { time, frames: 0, encode: 0 };
+        const count = Math.round((time - previous.time) / 1000 * fps);
+        const next = { time, frames: previous.frames + count, encode: previous.encode + count * (fps > 30 ? 0.02 : 0.002) };
+        counters.set(this, next);
+        return new Map([['video', { type: 'outbound-rtp', kind: 'video', timestamp: time, framesEncoded: next.frames, totalEncodeTime: next.encode,
+          framesPerSecond: fps, frameHeight: settings?.height, frameWidth: settings?.width, qualityLimitationReason: fps > 30 ? 'cpu' : 'none', powerEfficientEncoder: false }]]);
+      } });
+      Object.defineProperty(navigator.mediaDevices, 'getDisplayMedia', { value: async (options: DisplayMediaStreamOptions) => {
+        const video = options.video as MediaTrackConstraints;
+        const height = (video.height as ConstrainULongRange).ideal!;
+        const width = (video.width as ConstrainULongRange).ideal!;
+        const fps = (video.frameRate as ConstrainDoubleRange).ideal!;
+        const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+        const stream = canvas.captureStream(fps), context = canvas.getContext('2d')!;
+        const timer = setInterval(() => { context.fillStyle = '#5865f2'; context.fillRect(0, 0, width, height); }, 1000 / fps);
         const track = stream.getVideoTracks()[0], stop = track.stop.bind(track); track.stop = () => { clearInterval(timer); stop(); };
+        Object.defineProperty(window, 'testScreenTrack', { value: track, configurable: true });
         return stream;
       } });
     });
     await page.getByRole('button', { name: 'Compartilhar tela no canal', exact: true }).click();
     await expect(other.locator('.voice-room video.call-video')).toBeVisible({ timeout: 30000 });
-    await expect.poll(() => other.locator('.voice-room video.call-video').evaluate((video: HTMLVideoElement) => video.videoHeight)).toBeGreaterThanOrEqual(750);
+    await expect.poll(() => other.locator('.voice-room video.call-video').evaluate((video: HTMLVideoElement) => video.videoHeight)).toBeGreaterThanOrEqual(1080);
+    expect(await page.evaluate(() => (window as unknown as { testScreenTrack: MediaStreamTrack }).testScreenTrack.getSettings().frameRate)).toBe(60);
+    await expect(page.getByLabel('Resolução da transmissão', { exact: true })).toBeDisabled();
+    await expect(page.locator('.screen-feedback-notice')).toContainText('Escolha uma qualidade menor', { timeout: 10000 });
+    expect(await page.evaluate(() => (window as unknown as { testScreenTrack: MediaStreamTrack }).testScreenTrack.getSettings().frameRate)).toBe(60);
+    await page.getByLabel('Ajustar ao desempenho', { exact: true }).check();
+    await expect(page.locator('.screen-feedback')).toContainText('Em uso: 1080p/30 fps', { timeout: 10000 });
+    expect(await page.evaluate(() => (window as unknown as { testScreenTrack: MediaStreamTrack }).testScreenTrack.getSettings().frameRate)).toBe(30);
     await page.getByRole('button', { name: 'Parar transmissão do canal' }).click(); await expect(other.locator('.voice-room video.call-video')).toHaveCount(0);
+    await page.getByLabel('Resolução da transmissão', { exact: true }).selectOption('750');
+    await page.getByLabel('FPS da transmissão', { exact: true }).selectOption('30');
+    await page.getByRole('button', { name: 'Compartilhar tela no canal', exact: true }).click();
+    await expect.poll(() => other.locator('.voice-room video.call-video').evaluate((video: HTMLVideoElement) => video.videoHeight)).toBeGreaterThanOrEqual(750);
+    expect(await page.evaluate(() => (window as unknown as { testScreenTrack: MediaStreamTrack }).testScreenTrack.getSettings().frameRate)).toBe(30);
+    await page.getByRole('button', { name: 'Parar transmissão do canal' }).click();
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('samuschat.desktop.screenPreferences')!))).toMatchObject({ height: 750, frameRate: 30, automatic: true });
     await other.getByRole('button', { name: 'Sair do canal de chamada' }).click();
     await expect(page.locator('.voice-room')).toContainText('1/6 participantes');
     await page.getByRole('button', { name: 'Sair do canal de chamada' }).click(); await expect(page.locator('.voice-room')).toHaveCount(0);
