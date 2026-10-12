@@ -79,15 +79,16 @@ test('chamada individual: convite, aceite, mídia WebRTC, microfone e encerramen
     // the native browser picker remains a manual hardware test.
     await page.evaluate(() => {
       Object.defineProperty(navigator.mediaDevices, 'getDisplayMedia', { value: async () => {
-        const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 360;
-        const context = canvas.getContext('2d')!; const stream = canvas.captureStream(15);
-        const timer = setInterval(() => { context.fillStyle = '#5865f2'; context.fillRect(0, 0, 640, 360); context.fillStyle = '#fff'; context.fillText(String(Date.now()), 40, 40); }, 60);
+        const canvas = document.createElement('canvas'); canvas.width = 1600; canvas.height = 900;
+        const context = canvas.getContext('2d')!; const stream = canvas.captureStream(30);
+        const timer = setInterval(() => { context.fillStyle = '#5865f2'; context.fillRect(0, 0, 1600, 900); context.fillStyle = '#fff'; context.fillText(String(Date.now()), 40, 40); }, 33);
         const track = stream.getVideoTracks()[0]; const stop = track.stop.bind(track); track.stop = () => { clearInterval(timer); stop(); };
         return stream;
       } });
     });
     await page.getByRole('button', { name: 'Compartilhar tela' }).click(); await expect(page.locator('.local-preview')).not.toBeVisible(); await page.getByRole('button', { name: 'Mostrar prévia' }).click(); await expect(page.locator('.local-preview')).toBeVisible(); await expect(other.locator('video.call-video')).toBeVisible();
-    await expect.poll(() => other.locator('video.call-video').evaluate((video: HTMLVideoElement) => video.videoWidth)).toBeGreaterThan(0);
+    await expect.poll(() => other.locator('video.call-video').evaluate((video: HTMLVideoElement) => video.videoHeight)).toBeGreaterThanOrEqual(750);
+    expect(await page.locator('.local-preview video').evaluate((video: HTMLVideoElement) => (video.srcObject as MediaStream).getVideoTracks()[0].getSettings().frameRate)).toBe(30);
     await page.getByRole('button', { name: 'Parar transmissão' }).click(); await expect(page.locator('.local-preview')).not.toBeVisible(); await expect(other.locator('video.call-video')).not.toBeVisible();
     await other.getByRole('button', { name: 'Encerrar chamada' }).click(); await expect(page.locator('.call-panel')).not.toBeVisible();
     const active = await request.get('/api/calls', { headers: { Authorization: `Bearer ${a.token}` } }); expect((await active.json()).data).toEqual([]);

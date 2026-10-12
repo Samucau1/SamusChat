@@ -4,7 +4,7 @@ Data: 06/10/2026.
 
 Atualização em 12/10/2026: a versão integrada preserva rascunhos de texto e anexos por conversa durante a sessão e mostra o indicador “Rascunho” na lista lateral. Este documento descreve o protótipo inicial; para o comportamento atual, consultar [DESKTOP_API.md](DESKTOP_API.md).
 
-A versão integrada também inclui [personalização de perfil/servidor e transmissão econômica](PERSONALIZACAO_PC_ANDROID.md), compartilhadas com Android, além de gestão de membros e canais de chamada no PC.
+A versão integrada também inclui [personalização de perfil/servidor e transmissão PC a 900p/30 fps](PERSONALIZACAO_PC_ANDROID.md), além de gestão de membros e canais de chamada no PC. A personalização é compartilhada com Android; o ajuste de transmissão desta rodada se aplica ao PC.
 
 Atualização em 09/10/2026: o protótipo evoluiu para um MVP integrado à API. O texto abaixo preserva o planejamento e o escopo da primeira versão; o comportamento atual está no [guia da integração desktop](DESKTOP_API.md).
 

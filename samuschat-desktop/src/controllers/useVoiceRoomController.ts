@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiRepository, type CallSession, type VoiceRoom } from '../models/apiRepository';
-import { constrainScreen, constrainSender, screenProfiles } from '../models/screenShare';
+import { constrainScreen, constrainSender, screenCaptureOptions } from '../models/screenShare';
 import { gathered } from './useCallController';
 
 interface Peer { connection: RTCPeerConnection; sender: RTCRtpSender; stream: MediaStream; control?: RTCDataChannel; sharing: boolean; email: string; }
@@ -53,7 +53,7 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
     connection.ontrack = event => { if (active.current && peers.current.get(session.id) === peer) { peer.stream.addTrack(event.track); updateRemote(); } };
     connection.onconnectionstatechange = () => {
       if (connection.connectionState === 'failed' && active.current) errorRef.current(new Error(`Mídia interrompida com ${peer.email}. Saia e entre no canal novamente.`));
-      if (connection.connectionState === 'connected' && screen.current) void constrainSender(peer.sender, 'economy', Math.floor(screenProfiles.economy.maxBitrate / Math.max(1, peers.current.size))).catch(errorRef.current);
+      if (connection.connectionState === 'connected' && screen.current) void constrainSender(peer.sender).catch(errorRef.current);
     };
     return peer;
   }
@@ -79,7 +79,7 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
       }
     }
     if (screen.current && peers.current.size !== previousSize) for (const peer of peers.current.values()) {
-      await constrainSender(peer.sender, 'economy', Math.floor(screenProfiles.economy.maxBitrate / Math.max(1, peers.current.size)));
+      await constrainSender(peer.sender);
     }
   }
   useEffect(() => {
@@ -129,13 +129,13 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
     sharingWorking.current = true; let captured: MediaStream | undefined;
     try {
       if (screen.current) { await stopSharing(); return; }
-      const generation = epoch.current; const profile = screenProfiles.economy;
-      captured = await navigator.mediaDevices.getDisplayMedia({ video: { width: { ideal: profile.width }, height: { ideal: profile.height }, frameRate: { ideal: profile.frameRate } }, audio: false });
-      const track = captured.getVideoTracks()[0]; await constrainScreen(track, 'economy');
+      const generation = epoch.current;
+      captured = await navigator.mediaDevices.getDisplayMedia(screenCaptureOptions());
+      const track = captured.getVideoTracks()[0]; await constrainScreen(track);
       if (!active.current || epoch.current !== generation) { captured.getTracks().forEach(track => track.stop()); return; }
       screen.current = captured;
       for (const peer of peers.current.values()) {
-        await peer.sender.replaceTrack(track); await constrainSender(peer.sender, 'economy', Math.floor(screenProfiles.economy.maxBitrate / Math.max(1, peers.current.size)));
+        await peer.sender.replaceTrack(track); await constrainSender(peer.sender);
         if (peer.control?.readyState === 'open') peer.control.send('screen:on');
       }
       track.onended = () => { if (screen.current?.getVideoTracks()[0] === track) void stopSharing(); };

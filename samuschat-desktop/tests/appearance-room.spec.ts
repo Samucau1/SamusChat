@@ -53,7 +53,7 @@ test('perfil GIF e servidor personalizado persistem; membros, cargos e exclusão
   await page.getByRole('button', { name: 'Confirmar', exact: true }).click(); await expect(page.locator('.message')).toHaveCount(0);
 });
 
-test('canal de chamada: dois clientes, áudio, tela econômica e saída', async ({ page, browser, request }) => {
+test('canal de chamada: dois clientes, áudio, tela a 30 fps e saída', async ({ page, browser, request }) => {
   const a = await account(request, 'room_a'), b = await account(request, 'room_b');
   const created = await request.post('/api/servers', { headers: { Authorization: `Bearer ${a.token}` }, data: { name: 'Sala desktop' } });
   const server = (await created.json()).data;
@@ -72,16 +72,16 @@ test('canal de chamada: dois clientes, áudio, tela econômica e saída', async 
     await expect(page.getByRole('button', { name: 'Ativar microfone do canal' })).toHaveAttribute('aria-pressed', 'true');
     await page.evaluate(() => {
       Object.defineProperty(navigator.mediaDevices, 'getDisplayMedia', { value: async () => {
-        const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 360;
-        const stream = canvas.captureStream(10), context = canvas.getContext('2d')!;
-        const timer = setInterval(() => { context.fillStyle = '#5865f2'; context.fillRect(0, 0, 640, 360); }, 100);
+        const canvas = document.createElement('canvas'); canvas.width = 1600; canvas.height = 900;
+        const stream = canvas.captureStream(30), context = canvas.getContext('2d')!;
+        const timer = setInterval(() => { context.fillStyle = '#5865f2'; context.fillRect(0, 0, 1600, 900); }, 33);
         const track = stream.getVideoTracks()[0], stop = track.stop.bind(track); track.stop = () => { clearInterval(timer); stop(); };
         return stream;
       } });
     });
     await page.getByRole('button', { name: 'Compartilhar tela no canal', exact: true }).click();
     await expect(other.locator('.voice-room video.call-video')).toBeVisible({ timeout: 30000 });
-    await expect.poll(() => other.locator('.voice-room video.call-video').evaluate((video: HTMLVideoElement) => video.videoWidth)).toBeGreaterThan(0);
+    await expect.poll(() => other.locator('.voice-room video.call-video').evaluate((video: HTMLVideoElement) => video.videoHeight)).toBeGreaterThanOrEqual(750);
     await page.getByRole('button', { name: 'Parar transmissão do canal' }).click(); await expect(other.locator('.voice-room video.call-video')).toHaveCount(0);
     await other.getByRole('button', { name: 'Sair do canal de chamada' }).click();
     await expect(page.locator('.voice-room')).toContainText('1/6 participantes');

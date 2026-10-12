@@ -1,6 +1,8 @@
 # SamusChat desktop integrado — 09/10/2026
 
-Atualização em 12/10/2026: contratos REST ampliados, gestão de membros, exclusão de mensagens, canais de chamada em grupo e personalização compartilhada com Android. A transmissão agora tem modo econômico e prévia opcional. Consulte [personalização e limites de mídia](PERSONALIZACAO_PC_ANDROID.md) e [regressão da entrega](REGRESSAO_PERSONALIZACAO_PC_ANDROID_2026-10-12.md).
+Atualização em 12/10/2026: contratos REST ampliados, gestão de membros, exclusão de mensagens, canais de chamada em grupo e personalização compartilhada com Android. A transmissão no PC usa 900p/30 fps e prévia opcional, conforme ajuste solicitado pelo usuário. Consulte [personalização e limites de mídia](PERSONALIZACAO_PC_ANDROID.md) e [regressão da entrega](REGRESSAO_PERSONALIZACAO_PC_ANDROID_2026-10-12.md).
+
+O ajuste de resolução/fps foi validado separadamente na [regressão de transmissão PC a 30 fps](REGRESSAO_TRANSMISSAO_PC_30FPS_2026-10-12.md).
 
 O front desktop agora utiliza a mesma API Spring Boot, PostgreSQL, Redis, contratos REST e STOMP do Android. A interface mantém a paleta e usa barra de servidores, lista lateral e conversa em colunas. Nenhuma alteração de contrato do backend foi necessária.
 
