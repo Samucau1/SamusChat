@@ -1,5 +1,7 @@
 # SamusChat desktop integrado — 09/10/2026
 
+Atualização em 12/10/2026: contratos REST ampliados, gestão de membros, exclusão de mensagens, canais de chamada em grupo e personalização compartilhada com Android. A transmissão agora tem modo econômico e prévia opcional. Consulte [personalização e limites de mídia](PERSONALIZACAO_PC_ANDROID.md) e [regressão da entrega](REGRESSAO_PERSONALIZACAO_PC_ANDROID_2026-10-12.md).
+
 O front desktop agora utiliza a mesma API Spring Boot, PostgreSQL, Redis, contratos REST e STOMP do Android. A interface mantém a paleta e usa barra de servidores, lista lateral e conversa em colunas. Nenhuma alteração de contrato do backend foi necessária.
 
 Aceite manual em 09/10/2026: o usuário informou que conseguiu localizar e carregar servidores já existentes no banco por meio da pesquisa e validou a primeira entrega para PC. O fluxo foi exercitado no navegador com a API local. Esse relato não equivale a aprovar os cenários externos, instalador ou todas as combinações de mídia. A regressão de publicação está no [relatório do aceite desktop](REGRESSAO_ACEITE_DESKTOP_2026-10-09.md).
@@ -10,6 +12,7 @@ Aceite manual em 09/10/2026: o usuário informou que conseguiu localizar e carre
 - Recuperação de senha em três etapas pelos endpoints existentes; entrega de email depende de SMTP configurado.
 - Listagem, criação e entrada em servidores por ID; criação de canais de texto e busca lateral.
 - Histórico paginado, envio por Enter, quebra de linha com Shift+Enter e preservação do rascunho em falhas.
+- Em 12/10/2026: rascunhos de texto e anexos preservados por conversa ao alternar canais, servidores e amigos, com indicador na lista lateral. O envio concluído limpa somente o conteúdo enviado, mesmo após trocar de conversa. Rascunhos permanecem apenas em memória e são descartados ao recarregar ou sair da conta.
 - Mensagens de canal recebidas por STOMP, reconexão automática e deduplicação por ID. Conversas privadas usam leitura REST a cada três segundos, conforme o contrato existente sem destino STOMP privado.
 - Upload de anexo em canal até 10 MB e abertura de imagens/arquivos pelo proxy de uploads. O backend não oferece upload privado no contrato atual.
 - Chamadas individuais: convite, aceite/recusa, microfone, encerramento e compartilhamento de tela com prévia. SDP e credenciais ICE vêm da mesma API do Android.
@@ -59,6 +62,8 @@ Na primeira tentativa, o perfil test via Maven não carregou os recursos H2 e ut
 
 ## Limites da entrega
 
-Chamadas em grupo, instalador, push desktop e login Google ainda não integram este MVP. Recuperação exige SMTP disponível. Compartilhamento transmite vídeo da tela; áudio interno do dispositivo Android usa um canal de dados próprio que ainda não foi portado ao desktop. Microfone continua disponível na chamada.
+Validação da melhoria de rascunhos em 12/10/2026: TypeScript/build e cenário Playwright com REST simulado. O cenário verifica isolamento entre canais e conversa privada, restauração de anexo, resposta de envio após troca de conversa, falha de envio e descarte ao recarregar. Essa rodada não repete a integração com API real ou mídia.
+
+Instalador, push desktop e interface de login Google ainda não integram este MVP. O adaptador REST de Google está disponível, mas o fluxo completo depende da configuração OAuth e da interface de autenticação correspondente. Recuperação exige SMTP disponível. Compartilhamento transmite vídeo da tela; áudio interno do dispositivo Android usa um canal de dados próprio que ainda não foi portado ao desktop. Microfone continua disponível na chamada. Canais em grupo agora têm áudio e compartilhamento no desktop.
 
 Chamadas e captura de tela exigem localhost ou HTTPS e permissões do navegador. Acesso entre redes diferentes depende de TURN alcançável. Validação de áudio físico, escolha real da tela/janela e interoperabilidade desktop–Android precisa ser realizada com os dispositivos; sucesso entre navegadores com mídia simulada não substitui esses testes.

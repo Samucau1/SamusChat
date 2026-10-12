@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { useChatController } from './controllers/useChatController';
 import { useCallController } from './controllers/useCallController';
+import { useVoiceRoomController } from './controllers/useVoiceRoomController';
 import { useSession } from './controllers/useSession';
 import { ChatApp } from './views/ChatApp';
 import { AuthScreen } from './views/AuthScreen';
@@ -10,7 +11,8 @@ import './styles.css';
 function ConnectedApp({ session: s }: { session: ReturnType<typeof useSession> }) {
   const controller = useChatController(s.api, s.user!, s.setUser, s.handleError);
   const calls = useCallController(s.api, s.user!.email, s.handleError);
-  return <ChatApp controller={controller} calls={calls} error={s.error} clearError={() => s.setError('')} logout={s.logout} />;
+  const rooms = useVoiceRoomController(s.api, s.user!.email, s.handleError);
+  return <ChatApp controller={controller} calls={calls} rooms={rooms} error={s.error} clearError={() => s.setError('')} logout={s.logout} />;
 }
 function App() {
   const session = useSession();

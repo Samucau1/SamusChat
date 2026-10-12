@@ -30,6 +30,7 @@ fun ServerListScreen(viewModel: ServerViewModel, email: String, onChannelClick: 
     val servers by viewModel.servers.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    var appearanceOpen by rememberSaveable { mutableStateOf(false) }
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
     var sheet by rememberSaveable { mutableStateOf<String?>(null) }
     var name by rememberSaveable { mutableStateOf("") }
@@ -74,15 +75,19 @@ fun ServerListScreen(viewModel: ServerViewModel, email: String, onChannelClick: 
                             shape = RoundedCornerShape(if (active) 16.dp else 26.dp),
                             color = if (active) Blurple else ChatBackground) {
                             Box(contentAlignment = Alignment.Center) {
-                                Text(server.name.take(2).uppercase(), style = MaterialTheme.typography.titleMedium)
+                                if (server.iconUrl != null) AppearanceImage(server.iconUrl, null, Modifier.fillMaxSize())
+                                else Text(server.name.take(2).uppercase(), style = MaterialTheme.typography.titleMedium)
                             }
                         }
                     }
                 }
             }
-            Column(Modifier.weight(1f).fillMaxHeight()) {
+            Box(Modifier.weight(1f).fillMaxHeight()) {
+                AppearanceImage(current?.backgroundUrl, null, Modifier.matchParentSize())
+                Column(Modifier.fillMaxSize().background(ChatBackground.copy(alpha = 0.92f))) {
                 if (current != null) {
-                    Box(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(Color(0xFF252A68), PanelBackground)))
+                    AppearanceImage(current.bannerUrl, "Capa do servidor", Modifier.fillMaxWidth().height(if (current.bannerUrl == null) 0.dp else 100.dp))
+                    Box(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(appearanceColor(current.accentColor, Color(0xFF252A68)).copy(alpha = 0.65f), PanelBackground)))
                         .padding(horizontal = 20.dp, vertical = 24.dp)) {
                         Column {
                             Text(current.name, style = MaterialTheme.typography.headlineMedium)
@@ -93,6 +98,7 @@ fun ServerListScreen(viewModel: ServerViewModel, email: String, onChannelClick: 
                             Text("ID do servidor: ${current.id}", style = MaterialTheme.typography.labelMedium)
                         }
                     }
+                    if (current.ownerEmail == email) TextButton(onClick = { viewModel.error.value = null; appearanceOpen = true }, enabled = !busy) { Text("Personalizar servidor") }
                     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("CANAIS", Modifier.weight(1f), style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -142,8 +148,11 @@ fun ServerListScreen(viewModel: ServerViewModel, email: String, onChannelClick: 
                     }
                 }
             }
+            }
         }
     }
+
+    if (appearanceOpen && current != null) ServerAppearanceDialog(current, viewModel, busy, error) { appearanceOpen = false }
 
     if (sheet != null) {
         ModalBottomSheet(onDismissRequest = { if (!busy) sheet = null },

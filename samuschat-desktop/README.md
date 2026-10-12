@@ -17,3 +17,5 @@ Testes reais de navegador: inicie `./scripts/start-desktop-test-api.ps1` na raiz
 
 Veja o [plano, tecnologias, entradas e arquitetura](../docs/DESKTOP_MVC.md).
 Veja também [funcionalidades, limites e testes da integração](../docs/DESKTOP_API.md).
+
+Veja [personalização compartilhada com Android, canais de chamada e transmissão econômica](../docs/PERSONALIZACAO_PC_ANDROID.md). A regressão inclui testes dos contratos REST, perfil/GIF, servidor, membros, salas e rascunhos; todos usam contas fictícias em H2 ou respostas simuladas.

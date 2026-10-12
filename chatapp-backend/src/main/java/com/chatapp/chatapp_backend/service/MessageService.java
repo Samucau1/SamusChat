@@ -132,6 +132,16 @@ public class MessageService {
         }
 
         messageRepository.delete(message);
+        events.publishEvent(new MessageCreatedEvent(MessageResponse.builder().id(message.getId())
+                .channelId(message.getChannel().getId()).type("DELETE").build()));
+    }
+
+    @Transactional
+    public void deleteMessage(String email, Long channelId, Long messageId) {
+        Message message = messageRepository.findById(messageId).orElseThrow(() -> new RuntimeException("Mensagem nao encontrada"));
+        if (!message.getChannel().getId().equals(channelId)) throw new IllegalArgumentException("Mensagem pertence a outro canal");
+        permissionService.requireMember(message.getChannel().getServer().getId(), email);
+        deleteMessage(email, messageId);
     }
 
     private void validateMessageContent(String content) {

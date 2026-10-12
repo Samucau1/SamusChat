@@ -1,7 +1,10 @@
-export interface User { id: number; username: string; email: string }
+export interface User { id: number; username: string; email: string; avatarUrl?: string; bannerUrl?: string; backgroundUrl?: string; accentColor?: string; bio?: string }
 export interface Channel { id: number; name: string; type: string }
-export interface ApiServer { id: number; name: string; description?: string; channels: Channel[] }
+export interface ApiServer { id: number; name: string; description?: string; ownerEmail?: string; channels: Channel[]; iconUrl?: string; bannerUrl?: string; backgroundUrl?: string; accentColor?: string }
 export interface Contact { email: string; username: string }
+export type MemberRole = 'ADMIN' | 'MOD' | 'USER';
+export interface Member { id: number; userEmail: string; username: string; role: MemberRole; joinedAt: string }
+export interface VoiceRoom { channelId: number; participants: Contact[]; sessions: CallSession[]; capacity: number }
 export interface ApiMessage { id: number; content: string | null; senderEmail: string; senderUsername: string; createdAt: string; attachmentUrl?: string; attachmentType?: string; type?: string }
 export interface CallSession { id: string; caller: string; callee: string; state: string; offer: string | null; answer: string | null; channelId: number | null }
 export class ApiError extends Error { constructor(message: string, public status: number) { super(message); } }
@@ -21,13 +24,39 @@ export class ApiRepository {
   post<T>(path: string, body?: unknown) { return this.request<T>(path, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body) }); }
   login(email: string, password: string) { return this.post<{ token: string }>('/api/auth/login', { email, password }); }
   register(username: string, email: string, password: string) { return this.post<{ token: string }>('/api/auth/register', { username, email, password }); }
+  googleLogin(idToken: string, password?: string) { return this.post<{ token: string }>('/api/auth/google', { idToken, password }); }
+  googleGis(credential: string, csrfToken: string, password?: string) { return this.post<{ token: string }>('/api/auth/google/gis', { credential, g_csrf_token: csrfToken, password }); }
+  requestRecovery(email: string) { return this.post<string>('/api/auth/password/request', { email }); }
+  verifyRecovery(email: string, code: string) { return this.post<{ resetToken: string }>('/api/auth/password/verify', { email, code }); }
+  resetPassword(email: string, resetToken: string, password: string) { return this.post<string>('/api/auth/password/reset', { email, resetToken, password }); }
   profile() { return this.request<User>('/api/users/me'); }
   saveProfile(name: string) { return this.request<User>(`/api/users/me/username?newUsername=${encodeURIComponent(name)}`, { method: 'PUT' }); }
+  saveAppearance(bio: string, accentColor: string) { return this.request<User>('/api/users/me/appearance', { method: 'PUT', body: JSON.stringify({ bio, accentColor }) }); }
+  saveServerAppearance(id: number, accentColor: string) { return this.request<ApiServer>(`/api/servers/${id}/appearance`, { method: 'PUT', body: JSON.stringify({ accentColor }) }); }
+  profileMedia(slot: 'avatar' | 'banner' | 'background', file: File | null) { return this.appearanceMedia<User>(`/api/users/me/media/${slot}`, file); }
+  serverMedia(id: number, slot: 'icon' | 'banner' | 'background', file: File | null) { return this.appearanceMedia<ApiServer>(`/api/servers/${id}/media/${slot}`, file); }
+  private appearanceMedia<T>(path: string, file: File | null) {
+    if (!file) return this.request<T>(path, { method: 'DELETE' });
+    if (!['image/png', 'image/jpeg', 'image/gif'].includes(file.type) || !file.size || file.size > 4 * 1024 * 1024 || (file.type === 'image/gif' && file.size > 2 * 1024 * 1024)) throw new ApiError('Use PNG/JPG de até 4 MB ou GIF de até 2 MB.', 0);
+    const body = new FormData(); body.append('file', file);
+    return this.request<T>(path, { method: 'POST', body });
+  }
   servers() { return this.request<ApiServer[]>('/api/servers'); }
+  server(id: number) { return this.request<ApiServer>(`/api/servers/${id}`); }
+  members(id: number) { return this.request<Member[]>(`/api/servers/${id}/members`); }
+  updateRole(id: number, userEmail: string, role: MemberRole) { return this.request<Member>(`/api/servers/${id}/members/role`, { method: 'PUT', body: JSON.stringify({ userEmail, role }) }); }
+  removeMember(id: number, email: string) { return this.request<void>(`/api/servers/${id}/members/${encodeURIComponent(email)}`, { method: 'DELETE' }); }
   contacts() { return this.request<Contact[]>('/api/calls/contacts'); }
   createServer(name: string, description: string) { return this.post<ApiServer>('/api/servers', { name, description }); }
   joinServer(id: number) { return this.post<string>(`/api/servers/${id}/join`); }
-  createChannel(id: number, name: string) { return this.post<Channel>(`/api/servers/${id}/channels`, { name, type: 'TEXT' }); }
+  createChannel(id: number, name: string, type: 'TEXT' | 'VOICE' = 'TEXT') { return this.post<Channel>(`/api/servers/${id}/channels`, { name, type }); }
+  deleteMessage(channelId: number, messageId: number) { return this.request<void>(`/api/channels/${channelId}/messages/${messageId}`, { method: 'DELETE' }); }
+  deleteFile(fileUrl: string) { return this.request<void>(`/api/files?fileUrl=${encodeURIComponent(fileUrl)}`, { method: 'DELETE' }); }
+  registerDevice(fcmToken: string) { return this.post<void>('/api/devices/register', { fcmToken }); }
+  unregisterDevice(fcmToken: string) { return this.request<void>(`/api/devices/unregister?fcmToken=${encodeURIComponent(fcmToken)}`, { method: 'DELETE' }); }
+  joinCallRoom(id: number) { return this.post<VoiceRoom>(`/api/channels/${id}/call/join`); }
+  callRoom(id: number) { return this.request<VoiceRoom>(`/api/channels/${id}/call`); }
+  leaveCallRoom(id: number) { return this.post<string>(`/api/channels/${id}/call/leave`); }
   history(conversation: { channelId?: number; contact?: string }, page = 0, signal?: AbortSignal) {
     const path = conversation.channelId !== undefined ? `/api/channels/${conversation.channelId}/messages?page=${page}&size=50` : `/api/direct-messages?contact=${encodeURIComponent(conversation.contact!)}&page=${page}`;
     return this.request<ApiMessage[]>(path, { signal });

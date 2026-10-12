@@ -25,14 +25,14 @@ object AttachmentPolicy {
         require(size == null || size != 0L) { "O arquivo está vazio." }
     }
     /** Check actual bytes even when a document provider omits or understates its size. */
-    fun copy(input: InputStream, output: OutputStream): Long {
+    fun copy(input: InputStream, output: OutputStream, maxBytes: Long = MAX_BYTES): Long {
         val buffer = ByteArray(8192)
         var total = 0L
         while (true) {
             val count = input.read(buffer)
             if (count < 0) break
             total += count
-            require(total <= MAX_BYTES) { "O arquivo deve ter no máximo 10 MB." }
+            require(total <= maxBytes) { "O arquivo deve ter no máximo 10 MB." }
             output.write(buffer, 0, count)
         }
         require(total > 0) { "O arquivo está vazio." }
@@ -61,7 +61,7 @@ suspend fun inspectAttachment(context: Context, uri: Uri): SelectedAttachment = 
 }
 
 /** Cache a bounded document snapshot for the duration of one upload, then always remove it. */
-suspend fun <T> withAttachmentPart(context: Context, selected: SelectedAttachment,
+suspend fun <T> withAttachmentPart(context: Context, selected: SelectedAttachment, maxBytes: Long = AttachmentPolicy.MAX_BYTES,
     upload: suspend (MultipartBody.Part) -> T): T {
     var snapshot: File? = null
     try {
@@ -69,7 +69,7 @@ suspend fun <T> withAttachmentPart(context: Context, selected: SelectedAttachmen
             val file = File.createTempFile("attachment-", ".tmp", context.cacheDir)
             snapshot = file
             val input = context.contentResolver.openInputStream(selected.uri) ?: error("Não foi possível abrir o arquivo. Selecione-o novamente.")
-            input.use { source -> file.outputStream().use { destination -> AttachmentPolicy.copy(source, destination) } }
+            input.use { source -> file.outputStream().use { destination -> AttachmentPolicy.copy(source, destination, maxBytes) } }
             file
         }
         return upload(MultipartBody.Part.createFormData("file", selected.name, ready.asRequestBody(selected.type.toMediaType())))

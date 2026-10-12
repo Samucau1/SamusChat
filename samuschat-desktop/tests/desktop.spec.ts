@@ -42,6 +42,9 @@ test('duas contas: criar/entrar em servidor, STOMP, anexo e canal novo', async (
     await page.getByLabel(/^Mensagem para/).fill('Mensagem real desktop'); await page.getByRole('button', { name: 'Enviar ↗' }).click(); await expect(other.locator('.message p').filter({ hasText: 'Mensagem real desktop' })).toHaveCount(1);
     await page.locator('input[type=file]').setInputFiles({ name: 'desktop.txt', mimeType: 'text/plain', buffer: Buffer.from('arquivo desktop') }); await page.getByRole('button', { name: 'Enviar ↗' }).click(); await expect(other.getByRole('link', { name: 'Abrir anexo ↗' })).toBeVisible();
     const href = await other.getByRole('link', { name: 'Abrir anexo ↗' }).getAttribute('href'); expect(await (await request.get(href!)).text()).toBe('arquivo desktop');
+    await page.getByRole('button', { name: /^Excluir mensagem/ }).first().click();
+    await page.getByRole('button', { name: 'Confirmar', exact: true }).click();
+    await expect(other.locator('.message p').filter({ hasText: 'Mensagem real desktop' })).toHaveCount(0);
     await page.getByRole('button', { name: '+ Criar canal', exact: true }).click(); await page.getByRole('dialog').getByLabel('Nome').fill('novo-canal'); await page.getByRole('button', { name: 'Criar', exact: true }).click(); await expect(page.getByRole('dialog')).not.toBeVisible(); await expect(page.getByRole('heading', { name: 'Bem-vindo a #novo-canal' })).toBeVisible();
     await page.screenshot({ path: 'test-results/desktop-chat.png', fullPage: true });
   } finally { await context.close(); }
@@ -83,7 +86,7 @@ test('chamada individual: convite, aceite, mídia WebRTC, microfone e encerramen
         return stream;
       } });
     });
-    await page.getByRole('button', { name: 'Compartilhar tela' }).click(); await expect(page.locator('.local-preview')).toBeVisible(); await expect(other.locator('video.call-video')).toBeVisible();
+    await page.getByRole('button', { name: 'Compartilhar tela' }).click(); await expect(page.locator('.local-preview')).not.toBeVisible(); await page.getByRole('button', { name: 'Mostrar prévia' }).click(); await expect(page.locator('.local-preview')).toBeVisible(); await expect(other.locator('video.call-video')).toBeVisible();
     await expect.poll(() => other.locator('video.call-video').evaluate((video: HTMLVideoElement) => video.videoWidth)).toBeGreaterThan(0);
     await page.getByRole('button', { name: 'Parar transmissão' }).click(); await expect(page.locator('.local-preview')).not.toBeVisible(); await expect(other.locator('video.call-video')).not.toBeVisible();
     await other.getByRole('button', { name: 'Encerrar chamada' }).click(); await expect(page.locator('.call-panel')).not.toBeVisible();

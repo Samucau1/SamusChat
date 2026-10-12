@@ -12,6 +12,11 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private String avatarUrl;
+    private String bannerUrl;
+    private String backgroundUrl;
+    private String accentColor;
+    private String bio;
 
     @Column(unique = true, nullable = false)
     private String username;

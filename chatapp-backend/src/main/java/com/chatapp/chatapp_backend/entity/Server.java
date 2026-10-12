@@ -13,6 +13,10 @@ public class Server {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private String iconUrl;
+    private String bannerUrl;
+    private String backgroundUrl;
+    private String accentColor;
 
     @Column(nullable = false)
     private String name;

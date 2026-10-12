@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiRepository, type CallSession } from '../models/apiRepository';
+import { constrainScreen, constrainSender, screenProfiles, type ScreenQuality } from '../models/screenShare';
 
 const terminal = (state: string) => ['ENDED', 'DECLINED', 'EXPIRED'].includes(state);
-async function gathered(peer: RTCPeerConnection) {
+export async function gathered(peer: RTCPeerConnection) {
   if (peer.iceGatheringState === 'complete') return;
   await new Promise<void>((resolve, reject) => {
     const finish = () => { clearTimeout(timer); peer.removeEventListener('icegatheringstatechange', changed); peer.removeEventListener('connectionstatechange', closed); };
@@ -21,6 +22,9 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
   const [remote, setRemote] = useState<MediaStream | null>(null);
   const [preview, setPreview] = useState<MediaStream | null>(null);
   const [busy, setBusy] = useState(false);
+  const [quality, setQuality] = useState<ScreenQuality>('economy');
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const sharingWorking = useRef(false);
   const ref = useRef<CallSession | null>(null);
   const peer = useRef<RTCPeerConnection | null>(null);
   const microphone = useRef<MediaStream | null>(null);
@@ -37,7 +41,7 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
     generation.current++; peer.current?.close(); peer.current = null;
     for (const stream of [microphone.current, screen.current, placeholder.current]) stream?.getTracks().forEach(track => track.stop());
     microphone.current = screen.current = placeholder.current = null; videoSender.current = null; control.current = null;
-    if (alive.current) { setRemote(null); setPreview(null); setSharing(false); setRemoteSharing(false); setMuted(false); setStatus(''); }
+    if (alive.current) { setRemote(null); setPreview(null); setPreviewVisible(false); setSharing(false); setRemoteSharing(false); setMuted(false); setStatus(''); }
   }
   function attach(channel: RTCDataChannel) {
     if (channel.label !== 'call-control') { channel.close(); return; }
@@ -58,9 +62,10 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
     connection.addTrack(stream.getAudioTracks()[0], stream);
     // Negotiate a video track up front, as the Android client does, so sharing
     // can replace the track without changing the one-off SDP API contract.
-    const canvas = document.createElement('canvas'); canvas.width = 1280; canvas.height = 720;
+    const canvas = document.createElement('canvas'); canvas.width = 16; canvas.height = 9;
     const context = canvas.getContext('2d')!; context.fillStyle = '#1e1f22'; context.fillRect(0, 0, canvas.width, canvas.height);
     const blank = canvas.captureStream(1); placeholder.current = blank;
+    blank.getVideoTracks()[0].enabled = false;
     videoSender.current = connection.addTrack(blank.getVideoTracks()[0], blank);
     connection.ondatachannel = event => attach(event.channel);
     if (caller) attach(connection.createDataChannel('call-control'));
@@ -104,7 +109,7 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
       if (!working.current) {
         working.current = true;
         const epoch = generation.current;
-        try { const value = ref.current ? await api.call(ref.current.id) : (await api.calls())[0]; if (active && generation.current === epoch && value) await progress(value); }
+        try { const value = ref.current ? await api.call(ref.current.id) : (await api.calls()).find(item => item.channelId === null); if (active && generation.current === epoch && value) await progress(value); }
         catch (problem) { if (active) { errorRef.current(problem); if (ref.current) { const id = ref.current.id; cleanup(); update(null); void api.callAction(id, 'end').catch(() => {}); } } }
         finally { working.current = false; }
       }
@@ -130,24 +135,42 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
   }
   function toggleMute() { const track = microphone.current?.getAudioTracks()[0]; if (track) { track.enabled = !track.enabled; setMuted(!track.enabled); } }
   async function stopSharing() {
-    screen.current?.getTracks().forEach(track => track.stop()); screen.current = null;
-    await videoSender.current?.replaceTrack(placeholder.current?.getVideoTracks()[0] || null);
+    const sender = videoSender.current;
+    const stream = screen.current;
+    screen.current = null; stream?.getTracks().forEach(track => track.stop());
+    setSharing(false); setPreview(null); setPreviewVisible(false);
+    try { await sender?.replaceTrack(placeholder.current?.getVideoTracks()[0] || null); }
+    catch (problem) { if (alive.current && peer.current?.connectionState !== 'closed') errorRef.current(problem); }
     if (control.current?.readyState === 'open') control.current.send('screen:off');
-    setSharing(false); setPreview(null);
   }
   async function share() {
-    if (screen.current) { await stopSharing(); return; }
+    if (sharingWorking.current) return;
+    sharingWorking.current = true;
+    let captured: MediaStream | undefined;
     try {
+      if (screen.current) { await stopSharing(); return; }
       const sender = videoSender.current; const currentGeneration = generation.current;
       if (!sender) return;
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: { width: 1280, height: 720, frameRate: 15 }, audio: false });
-      if (generation.current !== currentGeneration) { stream.getTracks().forEach(track => track.stop()); return; }
-      screen.current = stream; await sender.replaceTrack(stream.getVideoTracks()[0]);
-      stream.getVideoTracks()[0].onended = () => { void stopSharing(); };
+      const profile = screenProfiles[quality];
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: { width: { ideal: profile.width }, height: { ideal: profile.height }, frameRate: { ideal: profile.frameRate } }, audio: false });
+      captured = stream;
+      const track = stream.getVideoTracks()[0];
+      if (!track) throw new Error('A captura não forneceu vídeo.');
+      await constrainScreen(track, quality);
+      if (!alive.current || generation.current !== currentGeneration || sender !== videoSender.current) { stream.getTracks().forEach(track => track.stop()); return; }
+      await sender.replaceTrack(track);
+      await constrainSender(sender, quality);
+      if (!alive.current || generation.current !== currentGeneration || track.readyState === 'ended') { stream.getTracks().forEach(track => track.stop()); return; }
+      screen.current = stream;
+      track.onended = () => { if (screen.current === stream) void stopSharing(); };
       if (control.current?.readyState === 'open') control.current.send('screen:on');
-      setSharing(true); setPreview(stream);
-    } catch (problem) { screen.current?.getTracks().forEach(track => track.stop()); screen.current = null; errorRef.current(problem); }
+      setSharing(true); setPreviewVisible(false); setPreview(stream);
+    } catch (problem) {
+      captured?.getTracks().forEach(track => track.stop());
+      if (captured && alive.current) await stopSharing();
+      if (alive.current && !(problem instanceof DOMException && problem.name === 'NotAllowedError')) errorRef.current(problem);
+    } finally { sharingWorking.current = false; }
   }
-  return { call, status, muted, sharing, remoteSharing, remote, preview, busy, invite, accept, end, toggleMute, share };
+  return { call, status, muted, sharing, remoteSharing, remote, preview: previewVisible ? preview : null, previewVisible, setPreviewVisible, quality, setQuality, busy, invite, accept, end, toggleMute, share };
 }
 export type CallController = ReturnType<typeof useCallController>;

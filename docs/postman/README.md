@@ -1,5 +1,9 @@
 # Regressao HTTP com Postman / Newman
 
+Atualização de 12/10/2026: a coleção compartilhada contém **108 requisições e 206 verificações**. As pastas de PC e Android exercitam aparência, avatar/GIF, capa, fundo, versão estática, remoção, validação, permissões, cargos e dispositivos. Importe também `SamusChat-pc.postman_environment.json` e `SamusChat-android.postman_environment.json`; ambos apontam para H2 na porta 18083. Rode a coleção inteira em cada ambiente. Para a API final desta regressão, substitua `baseUrl` por `http://127.0.0.1:18084` ou pela porta usada no launcher.
+
+O arquivo `fixtures/appearance.gif` é um GIF fictício de 1×1. As pastas novas distinguem as requisições de clientes simulados sem desabilitar os limites da API. HTTP e sinalização são cobertos pela coleção; transmissão real é validada pelos testes WebRTC de navegador. Veja [o relatório desta entrega](../REGRESSAO_PERSONALIZACAO_PC_ANDROID_2026-10-12.md).
+
 Importe `SamusChat.postman_collection.json` e `SamusChat-local.postman_environment.json` no Postman, selecione o ambiente H2 local e execute a colecao inteira, na ordem. A URL padrao e `http://127.0.0.1:18081`; altere a variavel `baseUrl` se necessario, mantendo uma API descartavel.
 
 Use uma API descartavel: a colecao cria duas contas, um servidor e canais novos em cada execucao. IDs e tokens ficam em variaveis de execucao, sem credenciais reais no arquivo. Nao exporte variaveis preenchidas com tokens para o Git.

@@ -4,8 +4,8 @@ data class ApiResponse<T>(val success: Boolean, val message: String?, val data: 
 data class LoginRequest(val email: String, val password: String)
 data class RegisterRequest(val username: String, val email: String, val password: String)
 data class TokenData(val token: String)
-data class User(val id: Long, val username: String, val email: String)
-data class Server(val id: Long, val name: String, val description: String?, val ownerEmail: String, val channels: List<Channel>, val createdAt: String)
+data class User(val id: Long, val username: String, val email: String, val avatarUrl: String? = null, val bannerUrl: String? = null, val backgroundUrl: String? = null, val accentColor: String? = null, val bio: String? = null)
+data class Server(val id: Long, val name: String, val description: String?, val ownerEmail: String, val channels: List<Channel>, val createdAt: String, val iconUrl: String? = null, val bannerUrl: String? = null, val backgroundUrl: String? = null, val accentColor: String? = null)
 data class Channel(val id: Long, val name: String, val type: String, val createdAt: String)
 data class ServerRequest(val name: String, val description: String?)
 data class ChannelRequest(val name: String, val type: String)
@@ -17,10 +17,14 @@ data class MemberResponse(val id: Long, val userEmail: String, val username: Str
 data class DeviceTokenRequest(val fcmToken: String, val deviceModel: String?)
 
 fun mergeMessages(current: List<Message>, incoming: List<Message>): List<Message> =
-    (current + incoming).associateBy { it.id }.values.sortedWith(compareBy<Message> { it.createdAt }.thenBy { it.id })
+    (current + incoming.filter { it.type != "DELETE" }).filter { message -> incoming.none { it.type == "DELETE" && it.id == message.id } }
+        .associateBy { it.id }.values.sortedWith(compareBy<Message> { it.createdAt }.thenBy { it.id })
 
 data class RecoveryEmail(val email: String)
 data class RecoveryCode(val email: String, val code: String)
 data class RecoveryReset(val email: String, val resetToken: String, val password: String)
 data class ResetAuthorization(val resetToken: String)
 data class GoogleLogin(val idToken: String, val password: String?)
+
+data class ProfileAppearance(val bio: String, val accentColor: String?)
+data class ServerAppearance(val accentColor: String?)

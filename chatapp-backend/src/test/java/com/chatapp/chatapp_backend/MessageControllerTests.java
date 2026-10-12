@@ -113,6 +113,11 @@ class MessageControllerTests {
                 .andExpect(jsonPath("$.data[0].content").value("Ol\u00e1 pessoal!"))
                 .andExpect(jsonPath("$.data[1].content").value("Segunda mensagem!"));
 
+        mockMvc.perform(delete("/api/channels/{channelId}/messages/{messageId}", channelId + 1000, firstMessageId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/channels/{channelId}/messages", channelId).header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$.data.length()").value(2));
         mockMvc.perform(delete("/api/channels/{channelId}/messages/{messageId}", channelId, firstMessageId)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());

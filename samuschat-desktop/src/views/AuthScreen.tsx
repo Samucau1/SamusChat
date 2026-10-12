@@ -9,9 +9,9 @@ export function AuthScreen({ session: s }: { session: ReturnType<typeof useSessi
   async function recovery() {
     setBusy(true); s.setError('');
     try {
-      if (stage === 0) { const message = await s.api.post<string>('/api/auth/password/request', { email: email.trim() }); setNotice(message); setStage(1); }
-      else if (stage === 1) { const result = await s.api.post<{ resetToken: string }>('/api/auth/password/verify', { email: email.trim(), code }); setResetToken(result.resetToken); setPassword(''); setStage(2); setNotice('Código confirmado. Escolha sua nova senha.'); }
-      else { if (password !== confirm) throw new Error('As senhas precisam ser iguais.'); await s.api.post('/api/auth/password/reset', { email: email.trim(), resetToken, password }); setResetToken(''); setRecovering(false); setPassword(''); setNotice('Senha alterada. Entre com a nova senha.'); }
+      if (stage === 0) { const message = await s.api.requestRecovery(email.trim()); setNotice(message); setStage(1); }
+      else if (stage === 1) { const result = await s.api.verifyRecovery(email.trim(), code); setResetToken(result.resetToken); setPassword(''); setStage(2); setNotice('Código confirmado. Escolha sua nova senha.'); }
+      else { if (password !== confirm) throw new Error('As senhas precisam ser iguais.'); await s.api.resetPassword(email.trim(), resetToken, password); setResetToken(''); setRecovering(false); setPassword(''); setNotice('Senha alterada. Entre com a nova senha.'); }
     } catch (problem) { s.handleError(problem); } finally { setBusy(false); }
   }
   return <main className="auth-shell"><section className="auth-intro"><div className="brand-mark">SC</div><p className="eyebrow">SAMUSCHAT PARA COMPUTADOR</p><h1>Suas conversas.<br />Mais espaço para conectar.</h1><p>Servidores, amigos e projetos no mesmo lugar. Continue no computador usando sua conta do celular.</p><div className="auth-feature"># Converse nos seus servidores</div><div className="auth-feature">@ Encontre seus amigos</div><div className="auth-feature">↗ Compartilhe ideias e arquivos</div></section>

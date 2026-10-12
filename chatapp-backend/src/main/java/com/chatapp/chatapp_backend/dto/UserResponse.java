@@ -8,6 +8,11 @@ import java.time.LocalDateTime;
 @Builder
 public class UserResponse {
     private Long id;
+    private String avatarUrl;
+    private String bannerUrl;
+    private String backgroundUrl;
+    private String accentColor;
+    private String bio;
     private String username;
     private String email;
     private LocalDateTime createdAt;

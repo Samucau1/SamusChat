@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
-import { ApiRepository, mergeApiMessages, type ApiMessage, type ApiServer, type Contact, type User } from '../models/apiRepository';
+import { ApiRepository, mergeApiMessages, type ApiMessage, type ApiServer, type Contact, type User, type Member, type MemberRole } from '../models/apiRepository';
 
 export interface Conversation { id: string; name: string; description: string; channelId?: number; contact?: string; serverId?: number }
 export function useChatController(api: ApiRepository, user: User, setUser: (user: User) => void, onError: (error: unknown) => void) {
   const [servers, setServers] = useState<ApiServer[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [serverId, setServerId] = useState<number | null>(null);
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<ApiMessage[]>([]);
@@ -18,6 +19,7 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
   const [hasOlder, setHasOlder] = useState(false);
   const [connection, setConnection] = useState('Disponível');
   const [file, setFile] = useState<File | null>(null);
+  const drafts = useRef(new Map<string, { text: string; file: File | null }>());
   const selected = useRef(conversation); selected.current = conversation;
   const working = useRef(false);
   const errorRef = useRef(onError); errorRef.current = onError;
@@ -29,11 +31,20 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
     setServers(nextServers); setContacts(nextContacts);
   }
   useEffect(() => { let alive = true; Promise.all([api.servers(), api.contacts()]).then(([s, c]) => { if (alive) { setServers(s); setContacts(c); } }).catch(problem => { if (alive) errorRef.current(problem); }); return () => { alive = false; }; }, [api]);
-  function selectConversation(item: Conversation) { setConversation(item); setDraft(''); setFile(null); }
+  function updateDraft(text: string) {
+    if (selected.current) drafts.current.set(selected.current.id, { text, file });
+    setDraft(text);
+  }
+  function switchConversation(item: Conversation | null) {
+    selected.current = item;
+    const saved = item ? drafts.current.get(item.id) : undefined;
+    setConversation(item); setDraft(saved?.text ?? ''); setFile(saved?.file ?? null);
+  }
+  function selectConversation(item: Conversation) { switchConversation(item); }
   function selectArea(id: number | null) {
-    setServerId(id); setQuery(''); setDraft(''); setFile(null);
+    setServerId(id); setQuery(''); setMembers([]);
     const channel = servers.find(item => item.id === id)?.channels.find(item => item.type === 'TEXT');
-    setConversation(channel ? { id: `channel:${channel.id}`, name: channel.name, description: 'Conversa do servidor', channelId: channel.id, serverId: id! } : null);
+    switchConversation(channel ? { id: `channel:${channel.id}`, name: channel.name, description: 'Conversa do servidor', channelId: channel.id, serverId: id! } : null);
   }
   useEffect(() => {
     setMessages([]); setPage(0); setHasOlder(false);
@@ -79,16 +90,31 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
     working.current = true; setBusy(true);
     try {
       const message = attachment && current.channelId !== undefined ? await api.upload(current.channelId, attachment, text) : await api.send(current, text);
+      const saved = drafts.current.get(current.id);
+      if (saved) {
+        const next = { text: saved.text === draft ? '' : saved.text, file: saved.file === attachment ? null : saved.file };
+        if (!next.text && !next.file) drafts.current.delete(current.id);
+        else drafts.current.set(current.id, next);
+      }
       if (selected.current?.id === current.id) { setMessages(previous => mergeApiMessages(previous, [message])); setDraft(value => value === draft ? '' : value); setFile(value => value === attachment ? null : value); }
     } catch (problem) { errorRef.current(problem); }
     finally { working.current = false; setBusy(false); }
   }
-  function chooseFile(value: File | null) { if (value && value.size > 10 * 1024 * 1024) { errorRef.current(new Error('O arquivo deve ter no máximo 10 MB.')); return; } setFile(value); }
+  function chooseFile(value: File | null) { if (value && value.size > 10 * 1024 * 1024) { errorRef.current(new Error('O arquivo deve ter no máximo 10 MB.')); return; } if (selected.current) drafts.current.set(selected.current.id, { text: draft, file: value }); setFile(value); }
   async function run(operation: () => Promise<void>) { if (working.current) return false; working.current = true; setBusy(true); try { await operation(); return true; } catch (problem) { errorRef.current(problem); return false; } finally { working.current = false; setBusy(false); } }
   async function saveProfile(name: string) { await run(async () => { setUser(await api.saveProfile(name.trim())); setProfileOpen(false); }); }
-  async function createServer(name: string, description: string) { return await run(async () => { const result = await api.createServer(name.trim(), description.trim()); await refresh(); setServerId(result.id); const channel = result.channels.find(item => item.type === 'TEXT'); setConversation(channel ? { id: `channel:${channel.id}`, name: channel.name, description: 'Conversa do servidor', channelId: channel.id, serverId: result.id } : null); }); }
-  async function joinServer(id: number) { return await run(async () => { await api.joinServer(id); await refresh(); setServerId(id); setConversation(null); }); }
-  async function createChannel(name: string) { if (serverId === null) return false; const id = serverId; return await run(async () => { const channel = await api.createChannel(id, name.trim()); await refresh(); selectConversation({ id: `channel:${channel.id}`, name: channel.name, description: 'Conversa do servidor', channelId: channel.id, serverId: id }); }); }
-  return { servers, serverId, conversations, conversation, messages, draft, setDraft, query, setQuery, profile: { name: user.username, status: user.email }, profileOpen, setProfileOpen, selectArea, selectConversation, sendMessage, saveProfile, createServer, joinServer, createChannel, busy, loading, connection, hasOlder, loadOlder, file, chooseFile, refresh: () => run(refresh) };
+  async function saveAppearance(bio: string, color: string) { return run(async () => { setUser(await api.saveAppearance(bio.trim(), color)); }); }
+  async function profileMedia(slot: 'avatar' | 'banner' | 'background', file: File | null) { return run(async () => { setUser(await api.profileMedia(slot, file)); }); }
+  async function saveServerAppearance(color: string) { if (serverId === null) return false; const id = serverId; return run(async () => { const result = await api.saveServerAppearance(id, color); setServers(previous => previous.map(item => item.id === id ? result : item)); }); }
+  async function serverMedia(slot: 'icon' | 'banner' | 'background', file: File | null) { if (serverId === null) return false; const id = serverId; return run(async () => { const result = await api.serverMedia(id, slot, file); setServers(previous => previous.map(item => item.id === id ? result : item)); }); }
+  async function createServer(name: string, description: string) { return await run(async () => { const result = await api.createServer(name.trim(), description.trim()); await refresh(); setServerId(result.id); const channel = result.channels.find(item => item.type === 'TEXT'); switchConversation(channel ? { id: `channel:${channel.id}`, name: channel.name, description: 'Conversa do servidor', channelId: channel.id, serverId: result.id } : null); }); }
+  async function joinServer(id: number) { return await run(async () => { await api.joinServer(id); await refresh(); setServerId(id); switchConversation(null); }); }
+  async function createChannel(name: string, type: 'TEXT' | 'VOICE' = 'TEXT') { if (serverId === null) return false; const id = serverId; return await run(async () => { const channel = await api.createChannel(id, name.trim(), type); await refresh(); if (type === 'TEXT') selectConversation({ id: `channel:${channel.id}`, name: channel.name, description: 'Conversa do servidor', channelId: channel.id, serverId: id }); }); }
+  async function loadMembers() { if (serverId === null) return; const id = serverId; return run(async () => { setMembers(await api.members(id)); }); }
+  async function updateRole(email: string, role: MemberRole) { if (serverId === null) return; const id = serverId; return run(async () => { const result = await api.updateRole(id, email, role); setMembers(previous => previous.map(item => item.userEmail === email ? result : item)); }); }
+  async function removeMember(email: string) { if (serverId === null) return false; const id = serverId; return run(async () => { await api.removeMember(id, email); if (email === user.email) { await refresh(); selectArea(null); } else setMembers(previous => previous.filter(item => item.userEmail !== email)); }); }
+  async function deleteMessage(id: number) { const current = conversation; if (current?.channelId === undefined) return false; return run(async () => { await api.deleteMessage(current.channelId!, id); if (selected.current?.id === current.id) setMessages(previous => previous.filter(item => item.id !== id)); }); }
+  function hasDraft(id: string) { const saved = drafts.current.get(id); return Boolean(saved && (saved.text || saved.file)); }
+  return { user, saveAppearance, profileMedia, saveServerAppearance, serverMedia, members, loadMembers, updateRole, removeMember, deleteMessage, hasDraft, servers, serverId, conversations, conversation, messages, draft, setDraft: updateDraft, query, setQuery, profile: { name: user.username, status: user.email }, profileOpen, setProfileOpen, selectArea, selectConversation, sendMessage, saveProfile, createServer, joinServer, createChannel, busy, loading, connection, hasOlder, loadOlder, file, chooseFile, refresh: () => run(refresh) };
 }
 export type ChatController = ReturnType<typeof useChatController>;

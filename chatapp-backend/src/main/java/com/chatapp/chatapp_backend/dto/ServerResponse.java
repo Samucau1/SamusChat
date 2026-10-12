@@ -9,6 +9,10 @@ import java.util.List;
 @Builder
 public class ServerResponse {
     private Long id;
+    private String iconUrl;
+    private String bannerUrl;
+    private String backgroundUrl;
+    private String accentColor;
     private String name;
     private String description;
     private String ownerEmail;

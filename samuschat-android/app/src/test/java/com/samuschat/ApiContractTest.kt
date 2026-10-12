@@ -143,6 +143,14 @@ class ApiContractTest {
         assertEquals("/uploads/a.png", merged.last().attachmentUrl)
     }
 
+    @Test fun realtimeDeletionRemovesOnlyTheTargetAndNeverRendersTheEvent() {
+        val first = Message(1, "oi", "a", "A", 2, null, null, "2026-10-12T10:00:00")
+        val other = first.copy(id = 2)
+        val deleted = first.copy(type = "DELETE", content = null)
+        assertEquals(listOf(2L), mergeMessages(listOf(first, other), listOf(deleted)).map { it.id })
+        assertEquals(emptyList<Message>(), mergeMessages(emptyList(), listOf(deleted)))
+    }
+
     @Test fun standardizedSecurityErrorsRemainCompatibleWithAndroid() = runTest {
         val server = MockWebServer()
         try {

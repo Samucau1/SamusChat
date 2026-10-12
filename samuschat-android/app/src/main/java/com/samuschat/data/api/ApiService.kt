@@ -5,6 +5,12 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiService {
+    @PUT("api/users/me/appearance") suspend fun updateAppearance(@Header("Authorization") token: String, @Body request: ProfileAppearance): Response<ApiResponse<User>>
+    @Multipart @POST("api/users/me/media/{slot}") suspend fun uploadProfileMedia(@Header("Authorization") token: String, @Path("slot") slot: String, @Part file: okhttp3.MultipartBody.Part): Response<ApiResponse<User>>
+    @DELETE("api/users/me/media/{slot}") suspend fun deleteProfileMedia(@Header("Authorization") token: String, @Path("slot") slot: String): Response<ApiResponse<User>>
+    @PUT("api/servers/{id}/appearance") suspend fun updateServerAppearance(@Header("Authorization") token: String, @Path("id") id: Long, @Body request: ServerAppearance): Response<ApiResponse<Server>>
+    @Multipart @POST("api/servers/{id}/media/{slot}") suspend fun uploadServerMedia(@Header("Authorization") token: String, @Path("id") id: Long, @Path("slot") slot: String, @Part file: okhttp3.MultipartBody.Part): Response<ApiResponse<Server>>
+    @DELETE("api/servers/{id}/media/{slot}") suspend fun deleteServerMedia(@Header("Authorization") token: String, @Path("id") id: Long, @Path("slot") slot: String): Response<ApiResponse<Server>>
     @Multipart
     @POST("api/channels/{id}/upload")
     suspend fun uploadAttachment(@Header("Authorization") token: String, @Path("id") id: Long,
