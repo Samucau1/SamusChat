@@ -1,0 +1,26 @@
+# Test-only overlay: real TLS and an explicitly trusted, isolated proxy address.
+# Generate logs/ci-smoke via scripts/prepare-smoke.py before using this file.
+services:
+  nginx:
+    ports:
+      - "127.0.0.1:${HTTPS_PORT:-18443}:443"
+    volumes:
+      - ./logs/ci-smoke/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./logs/ci-smoke/tls:/etc/nginx/tls:ro
+    networks:
+      samuschat-net:
+        ipv4_address: 192.0.2.10
+  backend1:
+    environment:
+      TRUSTED_PROXY_IPS: 192.0.2.10
+  backend2:
+    environment:
+      TRUSTED_PROXY_IPS: 192.0.2.10
+  backend3:
+    environment:
+      TRUSTED_PROXY_IPS: 192.0.2.10
+networks:
+  samuschat-net:
+    ipam:
+      config:
+        - subnet: 192.0.2.0/24

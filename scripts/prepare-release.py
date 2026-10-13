@@ -20,8 +20,9 @@ def main():
     if not re.fullmatch(r"[a-z_][a-z0-9_-]*", required("SERVER_USER")):
         raise SystemExit("Invalid SERVER_USER")
     keys = ("BACKEND_IMAGE", "IMAGE_TAG", "DB_USER", "DB_PASSWORD",
-            "REDIS_PASSWORD", "JWT_SECRET", "PUBLIC_BASE_URL")
+            "REDIS_PASSWORD", "JWT_SECRET", "PUBLIC_BASE_URL", "WEB_ORIGINS")
     values = {key: required(key) for key in keys}
+    values["TRUSTED_PROXY_IPS"] = os.environ.get("TRUSTED_PROXY_IPS", "")
     if len(values["JWT_SECRET"].encode()) < 32:
         raise SystemExit("JWT_SECRET must have at least 32 bytes")
     if not re.fullmatch(r"[0-9a-f]{40}", values["IMAGE_TAG"]):

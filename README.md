@@ -18,9 +18,11 @@ Um aplicativo Android e uma interface para PC conectados à mesma API.
 
 ## O projeto
 
+As melhorias de PC/Android desta entrega estão no [PR #2](https://github.com/Samucau1/SamusChat/pull/2). As imagens e os guias deste documento acompanham a implementação nesta branch.
+
 O SamusChat é um MVP de comunicação para reunir pessoas em servidores e canais, continuar conversas privadas e compartilhar a tela durante chamadas. O projeto reúne **Android nativo, uma versão para computador no navegador e um backend compartilhado**: contas, servidores e histórico pertencem à mesma estrutura, independentemente da interface utilizada.
 
-**Estado em 09/10/2026:** aplicativo Android em funcionamento e primeira entrega para PC aceita em teste manual local. A regressão de backend, Android, navegador e API foi aprovada. A próxima etapa é disponibilizar uma beta para um pequeno grupo com acesso pela internet; a hospedagem externa ainda está pendente.
+**Estado em 12/10/2026:** Android e PC compartilham personalização, chat e chamadas. A ligação PC tem qualidade na engrenagem, prévia e feedback de transmissão. Regressões locais de backend, Android, navegador e Postman aprovadas; validação de CI e integração com main acompanham o PR. A próxima etapa é disponibilizar uma beta para um pequeno grupo com acesso pela internet; a hospedagem externa ainda está pendente.
 
 <a id="interfaces"></a>
 
@@ -73,7 +75,7 @@ Capturas da [validação de mídia e estabilidade de 08/10/2026](docs/REGRESSAO_
 | Recurso | Android | PC no navegador |
 | --- | --- | --- |
 | Cadastro, login, sessão e logout | Implementado | Implementado |
-| Perfil e alteração do nome | Implementado; foto local por conta | Implementado; alteração do nome |
+| Perfil, foto/GIF, capa e fundo | Implementado; sincronizado pela API | Implementado; sincronizado pela API |
 | Recuperação de senha | Implementada; envio depende de SMTP | Implementada; envio depende de SMTP |
 | Criar servidor e entrar por ID | Implementado | Implementado |
 | Canais de texto e histórico paginado | Implementado | Implementado |
@@ -82,7 +84,7 @@ Capturas da [validação de mídia e estabilidade de 08/10/2026](docs/REGRESSAO_
 | Anexos em canais de texto | Implementado; até 10 MB | Implementado; até 10 MB |
 | Chamada individual com microfone | Implementado | Implementado |
 | Compartilhamento de tela individual | Implementado | Implementado |
-| Salas de chamada com vários participantes | Implementado | Próxima etapa |
+| Salas de chamada com vários participantes | Implementado | Implementado |
 | Áudio interno do dispositivo | Implementado no Android compatível | Próxima etapa |
 | Login Google | Código integrado; configuração OAuth pendente | Interface de login Google pendente |
 | Notificações push | Integração opcional com Firebase | Próxima etapa |

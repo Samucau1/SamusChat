@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.*;
 @EnabledIfEnvironmentVariable(named="RUN_REDIS_TESTS",matches="true")
 class AccountLoginLimiterRedisTests {
     @Test void concurrentAttemptsAcrossTwoInstancesShareOneAtomicLimit() throws Exception {
-        var factory=new LettuceConnectionFactory("127.0.0.1",Integer.parseInt(System.getenv().getOrDefault("REDIS_TEST_PORT","16385")));
+        var factory=new LettuceConnectionFactory("127.0.0.1",Integer.parseInt(System.getenv().getOrDefault("REDIS_TEST_PORT","6379")));
         factory.afterPropertiesSet();factory.start();
         var redis=new StringRedisTemplate(factory);var beans=new StaticListableBeanFactory();beans.addBean("redis",redis);
         var first=new AccountLoginLimiter(beans.getBeanProvider(StringRedisTemplate.class));

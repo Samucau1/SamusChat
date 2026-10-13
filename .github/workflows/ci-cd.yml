@@ -69,6 +69,16 @@ jobs:
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 5s --health-timeout 3s --health-retries 10
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: samus_audit
+          POSTGRES_USER: audit
+          POSTGRES_PASSWORD: audit_test_only
+        ports: ['15435:5432']
+        options: >-
+          --health-cmd "pg_isready -U audit -d samus_audit"
+          --health-interval 5s --health-timeout 3s --health-retries 10
     defaults:
       run:
         working-directory: chatapp-backend
@@ -84,6 +94,8 @@ jobs:
         run: bash mvnw -B -ntp verify
         env:
           RUN_REDIS_TESTS: 'true'
+          REDIS_TEST_PORT: '6379'
+          RUN_PG_MIGRATION_TESTS: 'true'
       - name: Test reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -111,8 +123,13 @@ jobs:
       DB_PASSWORD: smoke-database-only
       REDIS_PASSWORD: smoke-redis-only
       JWT_SECRET: smoke-jwt-secret-only-at-least-32-characters
-      PUBLIC_BASE_URL: http://localhost:18080
+      PUBLIC_BASE_URL: https://localhost:18443
       HTTP_PORT: '18080'
+      HTTPS_PORT: '18443'
+      WEB_ORIGINS: https://localhost:18443
+      SMOKE_HTTP_URL: http://localhost:18080
+      SMOKE_COMPOSE_OVERRIDE: docker-compose.smoke.yml
+      COMPOSE_PROJECT_NAME: samuschat-smoke
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -123,22 +140,26 @@ jobs:
           tags: local/samuschat-backend:ci
           cache-from: type=gha,scope=backend-amd64
           cache-to: type=gha,mode=max,scope=backend-amd64
+      - name: Prepare isolated smoke TLS
+        run: python3 scripts/prepare-smoke.py
       - name: Validate scripts and Compose
         run: |
           bash -n scripts/deploy.sh
           bash -n scripts/deploy-with-registry.sh
-          docker compose -f docker-compose.prod.yml config --quiet
+          docker compose -f docker-compose.prod.yml -f docker-compose.smoke.yml config --quiet
           python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Start three production instances on PostgreSQL
-        run: docker compose -f docker-compose.prod.yml up -d --wait --wait-timeout 240
+        run: docker compose -f docker-compose.prod.yml -f docker-compose.smoke.yml up -d --wait --wait-timeout 240
       - name: Verify routing, migrations and shared uploads
         run: node scripts/smoke-test.mjs
+        env:
+          NODE_EXTRA_CA_CERTS: ${{ github.workspace }}/logs/ci-smoke/tls/cert.pem
       - name: Container logs
         if: failure()
-        run: docker compose -f docker-compose.prod.yml logs --no-color --tail=150
+        run: docker compose -f docker-compose.prod.yml -f docker-compose.smoke.yml logs --no-color --tail=150
       - name: Clean up isolated CI stack
         if: always()
-        run: docker compose -f docker-compose.prod.yml down -v
+        run: docker compose -f docker-compose.prod.yml -f docker-compose.smoke.yml down -v
 
   build-and-push:
     name: Publish image to GHCR
@@ -208,6 +229,8 @@ jobs:
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           PUBLIC_BASE_URL: ${{ vars.PRODUCTION_URL }}
+          WEB_ORIGINS: ${{ vars.WEB_ORIGINS }}
+          TRUSTED_PROXY_IPS: ${{ vars.TRUSTED_PROXY_IPS }}
           IMAGE_TAG: ${{ github.sha }}
         run: python3 scripts/prepare-release.py
       - name: Upload and deploy the exact commit
