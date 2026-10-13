@@ -16,7 +16,7 @@ O código anterior exigia `maintain-framerate-and-resolution` e propagava rejei�
 
 A primeira alternativa experimental priorizava FPS. O teste de recepção observou queda para 225p; essa alternativa foi removida. A versão final prioriza resolução e passou a verificação de vídeo recebido com pelo menos 750p. A preferência compatível não garante simultaneamente FPS constante sob carga: os dados medidos são apresentados separadamente, e as opções/ajustes do app conservam o piso configurado de 750p/30 fps.
 
-O relato específico do usuário com a fonte física do Windows ainda exige reteste. Não foi confirmado que sua falha veio da preferência de codificação: Edge 155 e Chromium 156 disponíveis aceitaram a preferência estrita no teste de codificador. A rejeição foi reproduzida por injeção de NotSupportedError em teste, e o fluxo continuou com codificação real e vídeo recebido. Chrome não estava instalado no caminho pesquisado pelo Playwright.
+O usuário confirmou Edge com tela inteira. Uma sondagem adicional no Edge 155.0.4283.45, com perfil isolado e sem dispositivo sintético, capturou um monitor via API nativa: captura configurada em 1600×900/30 fps e vídeo recebido/decodificado em 1600×900. Foram exercitadas captura, restrições, negociação, substituição da trilha, parâmetros do emissor e recepção local. Não foram gravados imagens ou vídeo; apenas metadados. A automação usou modo sem interface e seleção automática do monitor, portanto não reproduz o seletor manual nem as configurações do perfil habitual do usuário. O erro original não foi reproduzido nessa sondagem; esse perfil ainda exige reteste. Não foi confirmado que sua falha veio da preferência de codificação: Edge 155 e Chromium 156 disponíveis aceitaram a preferência estrita no teste de codificador. A rejeição foi reproduzida por injeção de NotSupportedError em teste, e o fluxo continuou com codificação real e vídeo recebido. Chrome não estava instalado no caminho pesquisado pelo Playwright.
 
 Referências de contrato: [preferências de degradação — W3C](https://w3c.github.io/mst-content-hint/#degradation-preference-when-encoding) e [captura de tela e restrições — MDN](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia).
 
@@ -25,7 +25,9 @@ Referências de contrato: [preferências de degradação — W3C](https://w3c.gi
 | Verificação | Resultado |
 | --- | --- |
 | TypeScript e build Vite | Aprovados; JavaScript 313,06 kB, gzip 95,94 kB |
-| Regressão desktop | 18 testes aprovados em 39,1 s |
+| Regressão desktop — Chromium | 18 testes aprovados em 39,1 s |
+| Regressão desktop — Edge instalado | 18 testes aprovados em 41,1 s |
+| Monitor real — Edge, perfil isolado sem interface | Captura configurada 900p/30; substituição do vídeo e decodificação 900p aprovadas |
 | Ligação individual com dois clientes | Convite/aceite, áudio, erro de captura recuperável, compatibilidade do emissor, prévia, recepção, encerramento |
 | Canal com dois clientes | Prévia silenciada, recepção a 1080p, ajuste 60 → 30 fps por feedback simulado, nova transmissão no piso 750p/30 |
 | Captura nativa Chromium, fonte sintética | 900p/30 e ajuste 750p/30 aceitos; trilha encerrada no fim |
@@ -35,6 +37,18 @@ Referências de contrato: [preferências de degradação — W3C](https://w3c.gi
 Os testes de integração usam a API H2 real em localhost:18085. Microfone e fontes de vídeo são sintéticos; o teste nativo exercita o pipeline de captura do navegador com dispositivo de teste, sem gravar a tela pessoal. O teste de pressão de CPU injeta estatísticas, sem sobrecarregar a máquina. Não comprovam economia percentual, seletor físico do Windows, áudio real, interoperabilidade Android ou estabilidade de FPS na rede pública.
 
 Logs locais: `logs/desktop-call-regression-18-tests.log`, `logs/desktop-call-design-build-final.log` e sondagens `logs/desktop-native-encoder-probe.log`/`logs/desktop-native-capture-probe.log`. Capturas locais: `logs/desktop-call-settings.png`, `logs/desktop-call-sharing.png` e `logs/desktop-room-sharing.png`. Logs/capturas permanecem fora do Git.
+
+## Repetir no Edge
+
+Na pasta PC, com a API H2 em 18085:
+
+```powershell
+$env:SAMUSCHAT_TEST_BROWSER_CHANNEL = 'msedge'
+$env:SAMUSCHAT_TEST_API_URL = 'http://127.0.0.1:18085'
+npm run test:e2e
+```
+
+Sem a variável de canal, a suíte usa o Chromium do Playwright. O Edge precisa estar instalado. Na raiz, com o PC em 5175, `node scripts/probe-desktop-edge.mjs` usa fonte sintética. `node scripts/probe-desktop-edge.mjs --physical-monitor` captura brevemente um monitor real e envia somente entre pares locais do mesmo navegador, sem salvar imagens/vídeo; não executar esse modo durante a exibição de informações sensíveis. Resultado apenas de metadados em `logs/desktop-edge-physical-probe.json`. A [evidência desta execução](security/2026-10-12/correcoes/edge-monitor-results.json) conserva somente dimensões, versão e resultado das etapas. FPS configurado não equivale a uma medição de FPS entregue sob carga.
 
 ## Teste manual
 
