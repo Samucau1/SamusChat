@@ -54,7 +54,7 @@ public class PasswordRecoveryService {
     public void reset(String input,String token,String password) {
         String email=email(input);
         if(password==null || !sanitizer.isValidPassword(password) || password.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>72)
-            throw new IllegalArgumentException("Senha deve ter 6 a 72 bytes");
+            throw new IllegalArgumentException("Use senha de 15 caracteres a 72 bytes, sem sequencias comuns");
         var user=users.lockedByEmail(email).orElseThrow(PasswordRecoveryService::invalid);
         var r=recoveries.findById(email).orElseThrow(PasswordRecoveryService::invalid);
         if(r.isConsumed() || r.getResetHash()==null || !r.getExpiresAt().isAfter(Instant.now()) || token==null || token.length()>100 || !passwords.matches(token,r.getResetHash())) throw invalid();

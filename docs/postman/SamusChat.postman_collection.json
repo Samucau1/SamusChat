@@ -2,7 +2,7 @@
   "info": {
     "name": "SamusChat - Regressao API Android e Desktop",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Executar apenas em API descartavel H2. Cria contas ficticias, servidor e canais. Inclui CRUD, mensagens privadas, anexos e sinalizacao de chamadas. Nao comprova midia WebRTC real."
+    "description": "Regressão PC/Android em H2 descartável: CRUD, mídia protegida, aparência, chamadas e negativos de segurança. Tokens de execução não devem ser exportados."
   },
   "variable": [
     {
@@ -1430,7 +1430,12 @@
           "name": "Desktop - baixar anexo",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
             "url": "{{baseUrl}}{{desktopUploadPath}}"
           },
           "event": [
@@ -1936,7 +1941,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(403));"
                 ]
               }
             }
@@ -2279,7 +2284,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(403));"
                 ]
               }
             }
@@ -2938,7 +2943,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(403));"
                 ]
               }
             }
@@ -3281,7 +3286,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(403));"
                 ]
               }
             }
@@ -3471,6 +3476,987 @@
                 "exec": [
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "pm.test('Capa removida', () => pm.expect(pm.response.json().data.backgroundUrl).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Segurança e regressão PC",
+      "item": [
+        {
+          "name": "PC segurança - cadastrar terceiro",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"secPC{{runId}}\",\"email\":\"securitypc{{runId}}@example.test\",\"password\":\"SecurityPostman123!\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('securityTokenPC', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PC segurança - anexo anônimo",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}{{desktopUploadPath}}",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PC segurança - download fora do servidor",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}{{desktopUploadPath}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{securityTokenPC}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PC segurança - exclusão por terceiro",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/files?fileUrl={{baseUrl}}{{desktopUploadPath}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{securityTokenPC}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PC segurança - membro autorizado baixa",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}{{desktopUploadPath}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenB}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Download seguro',()=>pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment'));",
+                  "pm.test('Sem cache privado',()=>pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PC segurança - HTML disfarçado",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/channels/{{textId}}/upload",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "docs/postman/fixtures/security-attack.html",
+                  "contentType": "text/plain"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PC segurança - registrar FCM",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/devices/register",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"fcmToken\":\"security-PC-{{runId}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PC segurança - terceiro não remove FCM",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/devices/unregister?fcmToken=security-PC-{{runId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{securityTokenPC}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PC segurança - dono remove FCM",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/devices/unregister?fcmToken=security-PC-{{runId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PC segurança - senha errada 1",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"securitypc{{runId}}@example.test\",\"password\":\"wrong-password\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PC segurança - senha errada 2",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"securitypc{{runId}}@example.test\",\"password\":\"wrong-password\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PC segurança - senha errada 3",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"securitypc{{runId}}@example.test\",\"password\":\"wrong-password\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PC segurança - senha errada 4",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"securitypc{{runId}}@example.test\",\"password\":\"wrong-password\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PC segurança - senha errada 5",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"securitypc{{runId}}@example.test\",\"password\":\"wrong-password\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PC segurança - cabeçalho diferente não libera login",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-For",
+                "value": "198.18.250.9"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"securitypc{{runId}}@example.test\",\"password\":\"SecurityPostman123!\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.upsert({key:'X-Forwarded-For',value:'198.18.250.9'});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 429', () => pm.response.to.have.status(429));",
+                  "pm.test('Retentativa indicada',()=>pm.expect(pm.response.headers.has('Retry-After')).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PC segurança - senha fraca recusada",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"weakPC{{runId}}\",\"email\":\"weakPC{{runId}}@example.test\",\"password\":\"123456\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Segurança e regressão Android",
+      "item": [
+        {
+          "name": "Android segurança - cadastrar terceiro",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"secAndroid{{runId}}\",\"email\":\"securityandroid{{runId}}@example.test\",\"password\":\"SecurityPostman123!\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('securityTokenAndroid', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Android segurança - anexo anônimo",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}{{desktopUploadPath}}",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Android segurança - download fora do servidor",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}{{desktopUploadPath}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{securityTokenAndroid}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Android segurança - exclusão por terceiro",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/files?fileUrl={{baseUrl}}{{desktopUploadPath}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{securityTokenAndroid}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Android segurança - membro autorizado baixa",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}{{desktopUploadPath}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenB}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Download seguro',()=>pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment'));",
+                  "pm.test('Sem cache privado',()=>pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Android segurança - HTML disfarçado",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/channels/{{textId}}/upload",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "docs/postman/fixtures/security-attack.html",
+                  "contentType": "text/plain"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Android segurança - registrar FCM",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/devices/register",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"fcmToken\":\"security-Android-{{runId}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Android segurança - terceiro não remove FCM",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/devices/unregister?fcmToken=security-Android-{{runId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{securityTokenAndroid}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Android segurança - dono remove FCM",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/devices/unregister?fcmToken=security-Android-{{runId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Android segurança - senha errada 1",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"securityandroid{{runId}}@example.test\",\"password\":\"wrong-password\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Android segurança - senha errada 2",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"securityandroid{{runId}}@example.test\",\"password\":\"wrong-password\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Android segurança - senha errada 3",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"securityandroid{{runId}}@example.test\",\"password\":\"wrong-password\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Android segurança - senha errada 4",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"securityandroid{{runId}}@example.test\",\"password\":\"wrong-password\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Android segurança - senha errada 5",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"securityandroid{{runId}}@example.test\",\"password\":\"wrong-password\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Android segurança - cabeçalho diferente não libera login",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-For",
+                "value": "198.18.250.9"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"securityandroid{{runId}}@example.test\",\"password\":\"SecurityPostman123!\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.upsert({key:'X-Forwarded-For',value:'198.18.250.9'});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 429', () => pm.response.to.have.status(429));",
+                  "pm.test('Retentativa indicada',()=>pm.expect(pm.response.headers.has('Retry-After')).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Android segurança - senha fraca recusada",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"weakAndroid{{runId}}\",\"email\":\"weakAndroid{{runId}}@example.test\",\"password\":\"123456\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Encerramento e revogação",
+      "item": [
+        {
+          "name": "Dono remove anexo após regressão",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/files?fileUrl={{baseUrl}}{{desktopUploadPath}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout revoga todas as sessões",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/logout",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Token anterior não acessa perfil",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users/me",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
                 ]
               }
             }

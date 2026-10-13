@@ -38,7 +38,7 @@ fun RecoveryScreen(viewModel: AuthViewModel, onBack: () -> Unit) {
             2 -> {
                 OutlinedTextField(password, { password=it }, label={ Text("Nova senha") }, singleLine=true, enabled=!busy, visualTransformation=PasswordVisualTransformation(), keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Password))
                 OutlinedTextField(confirm, { confirm=it }, label={ Text("Confirmar senha") }, singleLine=true, enabled=!busy, visualTransformation=PasswordVisualTransformation(), keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Password))
-                Button(onClick={ viewModel.resetPassword(password,confirm); password=""; confirm="" }, enabled=!busy && password.length>=6 && password==confirm) { Text("Salvar nova senha") }
+                Button(onClick={ viewModel.resetPassword(password,confirm); password=""; confirm="" }, enabled=!busy && password.length>=15 && password==confirm) { Text("Salvar nova senha") }
             }
         }
         error?.let { ErrorNotice(it) }

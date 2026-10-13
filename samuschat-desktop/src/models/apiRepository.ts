@@ -23,6 +23,15 @@ export class ApiRepository {
   }
   post<T>(path: string, body?: unknown) { return this.request<T>(path, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body) }); }
   login(email: string, password: string) { return this.post<{ token: string }>('/api/auth/login', { email, password }); }
+  logout() { return this.post<void>('/api/auth/logout'); }
+  async attachment(value: string) {
+    const url = new URL(value, window.location.origin);
+    if (!/^\/uploads\/[0-9a-f-]{36}\.[a-z0-9]+$/.test(url.pathname)) throw new ApiError('Anexo inválido.', 0);
+    const response = await fetch(url.pathname, { headers: { Authorization: `Bearer ${this.token}` }, signal: AbortSignal.timeout(30000) });
+    if (!response.ok) throw new ApiError('Não foi possível acessar este anexo.', response.status);
+    if (Number(response.headers.get('Content-Length') ?? 0) > 10 * 1024 * 1024) throw new ApiError('Anexo maior que 10 MB.', 0);
+    return response.blob();
+  }
   register(username: string, email: string, password: string) { return this.post<{ token: string }>('/api/auth/register', { username, email, password }); }
   googleLogin(idToken: string, password?: string) { return this.post<{ token: string }>('/api/auth/google', { idToken, password }); }
   googleGis(credential: string, csrfToken: string, password?: string) { return this.post<{ token: string }>('/api/auth/google/gis', { credential, g_csrf_token: csrfToken, password }); }

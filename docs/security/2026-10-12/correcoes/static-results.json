@@ -1,0 +1,44 @@
+{
+  "checkedAt": "2026-10-13T02:10:09.115Z",
+  "secretScan": {
+    "scope": "Tracked working-tree text files only; history, ignored files and binaries excluded",
+    "scanned": 313,
+    "skipped": 20,
+    "candidates": [],
+    "candidateIsNotVerifiedLiveSecret": true
+  },
+  "manifests": {
+    "debug": {
+      "targetSdk": "35",
+      "cleartext": "true",
+      "debuggable": "true",
+      "backup": "false",
+      "source": "samuschat-android/app/build/intermediates/merged_manifest/debug/processDebugMainManifest/AndroidManifest.xml"
+    },
+    "validation": {
+      "targetSdk": "35",
+      "cleartext": "true",
+      "debuggable": "true",
+      "backup": "false",
+      "source": "samuschat-android/app/build/intermediates/merged_manifest/validation/processValidationMainManifest/AndroidManifest.xml"
+    },
+    "release": {
+      "targetSdk": "35",
+      "cleartext": "absent",
+      "debuggable": "absent",
+      "backup": "false",
+      "source": "samuschat-android/app/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml"
+    }
+  },
+  "observations": {
+    "androidTokenUsesOrdinaryDataStore": false,
+    "androidHttpLoggerRedactsAuthorization": true,
+    "androidProductionHttpLoggingDisabled": true,
+    "androidWebSocketUsesOkHttpNotJavaWebSocket": true,
+    "androidDefaultBuildUrlIsLocalHttp": true,
+    "nginxReplacesForwardedFor": true,
+    "nginxHasTlsListener": false,
+    "defaultProfileHasPublicJwtFallback": false,
+    "prodProfileRequiresJwtEnvironment": true
+  }
+}

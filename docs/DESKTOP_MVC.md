@@ -6,6 +6,10 @@ Atualização em 12/10/2026: a versão integrada preserva rascunhos de texto e a
 
 A versão integrada também inclui [personalização de perfil/servidor e transmissão PC com qualidade selecionável, a partir de 750p/30 fps](PERSONALIZACAO_PC_ANDROID.md), além de gestão de membros e canais de chamada no PC. A personalização é compartilhada com Android; o ajuste de transmissão desta rodada se aplica ao PC.
 
+Auditoria em 12/10/2026: ataques controlados à API compartilhada e ao PC identificaram falhas abertas. Consulte [evidências, prioridades e estratégias de correção para PC e Android](AUDITORIA_SEGURANCA_PC_ANDROID_2026-10-12.md) antes de uma publicação com dados reais.
+
+As correções locais e os resultados posteriores estão no [protocolo de segurança, API, regressão e Postman](PROTOCOLO_SEGURANCA_PC_ANDROID_2026-10-12.md). Ele inclui o roteiro para testar manualmente o PC; a verificação final de dependências e a publicação no GitHub permanecem pendentes.
+
 Atualização em 09/10/2026: o protótipo evoluiu para um MVP integrado à API. O texto abaixo preserva o planejamento e o escopo da primeira versão; o comportamento atual está no [guia da integração desktop](DESKTOP_API.md).
 
 ## Objetivo e escopo

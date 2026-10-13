@@ -41,7 +41,7 @@ internal fun AuthForm(register: Boolean, viewModel: AuthViewModel, onSwitch: () 
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val submit = { viewModel.submit(register, username, email, password); Unit }
-    val valid = email.isNotBlank() && password.isNotBlank() && (!register || username.isNotBlank())
+    val valid = email.isNotBlank() && password.isNotBlank() && (!register || (username.isNotBlank() && password.length >= 15))
     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF252A68), RailBackground)))) {
         Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(28.dp),
             verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
@@ -63,7 +63,7 @@ internal fun AuthForm(register: Boolean, viewModel: AuthViewModel, onSwitch: () 
                     OutlinedTextField(email, { email = it }, Modifier.fillMaxWidth(), label = { Text("Email") },
                         singleLine = true, enabled = !busy,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next))
-                    OutlinedTextField(password, { password = it }, Modifier.fillMaxWidth(), label = { Text("Senha") },
+                    OutlinedTextField(password, { password = it }, Modifier.fillMaxWidth(), label = { Text(if (register) "Senha (mínimo 15 caracteres)" else "Senha") },
                         visualTransformation = PasswordVisualTransformation(), singleLine = true, enabled = !busy,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = { if (valid && !busy) submit() }))

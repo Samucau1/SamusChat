@@ -43,7 +43,7 @@ class VoiceRoomApiTests {
         join("a").andExpect(status().isOk());assertThat(calls.count()).isEqualTo(3);
     }
     @Test void nonMembersAndTextChannelsCannotBeJoined()throws Exception {
-        join("outsider").andExpect(status().isBadRequest());
+        join("outsider").andExpect(status().isForbidden());
         api.perform(post("/api/channels/"+textId+"/call/join").with(user("a@room.test"))).andExpect(status().isBadRequest());
         api.perform(post("/api/channels/"+voiceId+"/call/join")).andExpect(status().isUnauthorized());
         api.perform(get("/api/channels/"+voiceId+"/call").with(user("a@room.test"))).andExpect(status().isUnauthorized());
@@ -81,7 +81,7 @@ class VoiceRoomApiTests {
     @Test void channelCreationValidatesTypeNameAndAdminRole()throws Exception {
         var url="/api/servers/"+serverId+"/channels";
         for(var type:List.of("TEXT","VOICE"))api.perform(post(url).with(user("a@room.test")).contentType("application/json").content(json.writeValueAsString(Map.of("name","new-"+type,"type",type)))).andExpect(status().isOk()).andExpect(jsonPath("$.data.type").value(type));
-        api.perform(post(url).with(user("b@room.test")).contentType("application/json").content("{\"name\":\"forbidden\",\"type\":\"VOICE\"}")).andExpect(status().isBadRequest());
+        api.perform(post(url).with(user("b@room.test")).contentType("application/json").content("{\"name\":\"forbidden\",\"type\":\"VOICE\"}")).andExpect(status().isForbidden());
         api.perform(post(url).with(user("a@room.test")).contentType("application/json").content("{\"name\":\"bad\",\"type\":\"INVALID\"}")).andExpect(status().isBadRequest());
         api.perform(post(url).with(user("a@room.test")).contentType("application/json").content(json.writeValueAsString(Map.of("name","x".repeat(256),"type","TEXT")))).andExpect(status().isBadRequest());
     }

@@ -23,7 +23,7 @@ class AppearanceApiTests {
     String register(String name) throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         var response = mvc.perform(post("/api/auth/register").header("X-Forwarded-For", "test-" + UUID.randomUUID()).contentType("application/json")
-                .content(json.writeValueAsString(java.util.Map.of("username", name + suffix, "email", name + suffix + "@example.com", "password", "Testing123!"))))
+                .content(json.writeValueAsString(java.util.Map.of("username", name + suffix, "email", name + suffix + "@example.com", "password", "IntegrationTest123!"))))
                 .andExpect(status().isOk()).andReturn();
         return "Bearer " + json.readTree(response.getResponse().getContentAsString()).path("data").path("token").asText();
     }
@@ -76,8 +76,8 @@ class AppearanceApiTests {
         var result = mvc.perform(post("/api/servers").header("Authorization", admin).header("X-Forwarded-For", "appearance-" + UUID.randomUUID()).contentType("application/json").content("{\"name\":\"Custom\",\"description\":\"Teste\"}")).andExpect(status().isOk()).andReturn();
         long id = json.readTree(result.getResponse().getContentAsString()).path("data").path("id").asLong();
         mvc.perform(post("/api/servers/{id}/join", id).header("Authorization", member).header("X-Forwarded-For", "appearance-" + UUID.randomUUID())).andExpect(status().isOk());
-        mvc.perform(put("/api/servers/{id}/appearance", id).header("Authorization", member).header("X-Forwarded-For", "appearance-" + UUID.randomUUID()).contentType("application/json").content("{\"accentColor\":\"#123456\"}")).andExpect(status().isBadRequest());
-        mvc.perform(multipart("/api/servers/{id}/media/icon", id).file(image("png", 20, 20)).header("Authorization", member).header("X-Forwarded-For", "appearance-" + UUID.randomUUID())).andExpect(status().isBadRequest());
+        mvc.perform(put("/api/servers/{id}/appearance", id).header("Authorization", member).header("X-Forwarded-For", "appearance-" + UUID.randomUUID()).contentType("application/json").content("{\"accentColor\":\"#123456\"}")).andExpect(status().isForbidden());
+        mvc.perform(multipart("/api/servers/{id}/media/icon", id).file(image("png", 20, 20)).header("Authorization", member).header("X-Forwarded-For", "appearance-" + UUID.randomUUID())).andExpect(status().isForbidden());
         mvc.perform(put("/api/servers/{id}/appearance", id).header("Authorization", admin).header("X-Forwarded-For", "appearance-" + UUID.randomUUID()).contentType("application/json").content("{\"accentColor\":\"#123456\"}")).andExpect(status().isOk());
         for (String slot : java.util.List.of("icon", "banner", "background")) {
             mvc.perform(multipart("/api/servers/{id}/media/{slot}", id, slot).file(image("png", 20, 20)).header("Authorization", admin).header("X-Forwarded-For", "appearance-" + UUID.randomUUID())).andExpect(status().isOk());

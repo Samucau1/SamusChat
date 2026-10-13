@@ -41,21 +41,21 @@ public class PermissionService {
     // Lança exceção se não for membro
     public void requireMember(Long serverId, String email) {
         if (!isMember(serverId, email)) {
-            throw new RuntimeException("Você não é membro deste servidor");
+            throw new org.springframework.security.access.AccessDeniedException("Acesso negado");
         }
     }
 
     // Lança exceção se não for ADMIN
     public void requireAdmin(Long serverId, String email) {
         if (!isAdmin(serverId, email)) {
-            throw new RuntimeException("Apenas administradores podem fazer isso");
+            throw new org.springframework.security.access.AccessDeniedException("Acesso negado");
         }
     }
 
     // Lança exceção se não for MOD ou ADMIN
     public void requireModOrAdmin(Long serverId, String email) {
         if (!isModOrAdmin(serverId, email)) {
-            throw new RuntimeException("Você não tem permissão para isso");
+            throw new org.springframework.security.access.AccessDeniedException("Acesso negado");
         }
     }
 }

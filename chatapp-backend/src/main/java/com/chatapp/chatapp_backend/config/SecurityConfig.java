@@ -22,6 +22,7 @@ public class SecurityConfig {
     private final JwtFilter jwtFilter;
     private final RateLimitFilter rateLimitFilter;
     private final ApiErrorWriter apiErrorWriter;
+    private final com.chatapp.chatapp_backend.security.TransportSecurityFilter transportSecurityFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -39,13 +40,16 @@ public class SecurityConfig {
                                 apiErrorWriter.write(response, 403, "Acesso negado"))
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/logout").authenticated()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
-                        .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/uploads/appearance/**").permitAll()
+                        .requestMatchers("/actuator/info", "/actuator/metrics/**").denyAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(transportSecurityFilter, RateLimitFilter.class)
                 .addFilterAfter(jwtFilter, RateLimitFilter.class);
 
         return http.build();

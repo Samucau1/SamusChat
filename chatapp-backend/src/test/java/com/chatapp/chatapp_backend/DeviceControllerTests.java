@@ -96,7 +96,7 @@ class DeviceControllerTests {
                                 {
                                   "username": "samus",
                                   "email": "samus@test.com",
-                                  "password": "123456"
+                                  "password": "IntegrationTest123!"
                                 }
                                 """))
                 .andExpect(status().isOk());
@@ -107,7 +107,7 @@ class DeviceControllerTests {
                         .content("""
                                 {
                                   "email": "samus@test.com",
-                                  "password": "123456"
+                                  "password": "IntegrationTest123!"
                                 }
                                 """))
                 .andExpect(status().isOk())

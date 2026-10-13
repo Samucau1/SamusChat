@@ -1,6 +1,6 @@
 import { test as base, expect, type Page, type APIRequestContext } from '@playwright/test';
 
-// Simulate distinct local clients without disabling the API's rate limits.
+// Forwarded-header fixtures remain untrusted; the local profile raises the global budget.
 const clientIp = () => `198.18.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 254) + 1}`;
 const test = base.extend({ extraHTTPHeaders: async ({}, use) => { await use({ 'X-Forwarded-For': clientIp() }); } });
 
@@ -41,7 +41,7 @@ test('duas contas: criar/entrar em servidor, STOMP, anexo e canal novo', async (
     await expect(page.getByRole('status').filter({ hasText: 'Ao vivo' })).toBeVisible(); await expect(other.getByRole('status').filter({ hasText: 'Ao vivo' })).toBeVisible();
     await page.getByLabel(/^Mensagem para/).fill('Mensagem real desktop'); await page.getByRole('button', { name: 'Enviar ↗' }).click(); await expect(other.locator('.message p').filter({ hasText: 'Mensagem real desktop' })).toHaveCount(1);
     await page.locator('input[type=file]').setInputFiles({ name: 'desktop.txt', mimeType: 'text/plain', buffer: Buffer.from('arquivo desktop') }); await page.getByRole('button', { name: 'Enviar ↗' }).click(); await expect(other.getByRole('link', { name: 'Abrir anexo ↗' })).toBeVisible();
-    const href = await other.getByRole('link', { name: 'Abrir anexo ↗' }).getAttribute('href'); expect(await (await request.get(href!)).text()).toBe('arquivo desktop');
+    const href = await other.getByRole('link', { name: 'Abrir anexo ↗' }).getAttribute('href'); expect((await request.get(href!)).status()).toBe(401); expect(await (await request.get(href!, { headers: { Authorization: 'Bearer ' + b.token } })).text()).toBe('arquivo desktop'); const download = page.waitForEvent('download'); await page.getByRole('link', { name: 'Abrir anexo ↗' }).click(); expect((await download).suggestedFilename()).toMatch(/\.txt$/);
     await page.getByRole('button', { name: /^Excluir mensagem/ }).first().click();
     await page.getByRole('button', { name: 'Confirmar', exact: true }).click();
     await expect(other.locator('.message p').filter({ hasText: 'Mensagem real desktop' })).toHaveCount(0);

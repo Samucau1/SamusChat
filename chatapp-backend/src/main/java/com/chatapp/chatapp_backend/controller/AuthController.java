@@ -20,6 +20,11 @@ public class AuthController {
 
     private final AuthService authService;
 
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(org.springframework.security.core.Authentication auth) {
+        authService.logout(auth.getName()); return ApiResponse.success(null, "Sessoes encerradas");
+    }
+
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<Map<String, String>>> register(@RequestBody RegisterRequest request) {
         String token = authService.register(request);

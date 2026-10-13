@@ -1,3 +1,5 @@
+import java.net.URI
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -14,6 +16,9 @@ android {
         versionCode = 2
         versionName = "1.1.0"
         val apiUrl = providers.gradleProperty("apiBaseUrl").getOrElse("http://10.0.2.2:8080/")
+        val parsedApiUrl = URI(apiUrl)
+        require(parsedApiUrl.scheme in listOf("http", "https") && parsedApiUrl.host != null && parsedApiUrl.userInfo == null && parsedApiUrl.query == null && parsedApiUrl.fragment == null && apiUrl.endsWith('/'))
+        if (gradle.startParameter.taskNames.any { it.substringAfterLast(':') in listOf("assembleRelease", "bundleRelease", "packageRelease") }) require(parsedApiUrl.scheme == "https") { "Release exige -PapiBaseUrl=https://seu-dominio/" }
         buildConfigField("String", "BASE_URL", "\"${apiUrl}\"")
         val googleClientId = providers.gradleProperty("googleClientId").getOrElse("")
         require(googleClientId.matches(Regex("[A-Za-z0-9._-]*")))
@@ -37,6 +42,8 @@ android {
     kotlinOptions { jvmTarget = "17" }
 }
 dependencies {
+    implementation("com.google.code.gson:gson:2.13.2")
+    implementation("org.java-websocket:Java-WebSocket:1.6.0")
     implementation("androidx.credentials:credentials:1.3.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")

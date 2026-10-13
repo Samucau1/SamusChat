@@ -13,7 +13,9 @@ try {
     Copy-Item -LiteralPath (Resolve-Path target/test-classes).Path -Destination (Join-Path $taskSnapshot 'test-classes') -Recurse
     Copy-Item -LiteralPath (Resolve-Path target/classes).Path -Destination (Join-Path $taskSnapshot 'classes') -Recurse
     $taskClasspath = (Join-Path $taskSnapshot 'test-classes') + ';' + (Join-Path $taskSnapshot 'classes') + ';' + (Get-Content target/desktop-test-classpath.txt -Raw).Trim()
-    $taskDatabase = 'jdbc:h2:mem:desktop_' + [Guid]::NewGuid().ToString('N') + ';MODE=PostgreSQL;DB_CLOSE_DELAY=0;DB_CLOSE_ON_EXIT=FALSE'
+    # Keep the in-memory schema across retirement of the pool's last connection.
+    # A unique name and process termination still isolate/discard this test database.
+    $taskDatabase = 'jdbc:h2:mem:desktop_' + [Guid]::NewGuid().ToString('N') + ';MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE'
     Write-Host "API descartavel H2 na porta $Port. Ctrl+C encerra e descarta os dados de teste."
     & java -cp $taskClasspath com.chatapp.chatapp_backend.ChatappBackendApplication `
         '--spring.profiles.active=test' "--server.port=$Port" `

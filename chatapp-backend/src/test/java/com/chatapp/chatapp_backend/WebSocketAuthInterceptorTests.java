@@ -13,7 +13,7 @@ import static org.mockito.Mockito.mock;
 
 class WebSocketAuthInterceptorTests {
     private final WebSocketAuthInterceptor interceptor = new WebSocketAuthInterceptor(
-            mock(JwtUtil.class), mock(ChannelRepository.class), mock(PermissionService.class));
+            mock(JwtUtil.class), mock(ChannelRepository.class), mock(PermissionService.class), mock(com.chatapp.chatapp_backend.websocket.WebSocketSessions.class));
 
     @Test
     void rejectsConnectWithoutJwt() {

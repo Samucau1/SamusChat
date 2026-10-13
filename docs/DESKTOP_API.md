@@ -16,7 +16,7 @@ Aceite manual em 09/10/2026: o usuário informou que conseguiu localizar e carre
 - Histórico paginado, envio por Enter, quebra de linha com Shift+Enter e preservação do rascunho em falhas.
 - Em 12/10/2026: rascunhos de texto e anexos preservados por conversa ao alternar canais, servidores e amigos, com indicador na lista lateral. O envio concluído limpa somente o conteúdo enviado, mesmo após trocar de conversa. Rascunhos permanecem apenas em memória e são descartados ao recarregar ou sair da conta.
 - Mensagens de canal recebidas por STOMP, reconexão automática e deduplicação por ID. Conversas privadas usam leitura REST a cada três segundos, conforme o contrato existente sem destino STOMP privado.
-- Upload de anexo em canal até 10 MB e abertura de imagens/arquivos pelo proxy de uploads. O backend não oferece upload privado no contrato atual.
+- Upload de anexo em canal até 10 MB. Download exige autenticação e associação ao canal; o PC usa Bearer e blobs locais. Exclusão exige autoria ou moderação autorizada. Fotos de aparência permanecem públicas. O backend não oferece upload em conversa privada no contrato atual.
 - Chamadas individuais: convite, aceite/recusa, microfone, encerramento e compartilhamento de tela com prévia. SDP e credenciais ICE vêm da mesma API do Android.
 
 O token fica em `sessionStorage`, separado do app Android. A sessão persiste ao recarregar a mesma aba e é removida ao sair; não há senha armazenada. Ao receber HTTP 401 em uma sessão conectada, retorna ao login. A sessão de navegador não usa cookies de autenticação.

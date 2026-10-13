@@ -13,10 +13,25 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> denied(Exception ex) { return ResponseEntity.status(403).body(ApiResponse.error("Acesso negado")); }
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<ApiResponse<Void>> status(org.springframework.web.server.ResponseStatusException ex) {
+        if (ex.getStatusCode().value() == 429) return ResponseEntity.status(429).header("Retry-After", "60").header("X-Rate-Limit-Retry-After", "60").body(ApiResponse.error("Muitas requisicoes. Tente novamente em 60 segundos."));
+        return ResponseEntity.status(ex.getStatusCode()).body(ApiResponse.error("Solicitacao nao permitida"));
+    }
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> notFound(Exception ex) { return ResponseEntity.status(404).body(ApiResponse.error("Nao encontrado")); }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex) {
         log.warn("Erro de negocio: {}", ex.getMessage());
         return ResponseEntity.badRequest().body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler({org.springframework.dao.DataAccessException.class, jakarta.persistence.PersistenceException.class})
+    public ResponseEntity<ApiResponse<Void>> handlePersistenceException(Exception ex) {
+        return handleGenericException(ex);
     }
 
     @ExceptionHandler(SecurityException.class)

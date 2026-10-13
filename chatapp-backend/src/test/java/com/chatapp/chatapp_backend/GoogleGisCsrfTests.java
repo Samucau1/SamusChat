@@ -18,6 +18,7 @@ class GoogleGisCsrfTests {
     @BeforeEach void setup() {
         auth=mock(GoogleAuthService.class);
         mvc=MockMvcBuilders.standaloneSetup(new GoogleAuthController(auth))
+            .setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(), new org.springframework.http.converter.FormHttpMessageConverter())
             .setControllerAdvice(new GlobalExceptionHandler()).build();
     }
     @Test void matchingJsonTokensAllowGoogleVerification() throws Exception {

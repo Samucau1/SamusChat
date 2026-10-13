@@ -31,7 +31,7 @@ class AuthServiceTest {
 
     @BeforeEach
     void setup() {
-        service = new AuthService(users, passwords, jwt, sanitizer);
+        service = new AuthService(users, passwords, jwt, sanitizer, mock(com.chatapp.chatapp_backend.security.AccountLoginLimiter.class));
     }
 
     @Test
@@ -39,7 +39,7 @@ class AuthServiceTest {
         RegisterRequest request = registration();
         request.setEmail("SAMUS@test.com");
         validRegistration(request);
-        when(passwords.encode("123456")).thenReturn("bcrypt-hash");
+        when(passwords.encode("IntegrationTest123!")).thenReturn("bcrypt-hash");
         when(jwt.generateToken("samus@test.com")).thenReturn("signed-token");
 
         assertThat(service.register(request)).isEqualTo("signed-token");
@@ -57,7 +57,7 @@ class AuthServiceTest {
         RegisterRequest request = registration();
         validRegistration(request);
         when(users.existsByEmail(request.getEmail())).thenReturn(true);
-        assertThatThrownBy(() -> service.register(request)).hasMessage("Email ja cadastrado");
+        assertThatThrownBy(() -> service.register(request)).hasMessage("Cadastro indisponivel. Confira os dados ou recupere sua conta.");
         verify(users, never()).save(any());
         verifyNoInteractions(passwords, jwt);
     }
@@ -67,13 +67,13 @@ class AuthServiceTest {
         RegisterRequest request = registration();
         validRegistration(request);
         when(users.existsByUsername(request.getUsername())).thenReturn(true);
-        assertThatThrownBy(() -> service.register(request)).hasMessage("Username ja cadastrado");
+        assertThatThrownBy(() -> service.register(request)).hasMessage("Cadastro indisponivel. Confira os dados ou recupere sua conta.");
         verify(users, never()).save(any());
         verifyNoInteractions(passwords, jwt);
     }
 
     @ParameterizedTest
-    @CsvSource({"username,Username invalido", "email,Email invalido", "password,Senha deve ter"})
+    @CsvSource({"username,Username invalido", "email,Email invalido", "password,Use senha"})
     void invalidRegistrationStopsBeforePersistence(String invalidField, String error) {
         RegisterRequest request = registration();
         when(sanitizer.sanitize(request.getUsername())).thenReturn(request.getUsername());
@@ -89,11 +89,11 @@ class AuthServiceTest {
 
     @Test
     void loginNormalizesEmailAndReturnsTokenForTheStoredAccount() {
-        LoginRequest request = login("123456");
+        LoginRequest request = login("IntegrationTest123!");
         request.setEmail("SAMUS@test.com");
         validLogin(request);
         when(users.lockedByEmail("samus@test.com")).thenReturn(Optional.of(user()));
-        when(passwords.matches("123456", "bcrypt-hash")).thenReturn(true);
+        when(passwords.matches("IntegrationTest123!", "bcrypt-hash")).thenReturn(true);
         when(jwt.generateToken("samus@test.com")).thenReturn("signed-token");
         assertThat(service.login(request)).isEqualTo("signed-token");
         verify(users, never()).save(any());
@@ -111,7 +111,7 @@ class AuthServiceTest {
 
     @Test
     void unknownEmailReturnsTheSameGenericError() {
-        LoginRequest request = login("123456");
+        LoginRequest request = login("IntegrationTest123!");
         validLogin(request);
         when(users.lockedByEmail(request.getEmail())).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.login(request)).hasMessage("Credenciais invalidas");
@@ -120,7 +120,7 @@ class AuthServiceTest {
 
     @Test
     void invalidLoginEmailDoesNotQueryTheDatabase() {
-        LoginRequest request = login("123456");
+        LoginRequest request = login("IntegrationTest123!");
         when(sanitizer.sanitize(request.getEmail())).thenReturn("invalid");
         assertThatThrownBy(() -> service.login(request)).hasMessage("Email invalido");
         verifyNoInteractions(users, passwords, jwt);
@@ -141,7 +141,7 @@ class AuthServiceTest {
 
     private RegisterRequest registration() {
         var request = new RegisterRequest();
-        request.setUsername("samus"); request.setEmail("samus@test.com"); request.setPassword("123456");
+        request.setUsername("samus"); request.setEmail("samus@test.com"); request.setPassword("IntegrationTest123!");
         return request;
     }
 

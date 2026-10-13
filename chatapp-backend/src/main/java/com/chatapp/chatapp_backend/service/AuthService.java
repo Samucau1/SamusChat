@@ -18,6 +18,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final InputSanitizer sanitizer;
+    private final com.chatapp.chatapp_backend.security.AccountLoginLimiter loginLimiter;
 
     public String register(RegisterRequest request) {
         String username = sanitizer.sanitize(request.getUsername());
@@ -31,16 +32,16 @@ public class AuthService {
             throw new RuntimeException("Email invalido");
         }
         if (!sanitizer.isValidPassword(password)) {
-            throw new RuntimeException("Senha deve ter entre 6 e 100 caracteres");
+            throw new RuntimeException("Use senha de 15 caracteres a 72 bytes, sem sequencias comuns");
         }
 
         String normalizedEmail = email.toLowerCase();
 
         if (userRepository.existsByEmail(normalizedEmail)) {
-            throw new RuntimeException("Email ja cadastrado");
+            throw new RuntimeException("Cadastro indisponivel. Confira os dados ou recupere sua conta.");
         }
         if (userRepository.existsByUsername(username)) {
-            throw new RuntimeException("Username ja cadastrado");
+            throw new RuntimeException("Cadastro indisponivel. Confira os dados ou recupere sua conta.");
         }
 
         User user = new User();
@@ -60,6 +61,8 @@ public class AuthService {
             throw new RuntimeException("Email invalido");
         }
 
+        loginLimiter.attempt(email.toLowerCase(java.util.Locale.ROOT));
+        if (request.getPassword() == null || request.getPassword().getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72) throw new RuntimeException("Credenciais invalidas");
         User user = userRepository.lockedByEmail(email.toLowerCase())
                 .orElseThrow(() -> new RuntimeException("Credenciais invalidas"));
 
@@ -67,6 +70,13 @@ public class AuthService {
             throw new RuntimeException("Credenciais invalidas");
         }
 
+        loginLimiter.success(email.toLowerCase(java.util.Locale.ROOT));
         return jwtUtil.generateToken(user.getEmail());
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void logout(String email) {
+        var user = userRepository.lockedByEmail(email).orElseThrow(() -> new SecurityException("Conta invalida"));
+        user.setAuthVersion(user.getAuthVersion() + 1); userRepository.save(user);
     }
 }

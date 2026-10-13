@@ -137,7 +137,7 @@ class ChatWebSocketControllerTests {
                                 {
                                   "username": "samus",
                                   "email": "samus@test.com",
-                                  "password": "123456"
+                                  "password": "IntegrationTest123!"
                                 }
                                 """))
                 .andExpect(status().isOk());
@@ -147,7 +147,7 @@ class ChatWebSocketControllerTests {
                         .content("""
                                 {
                                   "email": "samus@test.com",
-                                  "password": "123456"
+                                  "password": "IntegrationTest123!"
                                 }
                                 """))
                 .andExpect(status().isOk())

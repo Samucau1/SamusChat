@@ -1,43 +1,35 @@
-# Regressao HTTP com Postman / Newman
+# Regressão HTTP com Postman / Newman
 
-Atualização de 12/10/2026: a coleção compartilhada contém **108 requisições e 206 verificações**. As pastas de PC e Android exercitam aparência, avatar/GIF, capa, fundo, versão estática, remoção, validação, permissões, cargos e dispositivos. Importe também `SamusChat-pc.postman_environment.json` e `SamusChat-android.postman_environment.json`; ambos apontam para H2 na porta 18083. Rode a coleção inteira em cada ambiente. Para a API final desta regressão, substitua `baseUrl` por `http://127.0.0.1:18084` ou pela porta usada no launcher.
+Atualização de 12/10/2026: coleção compartilhada com **143 requisições e 247 verificações**, aprovada nos ambientes PC e Android. Cada execução cria contas, servidores e canais fictícios. Execute a coleção inteira, na ordem, exclusivamente em uma API descartável. Não exporte tokens preenchidos para o Git.
 
-O arquivo `fixtures/appearance.gif` é um GIF fictício de 1×1. As pastas novas distinguem as requisições de clientes simulados sem desabilitar os limites da API. HTTP e sinalização são cobertos pela coleção; transmissão real é validada pelos testes WebRTC de navegador. Veja [o relatório desta entrega](../REGRESSAO_PERSONALIZACAO_PC_ANDROID_2026-10-12.md).
-
-Importe `SamusChat.postman_collection.json` e `SamusChat-local.postman_environment.json` no Postman, selecione o ambiente H2 local e execute a colecao inteira, na ordem. A URL padrao e `http://127.0.0.1:18081`; altere a variavel `baseUrl` se necessario, mantendo uma API descartavel.
-
-Use uma API descartavel: a colecao cria duas contas, um servidor e canais novos em cada execucao. IDs e tokens ficam em variaveis de execucao, sem credenciais reais no arquivo. Nao exporte variaveis preenchidas com tokens para o Git.
-
-Para iniciar uma API com H2 em memoria, execute na raiz:
+Na raiz, inicie a API em um terminal:
 
 ```powershell
-.\scripts\start-desktop-test-api.ps1 -Port 18081
+./scripts/start-desktop-test-api.ps1 -Port 18085
 ```
 
-Com a API pronta, execute na raiz do repositorio:
+Em outro terminal, na raiz:
 
 ```powershell
-npx --yes newman run docs/postman/SamusChat.postman_collection.json `
-  -e docs/postman/SamusChat-local.postman_environment.json --working-dir . --bail
+npx --yes newman run docs/postman/SamusChat.postman_collection.json -e docs/postman/SamusChat-pc.postman_environment.json --env-var baseUrl=http://127.0.0.1:18085 --working-dir . --bail
+npx --yes newman run docs/postman/SamusChat.postman_collection.json -e docs/postman/SamusChat-android.postman_environment.json --env-var baseUrl=http://127.0.0.1:18085 --working-dir . --bail
 ```
 
-O limite de autenticacao permite cinco requisicoes por minuto por cliente; a colecao usa quatro. Os cenarios originais e a pasta desktop usam identificadores distintos de clientes simulados via X-Forwarded-For, gerados a partir do ID da execucao, mantendo os limites da API habilitados. Isso permite repetir a suite com novos clientes de teste; nao e um teste de carga. Encerre a API de teste com Ctrl+C quando terminar. O banco em memoria desaparece quando o processo termina.
+No Postman, importe a coleção e ambos os ambientes; ajuste `baseUrl` para a porta acima. Se necessário, selecione manualmente os arquivos de `fixtures/` nas requisições de upload. Os arquivos são fictícios; `security-attack.html` é um marcador inofensivo para testar rejeição de HTML.
 
-No Postman, confira o campo `file` da requisicao **Desktop - enviar anexo** e selecione `fixtures/desktop-anexo.txt` caso o caminho relativo nao seja resolvido pelo aplicativo. No Newman, execute da raiz conforme o comando acima; o arquivo fica em `docs/postman/fixtures/desktop-anexo.txt`.
+O launcher usa classpath de testes, H2 exclusivo, uploads em target e integrações externas desligadas. O banco conserva os dados mesmo quando todas as conexões fecham e desaparece ao encerrar a JVM. Apenas selecionar o perfil test em spring-boot:run não garante esse isolamento.
 
-O launcher usa classpath de testes e define H2, driver, usuario, DDL, uploads e integracoes explicitamente. Apenas selecionar o perfil test com spring-boot:run nao garante isolamento quando os recursos de teste nao entram no classpath.
-
-## Metodos e cenarios
-
-| Metodo | Cobertura |
+| Métodos | Cobertura |
 | --- | --- |
-| GET | Saude, autenticacao obrigatoria, perfil, servidores, membros, mensagens, contatos, ICE, chamadas e sala |
-| POST | Cadastro/login, servidor, entrada de membro, canais, mensagem, convite/aceite/oferta/resposta/encerramento e entrada/saida da sala |
-| PUT | Alteracao do nome do perfil |
-| DELETE | Exclusao da mensagem criada pela propria colecao |
+| GET | Saúde, autenticação, perfil, servidores, membros, mensagens, contatos, ICE, chamadas, salas e download protegido |
+| POST | Cadastro/login/logout, servidor, canais, mensagens, sinalização de chamadas, salas, anexos, aparência e dispositivos |
+| PUT | Perfil e personalização |
+| DELETE | Mensagens, aparência e anexos com verificação de autoria/permissões |
 
-As 44 requisicoes verificam status HTTP, envelopes de sucesso, estados da chamada, aceite proibido ao chamador, encerramento idempotente e dois participantes na sala. A pasta **MVP Desktop - privados e anexos** acrescenta envio/resposta privada entre duas contas, historicos dos dois lados, rejeicao de mensagem vazia, paginacao, envio anonimo rejeitado, upload/download com conteudo preservado e consulta ao mesmo servidor pelo segundo cliente. A API nao expoe PATCH nesses controladores.
+As pastas de PC e Android exercitam avatar/GIF, capa, fundo, versão estática, remoção, cargos e dispositivos. Os cenários de segurança verificam download anônimo e por não membro, exclusão indevida, conteúdo/MIME perigoso, propriedade do dispositivo, senha fraca, cinco tentativas por conta, troca de cabeçalho IP e revogação após logout.
 
-Esta colecao complementa a suite backend; nao cobre todos os endpoints nem substitui seus testes de permissoes, recuperacao de senha, Google, uploads, dispositivos, WebSocket e Redis. SDP de teste verifica sinalizacao; audio, video e compartilhamento real exigem clientes WebRTC.
+Cabeçalhos X-Forwarded-For presentes em fixtures não criam identidades confiáveis: o backend só aceita proxies configurados. O perfil H2 aumenta o orçamento global para a regressão local, mantendo o limite de cinco tentativas de login por conta por minuto. A coleção não é um teste de carga nem comprova proteção sob tráfego distribuído.
 
-Execucao aprovada em 09/10/2026: **44 requisicoes e 100 verificacoes**, nenhuma falha. Veja o [relatorio da regressao desktop](../REGRESSAO_ACEITE_DESKTOP_2026-10-09.md).
+Estes ambientes exercitam contratos HTTP da API compartilhada, sem executar o aplicativo Android físico. SDP fictício verifica sinalização; áudio, vídeo, captura e FPS exigem WebRTC e testes manuais de hardware. Redis, migração PostgreSQL, WebSocket, recuperação e Google têm testes backend separados.
+
+Consulte o [protocolo e resultados finais](../PROTOCOLO_SEGURANCA_PC_ANDROID_2026-10-12.md) e a [auditoria inicial](../AUDITORIA_SEGURANCA_PC_ANDROID_2026-10-12.md).

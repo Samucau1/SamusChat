@@ -77,7 +77,7 @@ class FileControllerTests {
     }
 
     @Test
-    void uploadImageCreatesAttachmentMessageAndExposesPublicFile() throws Exception {
+    void uploadImageCreatesAttachmentMessageAndRequiresAuthenticatedDownload() throws Exception {
         String token = registerAndLogin();
         long channelId = createServerAndGetGeneralChannelId(token);
 
@@ -85,7 +85,7 @@ class FileControllerTests {
                 "file",
                 "samus.png",
                 MediaType.IMAGE_PNG_VALUE,
-                new byte[] {1, 2, 3, 4}
+                pngFixture()
         );
 
         MvcResult uploadResult = mockMvc.perform(multipart("/api/channels/{channelId}/upload", channelId)
@@ -104,9 +104,9 @@ class FileControllerTests {
                 .asText();
         String fileName = attachmentUrl.substring(attachmentUrl.lastIndexOf("/") + 1);
 
-        mockMvc.perform(get("/uploads/{fileName}", fileName))
+        mockMvc.perform(get("/uploads/{fileName}", fileName).header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(content().bytes(new byte[] {1, 2, 3, 4}));
+                .andExpect(content().contentType("image/png"));
 
         mockMvc.perform(get("/api/channels/{channelId}/messages", channelId)
                         .header("Authorization", "Bearer " + token))
@@ -128,7 +128,7 @@ class FileControllerTests {
                 .andReturn();
         String url = objectMapper.readTree(result.getResponse().getContentAsString())
                 .get("data").get("attachmentUrl").asText();
-        mockMvc.perform(get(java.net.URI.create(url).getPath()))
+        mockMvc.perform(get(java.net.URI.create(url).getPath()).header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk()).andExpect(content().bytes(bytes));
         mockMvc.perform(get("/api/channels/{channelId}/messages", channelId)
                         .header("Authorization", "Bearer " + token))
@@ -146,7 +146,13 @@ class FileControllerTests {
             {"video/mp4", "teste.mp4"}, {"video/webm", "teste.webm"}, {"video/3gpp", "teste.3gp"}
         };
         for (String[] format : formats) {
-            byte[] bytes = new byte[] {0, 1, 2, 3, 4};
+            byte[] bytes = switch(format[1].substring(format[1].lastIndexOf('.') + 1)) {
+                case "doc" -> new byte[]{(byte)0xd0,(byte)0xcf,0x11,(byte)0xe0,(byte)0xa1,(byte)0xb1,0x1a,(byte)0xe1};
+                case "docx" -> docxFixture();
+                case "webm" -> new byte[]{0x1a,0x45,(byte)0xdf,(byte)0xa3};
+                case "3gp" -> new byte[]{0,0,0,12,'f','t','y','p','3','g','p','6'};
+                default -> new byte[]{0,0,0,12,'f','t','y','p','i','s','o','m'};
+            };
             MockMultipartFile file = new MockMultipartFile("file", format[1], format[0], bytes);
             MvcResult result = mockMvc.perform(multipart("/api/channels/{channelId}/upload", channelId)
                             .file(file).param("content", "Anexo " + format[1])
@@ -156,7 +162,7 @@ class FileControllerTests {
                     .andReturn();
             String url = objectMapper.readTree(result.getResponse().getContentAsString())
                     .get("data").get("attachmentUrl").asText();
-            mockMvc.perform(get(java.net.URI.create(url).getPath()))
+            mockMvc.perform(get(java.net.URI.create(url).getPath()).header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk()).andExpect(content().bytes(bytes));
             mockMvc.perform(get("/api/channels/{channelId}/messages", channelId)
                             .header("Authorization", "Bearer " + token))
@@ -165,6 +171,20 @@ class FileControllerTests {
         }
     }
 
+    private byte[] pngFixture() throws Exception {
+        var out = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB), "png", out);
+        return out.toByteArray();
+    }
+    private byte[] docxFixture() throws Exception {
+        var out = new java.io.ByteArrayOutputStream();
+        try (var zip = new java.util.zip.ZipOutputStream(out)) {
+            for (String name : new String[]{"[Content_Types].xml", "word/document.xml"}) {
+                zip.putNextEntry(new java.util.zip.ZipEntry(name)); zip.write("<test/>".getBytes()); zip.closeEntry();
+            }
+        }
+        return out.toByteArray();
+    }
     private String registerAndLogin() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -172,7 +192,7 @@ class FileControllerTests {
                                 {
                                   "username": "samus",
                                   "email": "samus@test.com",
-                                  "password": "123456"
+                                  "password": "IntegrationTest123!"
                                 }
                                 """))
                 .andExpect(status().isOk());
@@ -182,7 +202,7 @@ class FileControllerTests {
                         .content("""
                                 {
                                   "email": "samus@test.com",
-                                  "password": "123456"
+                                  "password": "IntegrationTest123!"
                                 }
                                 """))
                 .andExpect(status().isOk())

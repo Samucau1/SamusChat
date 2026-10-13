@@ -1,54 +1,32 @@
 package com.chatapp.chatapp_backend.controller;
-
-import com.chatapp.chatapp_backend.dto.ApiResponse;
-import com.chatapp.chatapp_backend.dto.MessageResponse;
-import com.chatapp.chatapp_backend.service.FileStorageService;
-import com.chatapp.chatapp_backend.service.MessageService;
+import com.chatapp.chatapp_backend.dto.*;
+import com.chatapp.chatapp_backend.service.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.FileSystemResource;
+import java.io.IOException;
 
-@RestController
-@RequestMapping("/api")
-@RequiredArgsConstructor
+@RestController @RequiredArgsConstructor
 public class FileController {
-
-    private final FileStorageService fileStorageService;
-    private final MessageService messageService;
-
-    @PostMapping("/channels/{channelId}/upload")
-    public ResponseEntity<ApiResponse<MessageResponse>> uploadFile(
-            Authentication auth,
-            @PathVariable Long channelId,
-            @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "content", required = false) String content) {
-
-        try {
-            String fileUrl = fileStorageService.saveFile(file);
-            String type = file.getContentType() != null && file.getContentType().startsWith("image/")
-                    ? "IMAGE"
-                    : "FILE";
-
-            MessageResponse response = messageService.sendMessageWithAttachment(
-                    auth.getName(), channelId, content, fileUrl, type
-            );
-
-            return ResponseEntity.ok(ApiResponse.success(response, "Arquivo enviado com sucesso"));
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao fazer upload: " + e.getMessage());
-        }
+    private final AttachmentService attachments;
+    private final FileStorageService storage;
+    @PostMapping("/api/channels/{channelId}/upload")
+    public ApiResponse<MessageResponse> upload(Authentication auth, @PathVariable Long channelId, @RequestParam("file") MultipartFile file, @RequestParam(value="content", required=false) String content) throws IOException {
+        return ApiResponse.success(attachments.upload(auth.getName(), channelId, file, content), "Arquivo enviado com sucesso");
     }
-
-    @DeleteMapping("/files")
-    public ResponseEntity<ApiResponse<Void>> deleteFile(@RequestParam String fileUrl) {
-        fileStorageService.deleteFile(fileUrl);
-        return ResponseEntity.ok(ApiResponse.success(null, "Arquivo deletado com sucesso"));
+    @GetMapping("/uploads/{filename}")
+    public ResponseEntity<FileSystemResource> download(Authentication auth, @PathVariable String filename) {
+        var file = attachments.download(auth.getName(), filename);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).contentType(MediaType.parseMediaType(storage.contentType(filename)))
+            .header("Content-Disposition", ContentDisposition.attachment().filename(filename).build().toString())
+            .header("Content-Security-Policy", "sandbox; default-src 'none'")
+            .body(new FileSystemResource(file));
+    }
+    @DeleteMapping("/api/files")
+    public ApiResponse<Void> delete(Authentication auth, @RequestParam String fileUrl) {
+        attachments.delete(auth.getName(), fileUrl); return ApiResponse.success(null, "Arquivo deletado com sucesso");
     }
 }

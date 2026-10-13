@@ -105,11 +105,11 @@ class Stage10ApiRegressionTests {
         long channel = server.path("channels").get(0).path("id").asLong();
         failure(send(owner, channel, "   "));
         failure(send(owner, channel, "x".repeat(2001)));
-        failure(send(outsider, channel, "sem permissao"));
-        failure(api.perform(get("/api/channels/{id}/messages", channel).header("Authorization", outsider)));
+        forbidden(send(outsider, channel, "sem permissao"));
+        forbidden(api.perform(get("/api/channels/{id}/messages", channel).header("Authorization", outsider)));
         failure(api.perform(get("/api/channels/{id}/messages", channel).header("Authorization", owner).param("page", "-1")));
         failure(api.perform(get("/api/channels/{id}/messages", channel).header("Authorization", owner).param("size", "101")));
-        failure(api.perform(post("/api/servers/{id}/channels", server.path("id").asLong())
+        forbidden(api.perform(post("/api/servers/{id}/channels", server.path("id").asLong())
                 .header("Authorization", outsider).contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"canal\"}")));
         success(api.perform(get("/api/channels/{id}/messages", channel).header("Authorization", owner)))
                 .andExpect(jsonPath("$.data").isEmpty());
@@ -117,7 +117,7 @@ class Stage10ApiRegressionTests {
 
     private String register(String username, String email) throws Exception {
         JsonNode result = data(success(api.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(Map.of("username", username, "email", email, "password", "123456"))))));
+                .content(json.writeValueAsString(Map.of("username", username, "email", email, "password", "IntegrationTest123!"))))));
         assertThat(result.path("token").asText()).isNotBlank();
         return "Bearer " + result.path("token").asText();
     }
@@ -139,6 +139,9 @@ class Stage10ApiRegressionTests {
                 .andExpect(jsonPath("$.error").doesNotExist());
     }
 
+    private void forbidden(ResultActions result) throws Exception {
+        result.andExpect(status().isForbidden()).andExpect(jsonPath("$.success").value(false)).andExpect(jsonPath("$.data").doesNotExist());
+    }
     private void failure(ResultActions result) throws Exception {
         result.andExpect(status().isBadRequest()).andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.timestamp").isString()).andExpect(jsonPath("$.error").isString())

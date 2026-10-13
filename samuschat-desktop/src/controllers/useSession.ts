@@ -7,9 +7,15 @@ export function useSession() {
   const [restoring, setRestoring] = useState(Boolean(api.token));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  function logout() { api.token = ''; sessionStorage.removeItem(key); setUser(null); setError(''); }
+  function clearSession() { api.token = ''; sessionStorage.removeItem(key); setUser(null); setError(''); }
+  async function logout() {
+    if (busy) return; setBusy(true);
+    try { await api.logout(); clearSession(); }
+    catch (problem) { handleError(problem); }
+    finally { setBusy(false); }
+  }
   function handleError(problem: unknown) {
-    if (problem instanceof ApiError && problem.status === 401 && user) logout();
+    if (problem instanceof ApiError && problem.status === 401 && user) clearSession();
     setError(problem instanceof Error ? problem.message : 'Ocorreu um erro. Tente novamente.');
   }
   useEffect(() => {

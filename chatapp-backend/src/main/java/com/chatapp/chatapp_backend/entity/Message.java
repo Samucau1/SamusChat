@@ -38,6 +38,11 @@ public class Message {
     @Column(name = "attachment_type")
     private String attachmentType;
 
+    @Column(name = "attachment_name", length = 80)
+    private String attachmentName;
+    @Column(name = "attachment_size")
+    private Long attachmentSize;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 

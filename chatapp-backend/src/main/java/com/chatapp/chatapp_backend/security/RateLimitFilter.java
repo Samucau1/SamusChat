@@ -21,6 +21,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private final RateLimitConfig rateLimitConfig;
     private final ApiErrorWriter apiErrorWriter;
+    @org.springframework.beans.factory.annotation.Value("${app.security.trusted-proxies:}") private String trustedProxies;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -58,9 +59,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private String getClientIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isEmpty()) {
+        boolean trusted = isTrustedProxy(request);
+        if (trusted && forwarded != null && forwarded.matches("[0-9a-fA-F:., ]{1,200}")) {
             return forwarded.split(",")[0].trim();
         }
         return request.getRemoteAddr();
+    }
+    public boolean isTrustedProxy(HttpServletRequest request) {
+        return java.util.Arrays.stream(trustedProxies.split(",")).map(String::trim).filter(value -> !value.isBlank()).anyMatch(request.getRemoteAddr()::equals);
     }
 }

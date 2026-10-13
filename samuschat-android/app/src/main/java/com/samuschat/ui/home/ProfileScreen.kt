@@ -155,6 +155,7 @@ fun ProfileScreen(app: SamusChatApplication, email: String, onLogout: () -> Unit
         Button(onClick = { model.saveAppearance(bio, color) }, enabled = !state.busy && state.username != null && bio.length <= 190 && color.matches(Regex("#[0-9a-fA-F]{6}"))) { Text("Salvar aparência") }
         state.notice?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
         HorizontalDivider()
+        Text("Sair encerra as sessões desta conta em todos os dispositivos.")
         OutlinedButton(onClick = onLogout, modifier = Modifier.fillMaxWidth(), enabled = !state.busy) { Text("Sair da conta") }
     }
     }
