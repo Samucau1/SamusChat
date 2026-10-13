@@ -35,7 +35,7 @@ Os canais de chamada do PC usam o mesmo contrato de sala do Android, até seis p
 
 Atualização em 12/10/2026: no PC, é possível escolher **750p, 900p, 1080p, 1440p ou 2160p**, com **30 ou 60 fps**. O navegador sugere uma configuração com base nas capacidades disponíveis. O ajuste automático usa estatísticas nativas de codificação e rede, sem descer abaixo de 750p/30 fps. A captura nativa é reutilizada, sem cópia de pixels em JavaScript; o app web não acessa contadores globais do Windows diretamente. Consulte [qualidade, feedback e limites da transmissão](TRANSMISSAO_PC_HARDWARE.md) e [regressão dessa alteração](REGRESSAO_TRANSMISSAO_PC_HARDWARE_2026-10-12.md).
 
-A prévia local individual começa oculta; grupos não reproduzem a própria captura. Não foi acrescentado modo econômico de transmissão ao Android. A opção de economizar animações de GIF é independente da transmissão de tela.
+A prévia local começa visível nas ligações individuais e nos canais. Quem transmite pode ampliar e assistir à própria captura, ou ocultar a prévia. Qualidade e ajuste automático ficam na engrenagem da ligação; o feedback de envio permanece visível. Não foi acrescentado modo econômico de transmissão ao Android. A opção de economizar animações de GIF é independente da transmissão de tela.
 
 Os testes automatizados verificam limites configurados, sinalização e decodificação de tela sintética. A redução real de CPU/GPU e a qualidade de áudio físico precisam de medição na máquina e nos dispositivos. Captura exige localhost/HTTPS e redes externas exigem TURN acessível.
 

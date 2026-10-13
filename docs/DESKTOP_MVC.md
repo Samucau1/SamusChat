@@ -8,9 +8,11 @@ A versão integrada também inclui [personalização de perfil/servidor e transm
 
 Auditoria em 12/10/2026: ataques controlados à API compartilhada e ao PC identificaram falhas abertas. Consulte [evidências, prioridades e estratégias de correção para PC e Android](AUDITORIA_SEGURANCA_PC_ANDROID_2026-10-12.md) antes de uma publicação com dados reais.
 
-As correções locais e os resultados posteriores estão no [protocolo de segurança, API, regressão e Postman](PROTOCOLO_SEGURANCA_PC_ANDROID_2026-10-12.md). Ele inclui o roteiro para testar manualmente o PC; a verificação final de dependências e a publicação no GitHub permanecem pendentes.
+As correções locais e os resultados posteriores estão no [protocolo de segurança, API, regressão e Postman](PROTOCOLO_SEGURANCA_PC_ANDROID_2026-10-12.md). Ele inclui o roteiro para testar manualmente o PC e o inventário final de dependências. As correções foram enviadas no commit `db92439`, no [PR #2](https://github.com/Samucau1/SamusChat/pull/2).
 
 Atualização em 09/10/2026: o protótipo evoluiu para um MVP integrado à API. O texto abaixo preserva o planejamento e o escopo da primeira versão; o comportamento atual está no [guia da integração desktop](DESKTOP_API.md).
+
+A tela de ligação agora organiza participantes e controles em um palco, com qualidade na engrenagem, prévia da própria transmissão e compatibilidade de codificação. Veja a [regressão da ligação PC](REGRESSAO_LIGACAO_PC_2026-10-12.md).
 
 ## Objetivo e escopo
 

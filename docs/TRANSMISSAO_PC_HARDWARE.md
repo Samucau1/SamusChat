@@ -2,7 +2,7 @@
 
 Atualização em 12/10/2026. Disponível em chamadas individuais e canais de chamada do PC. O Android conserva seus parâmetros anteriores.
 
-Antes de compartilhar, escolher **750p, 900p, 1080p, 1440p ou 2160p**, com **30 ou 60 fps**. As preferências ficam salvas neste navegador. A resolução corresponde à altura do vídeo; a captura conserva a proporção da fonte. Fontes que não fornecem a altura e o FPS escolhidos são recusadas com aviso. Não há opção abaixo de 750p/30 fps.
+Na ligação, abrir a engrenagem **Configurações da transmissão** e escolher **750p, 900p, 1080p, 1440p ou 2160p**, com **30 ou 60 fps**. As preferências ficam salvas neste navegador. A resolução corresponde à altura do vídeo; a captura conserva a proporção da fonte. Fontes que não fornecem a altura e o FPS escolhidos são recusadas com aviso. Não há opção abaixo de 750p/30 fps.
 
 ## Sugestão para a máquina
 
@@ -22,7 +22,7 @@ O ajuste reaplica restrições à mesma trilha nativa e atualiza os emissores, s
 
 A versão atual do PC roda no navegador. Reutiliza a captura nativa `getDisplayMedia`, o encoder WebRTC e a integração com o sistema operacional oferecida pelo navegador. Não acessa diretamente contadores globais de CPU/GPU do Windows, Windows Graphics Capture ou Desktop Duplication. Acesso direto a essas APIs exige uma aplicação ou componente nativo, ainda ausente do repositório.
 
-Existe uma captura por transmissão, compartilhada entre os pares. Cada destinatário ainda exige sua própria codificação/transmissão na arquitetura atual. A prévia local individual começa oculta; grupos não reproduzem sua própria captura. O monitoramento não cria uma segunda captura nem um laço de cópia de quadros.
+Existe uma captura por transmissão, compartilhada entre os pares. Cada destinatário ainda exige sua própria codificação/transmissão na arquitetura atual. A prévia local começa visível tanto na ligação individual quanto no canal. Usa a mesma captura nativa, sempre sem áudio local. O botão de ampliar permite assistir à própria transmissão; o botão de prévia permite ocultá-la. O monitoramento não cria uma segunda captura nem um laço de cópia de quadros.
 
 | Altura | Teto por destinatário em 30 fps | Teto em 60 fps |
 | --- | --- | --- |
@@ -34,9 +34,17 @@ Existe uma captura por transmissão, compartilhada entre os pares. Cada destinat
 
 Os tetos não incluem áudio nem overhead de rede. São limites, não reservas de banda. A escolha de codec eficiente depende das capacidades e da negociação entre os dois navegadores; o app não força aceleração por GPU.
 
-O seletor recebe restrições ideais; após selecionar a fonte, o app exige altura e FPS exatos via `applyConstraints`. O encoder usa `scaleResolutionDownBy: 1` e `maintain-framerate-and-resolution` para impedir a redução independente de resolução/FPS. Esse valor exige navegador compatível, como Chrome 144 ou superior. Mesmo assim, CPU/rede insuficientes podem causar descarte de quadros: configurar 30 fps não garante 30 quadros entregues a cada segundo. Tela estática com FPS baixo, sozinha, não dispara redução.
+O seletor recebe restrições ideais; após selecionar a fonte, o app exige altura e FPS exatos via `applyConstraints`. O encoder usa `scaleResolutionDownBy: 1` e tenta `maintain-framerate-and-resolution`. Se o navegador rejeita esse valor com TypeError ou NotSupportedError, busca parâmetros novos e tenta `maintain-resolution`, conservando os limites de bitrate e FPS. Se nenhuma preferência opcional é aceita, mantém os limites e usa a indicação de conteúdo `detail`. A alternativa prioriza resolução; não equivale a garantir FPS constante sob carga. Outros erros de conexão continuam sendo reportados. Mesmo assim, CPU/rede insuficientes podem causar descarte de quadros: configurar 30 fps não garante 30 quadros entregues a cada segundo. Tela estática com FPS baixo, sozinha, não dispara redução.
 
 Captura exige localhost ou HTTPS. Redes externas precisam de TURN acessível. A economia real de CPU/GPU precisa ser medida no Windows com uma tela física e o hardware de destino; os testes automatizados não medem um percentual de economia.
+
+## Interface e recuperação de falhas
+
+As configurações de resolução, FPS e ajuste automático ficam em uma janela modal aberta pela engrenagem. Durante a transmissão, resolução/FPS ficam bloqueados; parar e reiniciar aplica uma nova seleção. O ajuste automático pode ser alterado enquanto transmite. Os dados de envio e avisos continuam visíveis na ligação com a janela fechada.
+
+Cancelamento do seletor mantém a chamada. Falhas de captura exibem orientação sobre fonte, navegador, permissão ou qualidade, sem encerrar o áudio. A interface organiza participantes em blocos com controles de microfone, transmissão, prévia, encerramento e engrenagem na parte inferior.
+
+Veja a [regressão da interface e compatibilidade](REGRESSAO_LIGACAO_PC_2026-10-12.md).
 
 ## Referências
 

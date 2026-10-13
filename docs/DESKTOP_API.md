@@ -1,6 +1,6 @@
 # SamusChat desktop integrado — 09/10/2026
 
-Atualização em 12/10/2026: contratos REST ampliados, gestão de membros, exclusão de mensagens, canais de chamada em grupo e personalização compartilhada com Android. A transmissão no PC permite escolher de 750p a 2160p e 30 ou 60 fps, com sugestão de capacidade, ajuste por feedback nativo e prévia opcional. Consulte [qualidade e limites](TRANSMISSAO_PC_HARDWARE.md). Consulte [personalização e limites de mídia](PERSONALIZACAO_PC_ANDROID.md) e [regressão da entrega](REGRESSAO_PERSONALIZACAO_PC_ANDROID_2026-10-12.md).
+Atualização em 12/10/2026: contratos REST ampliados, gestão de membros, exclusão de mensagens, canais de chamada em grupo e personalização compartilhada com Android. A transmissão no PC permite escolher de 750p a 2160p e 30 ou 60 fps, com sugestão de capacidade, ajuste por feedback nativo e prévia visível por padrão, com opção de ocultar/ampliar. As configurações ficam na engrenagem da ligação. Consulte [qualidade e limites](TRANSMISSAO_PC_HARDWARE.md). Consulte [personalização e limites de mídia](PERSONALIZACAO_PC_ANDROID.md) e [regressão da entrega](REGRESSAO_PERSONALIZACAO_PC_ANDROID_2026-10-12.md).
 
 A escolha de qualidade e o ajuste por desempenho foram validados na [regressão de transmissão por hardware](REGRESSAO_TRANSMISSAO_PC_HARDWARE_2026-10-12.md). A [regressão anterior de transmissão fixa a 30 fps](REGRESSAO_TRANSMISSAO_PC_30FPS_2026-10-12.md) preserva o histórico daquela entrega.
 
@@ -61,6 +61,8 @@ A suíte abre clientes Chromium e exercita a API real com contas fictícias. Os 
 O microfone é simulado pelo navegador e a fonte de tela é um canvas sintético, transmitido pelo WebRTC e decodificado no segundo cliente. Isso não mede qualidade acústica nem testa o seletor nativo de compartilhamento. O cabeçalho de clientes de teste distingue as origens simuladas para não desativar os limites de requisições do backend. Logs ficam em `logs/desktop-e2e-final.log`; capturas e traces ficam fora do Git em `samuschat-desktop/test-results`.
 
 Na primeira tentativa, o perfil test via Maven não carregou os recursos H2 e utilizou PostgreSQL local. A instância foi encerrada; os três usuários fictícios, um servidor, seu canal, duas mensagens e um arquivo criados por essa tentativa foram identificados e removidos com critérios exatos. As dez contas anteriores permaneceram no banco. A suíte aprovada foi repetida em H2; o launcher agora define explicitamente banco e integrações externas.
+
+A [regressão da nova ligação](REGRESSAO_LIGACAO_PC_2026-10-12.md) acrescenta captura nativa com dispositivo sintético e recuperação de NotSupported, além de prévia em chamadas individuais/canais e qualidade na engrenagem. As fixtures X-Forwarded-For são ignoradas sem proxy confiável; o perfil local aumenta o orçamento global para a regressão.
 
 ## Limites da entrega
 

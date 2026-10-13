@@ -2,7 +2,7 @@ import { useScreenFeedback } from './useScreenFeedback';
 import type { ScreenPreferences } from './useScreenPreferences';
 import { useEffect, useRef, useState } from 'react';
 import { ApiRepository, type CallSession, type VoiceRoom } from '../models/apiRepository';
-import { constrainScreen, constrainSender, screenCaptureOptions, preferEfficientEncoder } from '../models/screenShare';
+import { constrainScreen, constrainSender, captureScreen, screenShareError, preferEfficientEncoder } from '../models/screenShare';
 import { gathered } from './useCallController';
 
 interface Peer { connection: RTCPeerConnection; sender: RTCRtpSender; stream: MediaStream; control?: RTCDataChannel; sharing: boolean; email: string; }
@@ -11,6 +11,8 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
   const [busy, setBusy] = useState(false);
   const [muted, setMuted] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [preview, setPreview] = useState<MediaStream | null>(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
   const [screenStarting, setScreenStarting] = useState(false);
   const screenProfile = useRef(preferences.profile);
   const preferencesRef = useRef(preferences); preferencesRef.current = preferences;
@@ -34,7 +36,7 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
     peers.current.clear();
     for (const stream of [microphone.current, blank.current, screen.current]) stream?.getTracks().forEach(track => track.stop());
     microphone.current = blank.current = screen.current = null; current.current = null;
-    if (active.current) { setRoom(null); setRemote([]); setMuted(false); setSharing(false); }
+    if (active.current) { setRoom(null); setRemote([]); setMuted(false); setSharing(false); setPreview(null); setPreviewVisible(false); }
   }
   async function leave() {
     const id = current.current?.channelId; cleanup();
@@ -125,7 +127,7 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
   async function stopSharing() {
     const previous = screen.current; screen.current = null;
     previous?.getTracks().forEach(track => track.stop());
-    setSharing(false);
+    setSharing(false); setPreview(null); setPreviewVisible(false);
     for (const peer of peers.current.values()) {
       try { await peer.sender.replaceTrack(blank.current?.getVideoTracks()[0] ?? null); } catch { /* Peer may have left. */ }
       if (peer.control?.readyState === 'open') peer.control.send('screen:off');
@@ -138,8 +140,10 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
       if (screen.current) { await stopSharing(); return; }
       const generation = epoch.current;
       const chosen = preferences.profile; preferences.choose(chosen.height, chosen.frameRate); screenProfile.current = chosen; setScreenStarting(true);
-      captured = await navigator.mediaDevices.getDisplayMedia(screenCaptureOptions(chosen));
-      const track = captured.getVideoTracks()[0]; await constrainScreen(track, chosen);
+      captured = await captureScreen(chosen);
+      const track = captured.getVideoTracks()[0];
+      if (!track) throw new Error('A captura não forneceu vídeo.');
+      await constrainScreen(track, chosen);
       if (!active.current || epoch.current !== generation) { captured.getTracks().forEach(track => track.stop()); return; }
       screen.current = captured;
       for (const peer of peers.current.values()) {
@@ -147,10 +151,10 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
         if (peer.control?.readyState === 'open') peer.control.send('screen:on');
       }
       track.onended = () => { if (screen.current?.getVideoTracks()[0] === track) void stopSharing(); };
-      setSharing(true);
-    } catch (problem) { captured?.getTracks().forEach(track => track.stop()); await stopSharing(); if (active.current && !(problem instanceof DOMException && problem.name === 'NotAllowedError')) errorRef.current(problem); }
+      setSharing(true); setPreview(captured); setPreviewVisible(true);
+    } catch (problem) { captured?.getTracks().forEach(track => track.stop()); await stopSharing(); if (active.current && !(problem instanceof DOMException && problem.name === 'NotAllowedError')) errorRef.current(screenShareError(problem)); }
     finally { sharingWorking.current = false; if (active.current) setScreenStarting(false); }
   }
-  return { feedback, screenStarting, room, busy, muted, sharing, remote, join, leave, toggleMute, share };
+  return { feedback, screenStarting, room, busy, muted, sharing, remote, preview: previewVisible ? preview : null, previewVisible, setPreviewVisible, join, leave, toggleMute, share };
 }
 export type VoiceRoomController = ReturnType<typeof useVoiceRoomController>;

@@ -75,12 +75,31 @@ test('chamada individual: convite, aceite, mídia WebRTC, microfone e encerramen
     await expect(other.getByRole('button', { name: 'Aceitar', exact: true })).toBeVisible(); await other.getByRole('button', { name: 'Aceitar', exact: true }).click(); await expect(page.locator('.call-panel strong')).toHaveText('Em chamada', { timeout: 30000 }); await expect(other.locator('.call-panel strong')).toHaveText('Em chamada', { timeout: 30000 });
     await page.getByRole('button', { name: 'Silenciar microfone' }).click(); await expect(page.getByRole('button', { name: 'Ativar microfone' })).toHaveAttribute('aria-pressed', 'true');
     await page.getByRole('button', { name: 'Ativar microfone' }).click();
+    await expect(page.getByLabel('Resolução da transmissão', { exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Configurações da transmissão', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Qualidade da transmissão' })).toBeVisible();
     await page.getByLabel('Resolução da transmissão', { exact: true }).selectOption('900');
     await page.getByLabel('FPS da transmissão', { exact: true }).selectOption('30');
     await page.getByLabel('Ajustar ao desempenho', { exact: true }).uncheck();
+    await page.screenshot({ path: '../logs/desktop-call-settings.png', fullPage: true });
+    await page.getByRole('button', { name: 'Concluído', exact: true }).click();
+    await page.evaluate(() => {
+      Object.defineProperty(navigator.mediaDevices, 'getDisplayMedia', { configurable: true, value: async () => { throw new DOMException('Not supported', 'NotSupportedError'); } });
+    });
+    await page.getByRole('button', { name: 'Compartilhar tela', exact: true }).click();
+    await expect(page.getByRole('alert')).toContainText('O navegador ou o Windows não aceitou esta captura');
+    await expect(page.locator('.call-panel strong')).toHaveText('Em chamada');
+    await expect(page.locator('.local-preview')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Fechar aviso' }).click();
     // Exercise real WebRTC track replacement with a synthetic screen source;
     // the native browser picker remains a manual hardware test.
     await page.evaluate(() => {
+      // Reproduce older native encoders rejecting the newer preference.
+      const nativeSetParameters = RTCRtpSender.prototype.setParameters;
+      Object.defineProperty(RTCRtpSender.prototype, 'setParameters', { value: function(this: RTCRtpSender, parameters: RTCRtpSendParameters) {
+        if ((parameters.degradationPreference as string) === 'maintain-framerate-and-resolution') return Promise.reject(new DOMException('Not supported', 'NotSupportedError'));
+        return nativeSetParameters.call(this, parameters);
+      } });
       Object.defineProperty(navigator.mediaDevices, 'getDisplayMedia', { value: async () => {
         const canvas = document.createElement('canvas'); canvas.width = 1600; canvas.height = 900;
         const context = canvas.getContext('2d')!; const stream = canvas.captureStream(30);
@@ -89,7 +108,21 @@ test('chamada individual: convite, aceite, mídia WebRTC, microfone e encerramen
         return stream;
       } });
     });
-    await page.getByRole('button', { name: 'Compartilhar tela' }).click(); await expect(page.locator('.local-preview')).not.toBeVisible(); await page.getByRole('button', { name: 'Mostrar prévia' }).click(); await expect(page.locator('.local-preview')).toBeVisible(); await expect(other.locator('video.call-video')).toBeVisible();
+    await page.getByRole('button', { name: 'Compartilhar tela' }).click(); await expect(page.locator('.local-preview')).toBeVisible(); await expect(other.locator('video.call-video')).toBeVisible();
+    await page.getByRole('button', { name: 'Ampliar sua transmissão', exact: true }).click(); await expect(page.locator('.call-stage')).toHaveClass(/watching/);
+    await expect(page.locator('.screen-feedback')).toContainText('900p · 30 fps configurados');
+    await page.setViewportSize({ width: 1024, height: 768 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const stageBounds = (await page.locator('.call-tiles').boundingBox())!, previewBounds = (await page.locator('.call-tile.focused').boundingBox())!;
+    expect(previewBounds.height).toBeLessThanOrEqual(stageBounds.height);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.screenshot({ path: '../logs/desktop-call-sharing.png', fullPage: true });
+    await page.getByRole('button', { name: 'Voltar à grade da ligação' }).click();
+    await page.getByRole('button', { name: 'Ocultar prévia' }).click(); await expect(page.locator('.local-preview')).not.toBeVisible();
+    await page.getByRole('button', { name: 'Mostrar prévia' }).click(); await expect(page.locator('.local-preview')).toBeVisible();
+    await page.getByRole('button', { name: 'Configurações da transmissão', exact: true }).click();
+    await expect(page.getByLabel('Resolução da transmissão', { exact: true })).toBeDisabled();
+    await page.keyboard.press('Escape'); await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect.poll(() => other.locator('video.call-video').evaluate((video: HTMLVideoElement) => video.videoHeight)).toBeGreaterThanOrEqual(750);
     expect(await page.locator('.local-preview video').evaluate((video: HTMLVideoElement) => (video.srcObject as MediaStream).getVideoTracks()[0].getSettings().frameRate)).toBe(30);
     await page.getByRole('button', { name: 'Parar transmissão' }).click(); await expect(page.locator('.local-preview')).not.toBeVisible(); await expect(other.locator('video.call-video')).not.toBeVisible();

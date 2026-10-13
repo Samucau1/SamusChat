@@ -30,20 +30,47 @@ export async function constrainScreen(track: MediaStreamTrack, profile: ScreenPr
 }
 
 export async function constrainSender(sender: RTCRtpSender, profile: ScreenProfile = desktopScreenProfile) {
-  const parameters = sender.getParameters();
-  if (!parameters.encodings?.length) return;
-  for (const encoding of parameters.encodings) {
-    encoding.maxBitrate = profile.maxBitrate;
-    encoding.maxFramerate = profile.frameRate;
-    encoding.scaleResolutionDownBy = 1;
+  // Some native encoders reject the newer W3C preference. Retry only this
+  // optional hint, keeping capture constraints and encoding limits intact.
+  for (const preference of ['maintain-framerate-and-resolution', 'maintain-resolution', undefined] as const) {
+    const parameters = sender.getParameters();
+    if (!parameters.encodings?.length) return;
+    for (const encoding of parameters.encodings) {
+      encoding.maxBitrate = profile.maxBitrate;
+      encoding.maxFramerate = profile.frameRate;
+      encoding.scaleResolutionDownBy = 1;
+    }
+    if (preference) parameters.degradationPreference = preference as RTCDegradationPreference;
+    else delete parameters.degradationPreference;
+    try {
+      await sender.setParameters(parameters);
+      // A browser with no degradation preference can still honor the content
+      // hint. Avoid its motion default shrinking a screen below the chosen size.
+      if (!preference && sender.track) sender.track.contentHint = 'detail';
+      return;
+    }
+    catch (problem) {
+      const unsupported = problem instanceof TypeError || problem instanceof DOMException && problem.name === 'NotSupportedError';
+      if (!unsupported || preference === undefined) throw problem;
+    }
   }
-  // Standardized by W3C; older TypeScript DOM declarations omit this value.
-  parameters.degradationPreference = 'maintain-framerate-and-resolution' as RTCDegradationPreference;
-  try { await sender.setParameters(parameters); }
-  catch (problem) {
-    if (problem instanceof TypeError) throw new Error('Atualize o navegador para compartilhar mantendo resolução e 30 fps.');
-    throw problem;
+}
+
+export function captureScreen(profile: ScreenProfile): Promise<MediaStream> {
+  if (!window.isSecureContext || !navigator.mediaDevices?.getDisplayMedia) {
+    throw new Error('Compartilhar tela exige Chrome, Edge ou Firefox atualizado, em HTTPS ou localhost. Abra o PC em http://127.0.0.1:5175.');
   }
+  // Invoke the picker directly within the click gesture, before any await.
+  return navigator.mediaDevices.getDisplayMedia(screenCaptureOptions(profile));
+}
+
+export function screenShareError(problem: unknown): unknown {
+  if (!(problem instanceof DOMException)) return problem;
+  if (problem.name === 'NotSupportedError') return new Error('O navegador ou o Windows não aceitou esta captura. Tente outra tela ou janela, selecione 750p/30 fps na engrenagem e use Chrome ou Edge atualizado.');
+  if (problem.name === 'OverconstrainedError') return new Error('A fonte não permite a qualidade escolhida. Selecione outra tela ou escolha 750p/30 fps na engrenagem.');
+  if (problem.name === 'NotReadableError') return new Error('O Windows não conseguiu capturar esta fonte. Verifique as permissões e tente outra tela ou janela.');
+  if (problem.name === 'InvalidStateError') return new Error('Mantenha esta janela ativa e clique novamente em Compartilhar tela.');
+  return problem;
 }
 
 export interface EncoderSample {

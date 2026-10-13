@@ -47,3 +47,33 @@ test('PC rejeita captura abaixo de 750p ou configurada abaixo de 30 fps', async 
     await expect(constrainScreen(track)).rejects.toThrow('750p');
   }
 });
+
+test('codificador sem a preferência nova mantém limites ao usar alternativa compatível', async () => {
+  const attempts: RTCRtpSendParameters[] = [];
+  const sender = {
+    getParameters: () => ({ encodings: [{}], transactionId: `transaction-${attempts.length}` }),
+    setParameters: async (value: RTCRtpSendParameters) => {
+      attempts.push(value);
+      if ((value.degradationPreference as string) === 'maintain-framerate-and-resolution') throw new DOMException('Not supported', 'NotSupportedError');
+    },
+  } as unknown as RTCRtpSender;
+  await constrainSender(sender, screenProfile(750, 30));
+  expect(attempts.map(item => item.degradationPreference)).toEqual(['maintain-framerate-and-resolution', 'maintain-resolution']);
+  expect(attempts[1].transactionId).toBe('transaction-1');
+  for (const item of attempts) expect(item.encodings[0]).toMatchObject({ maxBitrate: 2500000, maxFramerate: 30, scaleResolutionDownBy: 1 });
+});
+
+test('navegador sem preferências opcionais conserva limites e erros de conexão continuam visíveis', async () => {
+  const attempts: RTCRtpSendParameters[] = [];
+  const sender = { getParameters: () => ({ encodings: [{}] }), setParameters: async (value: RTCRtpSendParameters) => {
+    attempts.push(value); if (value.degradationPreference) throw new TypeError('Unsupported enum');
+  } } as unknown as RTCRtpSender;
+  await constrainSender(sender);
+  expect(attempts).toHaveLength(3);
+  expect(attempts[2]).not.toHaveProperty('degradationPreference');
+  expect(attempts[2].encodings[0].maxFramerate).toBe(30);
+  let calls = 0;
+  const closed = { getParameters: () => ({ encodings: [{}] }), setParameters: async () => { calls++; throw new DOMException('Connection closed', 'InvalidStateError'); } } as unknown as RTCRtpSender;
+  await expect(constrainSender(closed)).rejects.toThrow('Connection closed');
+  expect(calls).toBe(1);
+});

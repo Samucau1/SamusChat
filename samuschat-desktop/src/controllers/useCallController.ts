@@ -2,7 +2,7 @@ import { useScreenFeedback } from './useScreenFeedback';
 import type { ScreenPreferences } from './useScreenPreferences';
 import { useEffect, useRef, useState } from 'react';
 import { ApiRepository, type CallSession } from '../models/apiRepository';
-import { constrainScreen, constrainSender, screenCaptureOptions, preferEfficientEncoder } from '../models/screenShare';
+import { constrainScreen, constrainSender, captureScreen, screenShareError, preferEfficientEncoder } from '../models/screenShare';
 
 const terminal = (state: string) => ['ENDED', 'DECLINED', 'EXPIRED'].includes(state);
 export async function gathered(peer: RTCPeerConnection) {
@@ -158,7 +158,7 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
       const sender = videoSender.current; const currentGeneration = generation.current;
       if (!sender) return;
       const chosen = preferences.profile; preferences.choose(chosen.height, chosen.frameRate); screenProfile.current = chosen; setScreenStarting(true);
-      const stream = await navigator.mediaDevices.getDisplayMedia(screenCaptureOptions(chosen));
+      const stream = await captureScreen(chosen);
       captured = stream;
       const track = stream.getVideoTracks()[0];
       if (!track) throw new Error('A captura não forneceu vídeo.');
@@ -170,11 +170,11 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
       screen.current = stream;
       track.onended = () => { if (screen.current === stream) void stopSharing(); };
       if (control.current?.readyState === 'open') control.current.send('screen:on');
-      setSharing(true); setPreviewVisible(false); setPreview(stream);
+      setSharing(true); setPreviewVisible(true); setPreview(stream);
     } catch (problem) {
       captured?.getTracks().forEach(track => track.stop());
       if (captured && alive.current) await stopSharing();
-      if (alive.current && !(problem instanceof DOMException && problem.name === 'NotAllowedError')) errorRef.current(problem);
+      if (alive.current && !(problem instanceof DOMException && problem.name === 'NotAllowedError')) errorRef.current(screenShareError(problem));
     } finally { sharingWorking.current = false; if (alive.current) setScreenStarting(false); }
   }
   return { feedback, screenStarting, call, status, muted, sharing, remoteSharing, remote, preview: previewVisible ? preview : null, previewVisible, setPreviewVisible, busy, invite, accept, end, toggleMute, share };
