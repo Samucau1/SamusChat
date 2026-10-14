@@ -17,7 +17,7 @@ class SamusChatApplication : Application(), coil.ImageLoaderFactory {
         )
     }
     val tokens by lazy { TokenManager(this) }
-    val api by lazy { RetrofitClient.api }
+    val api by lazy { RetrofitClient.create(tokens) }
     val auth by lazy { AuthRepository(api, tokens) }
     val servers by lazy { ServerRepository(api, tokens) }
     val messages by lazy { MessageRepository(api, tokens) }

@@ -25,7 +25,7 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
   const errorRef = useRef(onError); errorRef.current = onError;
   const available: Conversation[] = serverId === null ? contacts.map(item => ({ id: `dm:${item.email}`, name: item.username, description: item.email, contact: item.email })) :
     (servers.find(item => item.id === serverId)?.channels ?? []).filter(channel => channel.type === 'TEXT').map(channel => ({ id: `channel:${channel.id}`, name: channel.name, description: 'Conversa do servidor', channelId: channel.id, serverId }));
-  const conversations = available.filter(item => item.name.toLocaleLowerCase('pt-BR').includes(query.toLocaleLowerCase('pt-BR')));
+  const conversations = available.filter(item => [item.name, item.contact ?? ''].some(value => value.toLocaleLowerCase('pt-BR').includes(query.toLocaleLowerCase('pt-BR'))));
   async function refresh() {
     const [nextServers, nextContacts] = await Promise.all([api.servers(), api.contacts()]);
     setServers(nextServers); setContacts(nextContacts);

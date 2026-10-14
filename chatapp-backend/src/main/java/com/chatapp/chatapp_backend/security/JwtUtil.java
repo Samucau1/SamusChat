@@ -20,11 +20,20 @@ public class JwtUtil {
     private long expiration;
 
     public String generateToken(String email) {
+        return generate(email, expiration, "access");
+    }
+
+    public String generateRefreshToken(String email) {
+        return generate(email, 30L * 24 * 60 * 60 * 1000, "refresh");
+    }
+
+    private String generate(String email, long lifetime, String kind) {
         return Jwts.builder()
                 .setSubject(email)
+                .claim("kind", kind)
                 .claim("av", users == null ? 0 : users.findByEmail(email).map(u -> u.getAuthVersion()).orElse(0))
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expiration))
+                .setExpiration(new Date(System.currentTimeMillis() + lifetime))
                 .signWith(getKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -38,9 +47,18 @@ public class JwtUtil {
                 .getSubject();
     }
 
-    public boolean isTokenValid(String token) {
+    public boolean isTokenValid(String token) { return valid(token, false); }
+
+    public String refreshAccessToken(String token) {
+        if (!valid(token, true)) throw new SecurityException("Sessao expirada ou revogada");
+        return generateToken(extractEmail(token));
+    }
+
+    private boolean valid(String token, boolean refresh) {
         try {
             Claims claims=Jwts.parserBuilder().setSigningKey(getKey()).build().parseClaimsJws(token).getBody();
+            String kind = claims.get("kind", String.class);
+            if (refresh ? !"refresh".equals(kind) : kind != null && !"access".equals(kind)) return false;
             if(users==null) return true;
             Number version=claims.get("av",Number.class);
             int actual=version==null ? 0 : version.intValue();

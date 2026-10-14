@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
                     var session by remember { mutableStateOf<Session?>(null) }
                     LaunchedEffect(Unit) { app.tokens.session.collect { session = it; loaded = true } }
                     if (!loaded) CircularProgressIndicator()
-                    else key(session?.token) {
+                    else key(session?.email) {
                         val nav = rememberNavController()
                         val scope = rememberCoroutineScope()
                         if (session != null) {

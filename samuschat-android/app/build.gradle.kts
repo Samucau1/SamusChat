@@ -15,7 +15,7 @@ android {
         targetSdk = 35
         versionCode = 2
         versionName = "1.1.0"
-        val apiUrl = providers.gradleProperty("apiBaseUrl").getOrElse("http://10.0.2.2:8080/")
+        val apiUrl = providers.gradleProperty("apiBaseUrl").getOrElse("http://127.0.0.1:8080/")
         val parsedApiUrl = URI(apiUrl)
         require(parsedApiUrl.scheme in listOf("http", "https") && parsedApiUrl.host != null && parsedApiUrl.userInfo == null && parsedApiUrl.query == null && parsedApiUrl.fragment == null && apiUrl.endsWith('/'))
         if (gradle.startParameter.taskNames.any { it.substringAfterLast(':') in listOf("assembleRelease", "bundleRelease", "packageRelease") }) require(parsedApiUrl.scheme == "https") { "Release exige -PapiBaseUrl=https://seu-dominio/" }

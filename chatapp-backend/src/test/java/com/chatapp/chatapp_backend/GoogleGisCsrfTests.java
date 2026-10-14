@@ -17,7 +17,9 @@ class GoogleGisCsrfTests {
     MockMvc mvc;
     @BeforeEach void setup() {
         auth=mock(GoogleAuthService.class);
-        mvc=MockMvcBuilders.standaloneSetup(new GoogleAuthController(auth))
+        var sessions = mock(com.chatapp.chatapp_backend.service.AuthService.class);
+        when(sessions.sessionTokens(anyString())).thenAnswer(invocation -> java.util.Map.of("token", invocation.getArgument(0), "refreshToken", "refresh"));
+        mvc=MockMvcBuilders.standaloneSetup(new GoogleAuthController(auth, sessions))
             .setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(), new org.springframework.http.converter.FormHttpMessageConverter())
             .setControllerAdvice(new GlobalExceptionHandler()).build();
     }

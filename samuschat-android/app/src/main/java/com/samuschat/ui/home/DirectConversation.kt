@@ -51,7 +51,10 @@ fun DirectConversation(app: SamusChatApplication, email: String, contact: CallCo
     Column(Modifier.fillMaxSize().imePadding()) {
         Row(Modifier.fillMaxWidth().padding(8.dp)) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar aos amigos") }
-            Text(contact.username, Modifier.weight(1f).padding(12.dp), style = MaterialTheme.typography.titleLarge)
+            Column(Modifier.weight(1f).padding(12.dp)) {
+                Text(contact.username, style = MaterialTheme.typography.titleLarge)
+                Text(contact.email, style = MaterialTheme.typography.bodySmall)
+            }
             FriendCallButton(calls, contact)
         }
         error?.let { Text(it, Modifier.padding(12.dp), color = MaterialTheme.colorScheme.error) }

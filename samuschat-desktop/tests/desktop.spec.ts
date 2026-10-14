@@ -4,7 +4,7 @@ import { test as base, expect, type Page, type APIRequestContext } from '@playwr
 const clientIp = () => `198.18.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 254) + 1}`;
 const test = base.extend({ extraHTTPHeaders: async ({}, use) => { await use({ 'X-Forwarded-For': clientIp() }); } });
 
-const password = 'DesktopTest123!';
+const password = 'DesktopTest12345!';
 async function register(request: APIRequestContext, prefix: string) {
   const name = `${prefix}_${crypto.randomUUID().slice(0, 8)}`; const email = `${name}@example.com`;
   const response = await request.post('/api/auth/register', { data: { username: name, email, password } });
@@ -75,6 +75,31 @@ test('chamada individual: convite, aceite, mídia WebRTC, microfone e encerramen
     await expect(other.getByRole('button', { name: 'Aceitar', exact: true })).toBeVisible(); await other.getByRole('button', { name: 'Aceitar', exact: true }).click(); await expect(page.locator('.call-panel strong')).toHaveText('Em chamada', { timeout: 30000 }); await expect(other.locator('.call-panel strong')).toHaveText('Em chamada', { timeout: 30000 });
     await page.getByRole('button', { name: 'Silenciar microfone' }).click(); await expect(page.getByRole('button', { name: 'Ativar microfone' })).toHaveAttribute('aria-pressed', 'true');
     await page.getByRole('button', { name: 'Ativar microfone' }).click();
+    await page.getByRole('button', { name: 'Microfone', exact: true }).click();
+    const micDialog = page.getByRole('dialog', { name: 'Microfone do PC' });
+    await expect(micDialog.getByLabel('Nível do microfone')).toBeVisible();
+    await page.getByRole('button', { name: 'Atualizar entradas', exact: true }).click();
+    const input = micDialog.getByLabel('Entrada de áudio');
+    await expect(input.locator('option')).not.toHaveCount(1);
+    const device = await input.locator('option').evaluateAll(options => options.map(option => (option as HTMLOptionElement).value).find(value => value));
+    expect(device).toBeTruthy();
+    // A deterministic tone verifies the meter and replaced RTP track; fake
+    // browser inputs can legitimately provide silence on a secondary device.
+    await page.evaluate(() => {
+      Object.defineProperty(navigator.mediaDevices, 'getUserMedia', { configurable: true, value: async () => {
+        const context = new AudioContext(), oscillator = context.createOscillator(), gain = context.createGain();
+        const destination = context.createMediaStreamDestination();
+        oscillator.frequency.value = 440; gain.gain.value = 0.2;
+        oscillator.connect(gain); gain.connect(destination); oscillator.start(); await context.resume();
+        const track = destination.stream.getAudioTracks()[0], stop = track.stop.bind(track);
+        track.stop = () => { stop(); oscillator.stop(); void context.close(); };
+        return destination.stream;
+      } });
+    });
+    await input.selectOption(device!);
+    await expect(page.locator('.call-panel strong')).toHaveText('Em chamada');
+    await expect(micDialog.getByLabel('Nível do microfone')).toHaveAttribute('value', /[1-9]/);
+    await micDialog.getByRole('button', { name: 'Concluído', exact: true }).click();
     await expect(page.getByLabel('Resolução da transmissão', { exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: 'Configurações da transmissão', exact: true }).click();
     await expect(page.getByRole('dialog', { name: 'Qualidade da transmissão' })).toBeVisible();

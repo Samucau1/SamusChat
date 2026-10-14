@@ -44,7 +44,7 @@ const result = {
     androidHttpLoggerRedactsAuthorization: retrofit.includes('redactHeader("Authorization")'),
     androidProductionHttpLoggingDisabled: retrofit.includes('else HttpLoggingInterceptor.Level.NONE'),
     androidWebSocketUsesOkHttpNotJavaWebSocket: ws.includes('Stomp.ConnectionProvider.OKHTTP'),
-    androidDefaultBuildUrlIsLocalHttp: androidBuild.includes('http://10.0.2.2:8080/'),
+    androidDefaultBuildUrlIsLocalHttp: androidBuild.includes('http://127.0.0.1:8080/'),
     nginxReplacesForwardedFor: nginx.includes('proxy_set_header X-Forwarded-For $remote_addr;'),
     nginxHasTlsListener: /listen\s+443/.test(nginx),
     defaultProfileHasPublicJwtFallback: /jwt\.secret=\$\{JWT_SECRET:(?!\$\{random\.uuid\})[^}]+\}/.test(normalConfig),

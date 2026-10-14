@@ -1,7 +1,19 @@
 # Documentação do SamusChat
 
+- [Relatório de desenvolvimento e validação — 14/10/2026](RELATORIO_DESENVOLVIMENTO_2026-10-14.md)
+- [Relatório Word com imagens — 14/10/2026](SamusChat_Relatorio_2026-10-14.docx)
+- [Regressão antes da publicação — 14/10/2026](REGRESSAO_PUBLICACAO_2026-10-14.md)
+- [Sessão persistente no Android](SESSAO_ANDROID.md)
+- [Áudio entre PC e celular — 14/10/2026](REGRESSAO_AUDIO_PC_CELULAR_2026-10-14.md)
+- [Diagnóstico das mensagens privadas — 14/10/2026](REGRESSAO_MENSAGENS_PC_CELULAR_2026-10-14.md)
+- [Tela cheia e rotação das transmissões](TELA_CHEIA_ROTACAO_PC_ANDROID.md)
+
 - [MVP desktop integrado à mesma API do Android](DESKTOP_API.md)
 - [Aceite desktop e regressao API/Postman — 09/10/2026](REGRESSAO_ACEITE_DESKTOP_2026-10-09.md)
+
+- [Plano da beta externa — 12 a 16/10/2026](PLANO_BETA_2026-10-12.md)
+- [APK e aceite manual no celular — 09/10/2026](REGRESSAO_APK_CELULAR_2026-10-09.md)
+- [Instalacao do APK e configuracao Google](INSTALACAO_CELULAR.md)
 
 - [Relatório de hoje com imagens (Word) — 08/10/2026](SamusChat_Relatorio_2026-10-08.docx)
 - [Regressão antes do commit e push — 08/10/2026](REGRESSAO_PUBLICACAO_2026-10-08.md)
@@ -25,7 +37,7 @@
 - [Prévia da tela compartilhada no Android](PREVIA_COMPARTILHAMENTO.md)
 
 - [Desktop: plano, tecnologias, entradas e protótipo MVC](DESKTOP_MVC.md)
-- [Inicialização automática: Docker, API, emulador e aplicativo](INICIALIZACAO_AUTOMATICA.md)
+- [Inicialização automática: Docker, API e celular USB](INICIALIZACAO_AUTOMATICA.md)
 
 - [Chamadas individuais, compartilhamento de tela e áudio interno](CHAMADAS_INDIVIDUAIS.md)
 - [Regressão de chamadas e capturas da versão atual](REGRESSAO_CHAMADAS.md)

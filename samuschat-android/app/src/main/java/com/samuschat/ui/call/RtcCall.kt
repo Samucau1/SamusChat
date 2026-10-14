@@ -40,6 +40,7 @@ class RtcCall(
     val localVideo: VideoTrack get() = videoTrack
     private var screen: ScreenCapturerAndroid? = null
     private var texture: SurfaceTextureHelper? = null
+    private var screenSizing: ScreenCaptureMonitor? = null
     private var channel: DataChannel? = null
     private var control: DataChannel? = null
     private var sharingState = false
@@ -184,22 +185,21 @@ class RtcCall(
         val capturer = ScreenCapturerAndroid(permission, object : MediaProjection.Callback() {
             override fun onStop() { main.post { if (!closed && generation == sharingGeneration && screen != null) { stopSharing(); onSharingStopped() } } }
             override fun onCapturedContentResize(width: Int, height: Int) {
-                if (width <= 0 || height <= 0) return
-                main.post {
-                    if (!closed && generation == sharingGeneration && screen != null) {
-                        val scale = 960.0 / maxOf(width, height)
-                        screen?.changeCaptureFormat(maxOf(2, (width * scale).toInt() / 2 * 2), maxOf(2, (height * scale).toInt() / 2 * 2), 15)
-                    }
-                }
+                main.post { if (!closed && generation == sharingGeneration) screenSizing?.capturedContent(width, height) }
             }
         })
         screen = capturer
         texture = SurfaceTextureHelper.create("call-screen", egl.eglBaseContext)
         capturer.initialize(texture, context, videoSource.capturerObserver)
-        val metrics = context.resources.displayMetrics
-        val width = if (metrics.widthPixels > metrics.heightPixels) 960 else 540
-        val height = if (metrics.widthPixels > metrics.heightPixels) 540 else 960
-        capturer.startCapture(width, height, 15)
+        val sizing = ScreenCaptureMonitor(context) { size ->
+            if (!closed && generation == sharingGeneration && screen === capturer) {
+                capturer.changeCaptureFormat(size.width, size.height, 15)
+                if (BuildConfig.DEBUG) android.util.Log.i("ScreenCapture", "resized=${size.width}x${size.height}")
+            }
+        }
+        screenSizing = sizing
+        capturer.startCapture(sizing.dimensions.width, sizing.dimensions.height, 15)
+        sizing.start()
         sharingState = true; sendSharingState()
     }
     fun deviceSound(enabled: Boolean) {
@@ -211,6 +211,7 @@ class RtcCall(
         deviceAudio.start(projection, data) { main.post { if (!closed) onFailure("Falha na captura do áudio do dispositivo") } }
     }
     fun stopSharing() {
+        screenSizing?.stop(); screenSizing = null
         sharingGeneration++
         deviceAudio.stopCapture()
         val capturer = screen; screen = null

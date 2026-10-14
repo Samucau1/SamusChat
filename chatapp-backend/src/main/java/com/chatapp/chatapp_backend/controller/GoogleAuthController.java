@@ -14,6 +14,7 @@ import java.util.Map;
 @RestController @RequestMapping("/api/auth") @RequiredArgsConstructor
 public class GoogleAuthController {
     private final GoogleAuthService auth;
+    private final com.chatapp.chatapp_backend.service.AuthService sessions;
     public record GoogleRequest(String idToken,String password) {}
     public record GisRequest(String credential, @JsonProperty("g_csrf_token") String csrfToken, String password) {}
 
@@ -38,7 +39,7 @@ public class GoogleAuthController {
     }
 
     private ApiResponse<Map<String,String>> authenticated(String token,String password) {
-        return ApiResponse.success(Map.of("token",auth.login(token,password)));
+        return ApiResponse.success(sessions.sessionTokens(auth.login(token,password)));
     }
 
     private void validateCsrf(HttpServletRequest request,String bodyToken) {

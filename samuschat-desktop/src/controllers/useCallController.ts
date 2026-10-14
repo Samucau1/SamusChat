@@ -1,3 +1,5 @@
+import { DeviceAudioTransport } from '../models/deviceAudio';
+import { captureMicrophone, rememberMicrophone } from '../models/microphone';
 import { useScreenFeedback } from './useScreenFeedback';
 import type { ScreenPreferences } from './useScreenPreferences';
 import { useEffect, useRef, useState } from 'react';
@@ -35,6 +37,10 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
   const screen = useRef<MediaStream | null>(null);
   const placeholder = useRef<MediaStream | null>(null);
   const videoSender = useRef<RTCRtpSender | null>(null);
+  const audio = useRef<DeviceAudioTransport | null>(null);
+  const [audioBlocked, setAudioBlocked] = useState(false);
+  const [audioNotice, setAudioNotice] = useState('');
+  const [microphoneStream, setMicrophoneStream] = useState<MediaStream | null>(null);
   const control = useRef<RTCDataChannel | null>(null);
   const alive = useRef(true);
   const generation = useRef(0);
@@ -43,12 +49,14 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
   const feedback = useScreenFeedback(sharing, preferences.automatic, screenProfile, () => screen.current?.getVideoTracks()[0], () => videoSender.current ? [videoSender.current] : []);
   function update(value: CallSession | null) { ref.current = value; if (alive.current) setCall(value); }
   function cleanup() {
+    audio.current?.close(); audio.current = null;
     generation.current++; peer.current?.close(); peer.current = null;
     for (const stream of [microphone.current, screen.current, placeholder.current]) stream?.getTracks().forEach(track => track.stop());
     microphone.current = screen.current = placeholder.current = null; videoSender.current = null; control.current = null;
-    if (alive.current) { setRemote(null); setPreview(null); setPreviewVisible(false); setSharing(false); setRemoteSharing(false); setMuted(false); setStatus(''); }
+    if (alive.current) { setMicrophoneStream(null); setAudioBlocked(false); setAudioNotice(''); setRemote(null); setPreview(null); setPreviewVisible(false); setSharing(false); setRemoteSharing(false); setMuted(false); setStatus(''); }
   }
   function attach(channel: RTCDataChannel) {
+    if (audio.current?.attach(channel)) return;
     if (channel.label !== 'call-control') { channel.close(); return; }
     control.current = channel;
     channel.onmessage = event => { if (alive.current && control.current === channel && ['screen:on', 'screen:off'].includes(event.data)) setRemoteSharing(event.data === 'screen:on'); };
@@ -58,9 +66,11 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
     if (peer.current) return peer.current;
     if (!navigator.mediaDevices?.getUserMedia) throw new Error('Chamadas exigem HTTPS ou localhost e permissão para o microfone.');
     const currentGeneration = generation.current;
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: false });
+    audio.current ??= new DeviceAudioTransport(setAudioBlocked);
+    void audio.current.activate().catch(() => setAudioBlocked(true));
+    const stream = await captureMicrophone();
     if (!alive.current || currentGeneration !== generation.current) { stream.getTracks().forEach(track => track.stop()); throw new Error('Chamada encerrada.'); }
-    microphone.current = stream;
+    microphone.current = stream; setMicrophoneStream(stream);
     const iceServers = await api.ice();
     if (!alive.current || currentGeneration !== generation.current) throw new Error('Chamada encerrada.');
     const connection = new RTCPeerConnection({ iceServers }); peer.current = connection;
@@ -74,7 +84,10 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
     videoSender.current = connection.addTrack(blank.getVideoTracks()[0], blank);
     preferEfficientEncoder(connection, videoSender.current, preferencesRef.current.hardware);
     connection.ondatachannel = event => attach(event.channel);
-    if (caller) attach(connection.createDataChannel('call-control'));
+    if (caller) {
+      attach(connection.createDataChannel('call-control'));
+      attach(connection.createDataChannel('device-audio', { ordered: false, maxRetransmits: 0 }));
+    }
     connection.ontrack = event => {
       if (!alive.current || peer.current !== connection) return;
       setRemote(previous => { const value = previous || new MediaStream(); if (!value.getTracks().some(track => track.id === event.track.id)) value.addTrack(event.track); return new MediaStream(value.getTracks()); });
@@ -142,6 +155,7 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
   function toggleMute() { const track = microphone.current?.getAudioTracks()[0]; if (track) { track.enabled = !track.enabled; setMuted(!track.enabled); } }
   async function stopSharing() {
     const sender = videoSender.current;
+    audio.current?.stopCapture(); setAudioNotice('');
     const stream = screen.current;
     screen.current = null; stream?.getTracks().forEach(track => track.stop());
     setSharing(false); setPreview(null); setPreviewVisible(false);
@@ -168,6 +182,11 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
       await constrainSender(sender, chosen);
       if (!alive.current || generation.current !== currentGeneration || track.readyState === 'ended') { stream.getTracks().forEach(track => track.stop()); return; }
       screen.current = stream;
+      try {
+        const sending = await audio.current?.startCapture(stream);
+        if (alive.current && generation.current === currentGeneration) setAudioNotice(sending ? 'Áudio da transmissão ativado' : 'Esta fonte veio sem áudio. No seletor, marque Compartilhar áudio ou escolha uma aba com som.');
+      } catch { if (alive.current) setAudioNotice('Não foi possível enviar o áudio da tela. Pare e selecione outra fonte com áudio.'); }
+      if (!alive.current || generation.current !== currentGeneration || screen.current !== stream) return;
       track.onended = () => { if (screen.current === stream) void stopSharing(); };
       if (control.current?.readyState === 'open') control.current.send('screen:on');
       setSharing(true); setPreviewVisible(true); setPreview(stream);
@@ -177,6 +196,19 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
       if (alive.current && !(problem instanceof DOMException && problem.name === 'NotAllowedError')) errorRef.current(screenShareError(problem));
     } finally { sharingWorking.current = false; if (alive.current) setScreenStarting(false); }
   }
-  return { feedback, screenStarting, call, status, muted, sharing, remoteSharing, remote, preview: previewVisible ? preview : null, previewVisible, setPreviewVisible, busy, invite, accept, end, toggleMute, share };
+  async function changeMicrophone(id: string) {
+    const currentGeneration = generation.current, previous = microphone.current;
+    const sender = peer.current?.getSenders().find(item => item.track?.kind === 'audio');
+    if (!previous || !sender) { rememberMicrophone(id); return; }
+    const next = await captureMicrophone(id);
+    if (generation.current !== currentGeneration || microphone.current !== previous) { next.getTracks().forEach(track => track.stop()); return; }
+    next.getAudioTracks()[0].enabled = previous.getAudioTracks()[0].enabled;
+    try { await sender.replaceTrack(next.getAudioTracks()[0]); }
+    catch (problem) { next.getTracks().forEach(track => track.stop()); throw problem; }
+    if (generation.current !== currentGeneration) { next.getTracks().forEach(track => track.stop()); return; }
+    microphone.current = next; setMicrophoneStream(next); rememberMicrophone(id); previous.getTracks().forEach(track => track.stop());
+  }
+  const activateAudio = () => { void audio.current?.activate().catch(() => setAudioBlocked(true)); };
+  return { microphoneStream, changeMicrophone, audioBlocked, audioNotice, activateAudio, feedback, screenStarting, call, status, muted, sharing, remoteSharing, remote, preview: previewVisible ? preview : null, previewVisible, setPreviewVisible, busy, invite, accept, end, toggleMute, share };
 }
 export type CallController = ReturnType<typeof useCallController>;

@@ -1,3 +1,5 @@
+import { DeviceAudioTransport } from '../models/deviceAudio';
+import { captureMicrophone, rememberMicrophone } from '../models/microphone';
 import { useScreenFeedback } from './useScreenFeedback';
 import type { ScreenPreferences } from './useScreenPreferences';
 import { useEffect, useRef, useState } from 'react';
@@ -22,6 +24,10 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
   const microphone = useRef<MediaStream | null>(null);
   const blank = useRef<MediaStream | null>(null);
   const screen = useRef<MediaStream | null>(null);
+  const audio = useRef<DeviceAudioTransport | null>(null);
+  const [audioBlocked, setAudioBlocked] = useState(false);
+  const [audioNotice, setAudioNotice] = useState('');
+  const [microphoneStream, setMicrophoneStream] = useState<MediaStream | null>(null);
   const ice = useRef<RTCIceServer[]>([]);
   const epoch = useRef(0);
   const active = useRef(false);
@@ -31,18 +37,20 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
   const feedback = useScreenFeedback(sharing, preferences.automatic, screenProfile, () => screen.current?.getVideoTracks()[0], () => [...peers.current.values()].map(item => item.sender));
   const updateRemote = () => setRemote([...peers.current].map(([id, peer]) => ({ id, email: peer.email, stream: new MediaStream(peer.stream.getTracks()), sharing: peer.sharing })));
   function cleanup() {
+    audio.current?.close(); audio.current = null;
     epoch.current++;
     for (const peer of peers.current.values()) peer.connection.close();
     peers.current.clear();
     for (const stream of [microphone.current, blank.current, screen.current]) stream?.getTracks().forEach(track => track.stop());
     microphone.current = blank.current = screen.current = null; current.current = null;
-    if (active.current) { setRoom(null); setRemote([]); setMuted(false); setSharing(false); setPreview(null); setPreviewVisible(false); }
+    if (active.current) { setMicrophoneStream(null); setAudioBlocked(false); setAudioNotice(''); setRoom(null); setRemote([]); setMuted(false); setSharing(false); setPreview(null); setPreviewVisible(false); }
   }
   async function leave() {
     const id = current.current?.channelId; cleanup();
     if (id !== undefined) try { await api.leaveCallRoom(id); } catch (problem) { if (active.current) errorRef.current(problem); }
   }
   function attach(peer: Peer, control: RTCDataChannel) {
+    if (audio.current?.attach(control)) return;
     if (control.label !== 'call-control') { control.close(); return; }
     peer.control = control;
     control.onopen = () => control.send(screen.current ? 'screen:on' : 'screen:off');
@@ -58,7 +66,10 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
     const peer: Peer = { connection, sender, stream: new MediaStream(), sharing: false, email: session.caller === email ? session.callee : session.caller };
     peers.current.set(session.id, peer);
     connection.ondatachannel = event => attach(peer, event.channel);
-    if (session.caller === email) attach(peer, connection.createDataChannel('call-control'));
+    if (session.caller === email) {
+      attach(peer, connection.createDataChannel('call-control'));
+      attach(peer, connection.createDataChannel('device-audio', { ordered: false, maxRetransmits: 0 }));
+    }
     connection.ontrack = event => { if (active.current && peers.current.get(session.id) === peer) { peer.stream.addTrack(event.track); updateRemote(); } };
     connection.onconnectionstatechange = () => {
       if (connection.connectionState === 'failed' && active.current) errorRef.current(new Error(`Mídia interrompida com ${peer.email}. Saia e entre no canal novamente.`));
@@ -111,10 +122,12 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
     working.current = true; setBusy(true); const generation = epoch.current;
     let captured: MediaStream | undefined;
     try {
-      captured = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: false });
+      audio.current = new DeviceAudioTransport(setAudioBlocked);
+      void audio.current.activate().catch(() => setAudioBlocked(true));
+      captured = await captureMicrophone();
       const config = await api.ice();
       if (!active.current || epoch.current !== generation) { captured.getTracks().forEach(track => track.stop()); return; }
-      microphone.current = captured; ice.current = config;
+      microphone.current = captured; setMicrophoneStream(captured); ice.current = config;
       const canvas = document.createElement('canvas'); canvas.width = 16; canvas.height = 9; canvas.getContext('2d')?.fillRect(0, 0, 16, 9);
       blank.current = canvas.captureStream(1); blank.current.getVideoTracks()[0].enabled = false;
       const result = await api.joinCallRoom(id);
@@ -125,6 +138,7 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
   }
   function toggleMute() { const track = microphone.current?.getAudioTracks()[0]; if (track) { track.enabled = !track.enabled; setMuted(!track.enabled); } }
   async function stopSharing() {
+    audio.current?.stopCapture(); setAudioNotice('');
     const previous = screen.current; screen.current = null;
     previous?.getTracks().forEach(track => track.stop());
     setSharing(false); setPreview(null); setPreviewVisible(false);
@@ -150,11 +164,36 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
         await peer.sender.replaceTrack(track); await constrainSender(peer.sender, screenProfile.current);
         if (peer.control?.readyState === 'open') peer.control.send('screen:on');
       }
+      try {
+        const sending = await audio.current?.startCapture(captured);
+        if (active.current && epoch.current === generation) setAudioNotice(sending ? 'Áudio da transmissão ativado' : 'Esta fonte veio sem áudio. No seletor, marque Compartilhar áudio ou escolha uma aba com som.');
+      } catch { if (active.current) setAudioNotice('Não foi possível enviar o áudio da tela. Pare e selecione outra fonte com áudio.'); }
+      if (!active.current || epoch.current !== generation || screen.current !== captured) return;
       track.onended = () => { if (screen.current?.getVideoTracks()[0] === track) void stopSharing(); };
       setSharing(true); setPreview(captured); setPreviewVisible(true);
     } catch (problem) { captured?.getTracks().forEach(track => track.stop()); await stopSharing(); if (active.current && !(problem instanceof DOMException && problem.name === 'NotAllowedError')) errorRef.current(screenShareError(problem)); }
     finally { sharingWorking.current = false; if (active.current) setScreenStarting(false); }
   }
-  return { feedback, screenStarting, room, busy, muted, sharing, remote, preview: previewVisible ? preview : null, previewVisible, setPreviewVisible, join, leave, toggleMute, share };
+  async function changeMicrophone(id: string) {
+    const generation = epoch.current, previous = microphone.current;
+    if (!previous) { rememberMicrophone(id); return; }
+    const next = await captureMicrophone(id);
+    if (generation !== epoch.current || microphone.current !== previous) { next.getTracks().forEach(track => track.stop()); return; }
+    const track = next.getAudioTracks()[0]; track.enabled = previous.getAudioTracks()[0].enabled;
+    const changed: RTCRtpSender[] = [];
+    try {
+      for (const peer of peers.current.values()) {
+        const sender = peer.connection.getSenders().find(item => item.track?.kind === 'audio');
+        if (sender) { await sender.replaceTrack(track); changed.push(sender); }
+      }
+    } catch (problem) {
+      await Promise.allSettled(changed.map(sender => sender.replaceTrack(previous.getAudioTracks()[0])));
+      next.getTracks().forEach(track => track.stop()); throw problem;
+    }
+    if (generation !== epoch.current) { next.getTracks().forEach(track => track.stop()); return; }
+    microphone.current = next; setMicrophoneStream(next); rememberMicrophone(id); previous.getTracks().forEach(track => track.stop());
+  }
+  const activateAudio = () => { void audio.current?.activate().catch(() => setAudioBlocked(true)); };
+  return { microphoneStream, changeMicrophone, audioBlocked, audioNotice, activateAudio, feedback, screenStarting, room, busy, muted, sharing, remote, preview: previewVisible ? preview : null, previewVisible, setPreviewVisible, join, leave, toggleMute, share };
 }
 export type VoiceRoomController = ReturnType<typeof useVoiceRoomController>;

@@ -28,7 +28,7 @@ As conversas reais utilizam a API. A tela Amigos também possui o contato **Alex
 
 Pré-requisitos: Android Studio, JDK 17 ou 21, SDK Android 35 e Build Tools 34.0.0. O aplicativo requer **Android 8.0/API 26 ou superior**. Configure `ANDROID_HOME` ou `sdk.dir` no arquivo local `local.properties`.
 
-Inicie a API com `.\setup.ps1` na raiz do repositório. Depois abra esta pasta no Android Studio e execute no emulador. A URL padrão `http://10.0.2.2:8080/` aponta para a máquina hospedeira a partir do emulador Android padrão.
+Na raiz, execute `.\iniciar-samuschat.ps1` com o celular conectado por USB e a depura??o autorizada. A URL padr?o `http://127.0.0.1:8080/` usa `adb reverse tcp:8080 tcp:8080`. No Android Studio, selecione o celular como destino do Run.
 
 Para usar o launcher que inicia o ambiente e abre o aplicativo, consulte [inicialização automática](../docs/INICIALIZACAO_AUTOMATICA.md).
 
@@ -47,7 +47,7 @@ Para um celular físico, defina o IP da máquina que executa a API. O endereço 
 ```powershell
 .\gradlew.bat :app:assembleDebug -PapiBaseUrl=http://192.168.1.9:8080/
 adb devices
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb -d install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
 O celular precisa estar conectado, com depuração USB autorizada, e conseguir acessar a API. A URL deve terminar com `/`. Para acessar pelo Wi-Fi, os dispositivos precisam de conectividade entre si e a porta da API deve estar acessível. `FILE_BASE_URL` no backend também deve usar um endereço alcançável pelo celular.
@@ -85,3 +85,6 @@ O login Google está implementado no Android, mas sua configuração real está 
 - [Prévia da tela compartilhada](../docs/PREVIA_COMPARTILHAMENTO.md)
 - [Validação de mídia e estabilidade](../docs/REGRESSAO_MIDIA_ESTABILIDADE_2026-10-08.md)
 - [Índice completo](../docs/README.md)
+
+Veja [sessão persistente Android](../docs/SESSAO_ANDROID.md): tokens criptografados, renovação automática e diferença entre fechar o app e sair da conta.
+Veja [tela cheia e rotação da transmissão](../docs/TELA_CHEIA_ROTACAO_PC_ANDROID.md): tocar na imagem revela o botão central de tela cheia; a captura acompanha jogos e vídeos que mudam a tela para paisagem.

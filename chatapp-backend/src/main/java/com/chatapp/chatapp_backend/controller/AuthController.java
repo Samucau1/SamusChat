@@ -20,6 +20,13 @@ public class AuthController {
 
     private final AuthService authService;
 
+    public record RefreshRequest(String refreshToken) {}
+
+    @PostMapping("/refresh")
+    public ApiResponse<Map<String, String>> refresh(@RequestBody RefreshRequest request) {
+        return ApiResponse.success(Map.of("token", authService.refresh(request.refreshToken())));
+    }
+
     @PostMapping("/logout")
     public ApiResponse<Void> logout(org.springframework.security.core.Authentication auth) {
         authService.logout(auth.getName()); return ApiResponse.success(null, "Sessoes encerradas");
@@ -29,7 +36,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Map<String, String>>> register(@RequestBody RegisterRequest request) {
         String token = authService.register(request);
         return ResponseEntity.ok(
-                ApiResponse.success(Map.of("token", token), "Cadastro realizado com sucesso")
+                ApiResponse.success(authService.sessionTokens(token), "Cadastro realizado com sucesso")
         );
     }
 

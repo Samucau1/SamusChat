@@ -200,7 +200,7 @@ npm run dev
 
 Abra **http://127.0.0.1:5173**. O Vite encaminha API, WebSocket e anexos ao backend local. É possível entrar com a mesma conta utilizada no Android.
 
-**3. Aplicativo Android** — abra `samuschat-android/` no Android Studio e execute no emulador. A URL padrão da API é `http://10.0.2.2:8080/`. O [README Android](samuschat-android/README.md) explica como gerar o APK e configurar a URL para um celular físico.
+**3. Aplicativo Android** ? conecte o celular por USB, ative Depura??o USB e autorize o computador no aparelho. Execute `.\iniciar-samuschat.ps1` para preparar os servi?os, encaminhar a API pelo cabo e instalar/abrir o app.
 
 Para iniciar o ambiente Android com o launcher do projeto, use `.\iniciar-samuschat.ps1`. Consulte o [guia de inicialização automática](docs/INICIALIZACAO_AUTOMATICA.md) para seus pré-requisitos.
 

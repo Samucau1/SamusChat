@@ -16,7 +16,7 @@ export function lowerScreenProfile(profile: ScreenProfile): ScreenProfile | null
 
 export function screenCaptureOptions(profile: ScreenProfile = desktopScreenProfile): DisplayMediaStreamOptions {
   // getDisplayMedia disallows mandatory min/exact constraints in the picker.
-  return { video: { width: { ideal: profile.width }, height: { ideal: profile.height }, frameRate: { ideal: profile.frameRate } }, audio: false };
+  return { video: { width: { ideal: profile.width }, height: { ideal: profile.height }, frameRate: { ideal: profile.frameRate } }, audio: true, systemAudio: 'include' } as DisplayMediaStreamOptions;
 }
 
 export async function constrainScreen(track: MediaStreamTrack, profile: ScreenProfile = desktopScreenProfile) {

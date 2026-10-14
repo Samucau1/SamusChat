@@ -1,7 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$Avd = 'SamusChat_Validacao',
-    [int]$Port = 5554,
+    [string]$Serial = '',
     [switch]$Rebuild
 )
 
@@ -9,14 +8,11 @@ $ErrorActionPreference = 'Stop'
 $taskRoot = $PSScriptRoot
 $taskSdk = Join-Path $taskRoot '.android-sdk'
 $taskAdb = Join-Path $taskSdk 'platform-tools/adb.exe'
-$taskEmulator = Join-Path $taskSdk 'emulator/emulator.exe'
-$taskSerial = "emulator-$Port"
+$taskSerial = $Serial
 $taskLogs = Join-Path $taskRoot 'logs'
 $taskBackend = $null
-$taskEmulatorProcess = $null
-$taskEmulatorClock = $null
 $taskOldAndroidHome = $env:ANDROID_HOME
-$taskOldAvdHome = $env:ANDROID_AVD_HOME
+$taskOldFileBaseUrl = $env:FILE_BASE_URL
 
 function Wait-Ready([scriptblock]$Probe, [int]$Seconds, [string]$Description) {
     $taskDeadline = (Get-Date).AddSeconds($Seconds)
@@ -24,9 +20,6 @@ function Wait-Ready([scriptblock]$Probe, [int]$Seconds, [string]$Description) {
         if (& $Probe) { return }
         if ($taskBackend -and $taskBackend.HasExited) {
             throw 'A API encerrou antes de ficar pronta. Consulte logs/api.stdout.log e logs/api.stderr.log.'
-        }
-        if ($taskEmulatorProcess -and $taskEmulatorProcess.HasExited) {
-            throw 'O emulador encerrou durante a inicializacao. Consulte logs/emulator.stderr.log e logs/emulator.stdout.log.'
         }
         Start-Sleep -Seconds 2
     } while ((Get-Date) -lt $taskDeadline)
@@ -52,7 +45,7 @@ function Test-Docker {
 }
 
 function Test-AndroidBoot {
-    # O ADB pode retornar stderr enquanto o emulador ainda esta offline.
+    # O ADB pode retornar stderr enquanto o celular ainda esta offline.
     $ErrorActionPreference = 'SilentlyContinue'
     $PSNativeCommandUseErrorActionPreference = $false
     try {
@@ -68,34 +61,14 @@ function Invoke-Device([string[]]$DeviceArguments) {
 }
 
 try {
-    if ($Avd -notmatch '^[A-Za-z0-9_.-]+$') { throw 'Nome de AVD invalido.' }
-    if ($Port -lt 5554 -or $Port -gt 5682 -or $Port % 2 -ne 0) { throw 'Use uma porta par entre 5554 e 5682.' }
-    foreach ($taskRequired in @($taskAdb, $taskEmulator)) {
-        if (-not (Test-Path -LiteralPath $taskRequired)) { throw "SDK nao encontrado: $taskRequired" }
-    }
+    if (-not (Test-Path -LiteralPath $taskAdb)) { throw "ADB nao encontrado: $taskAdb" }
+    . (Join-Path $taskRoot 'scripts/android-usb.ps1')
+    $taskSerial = Get-UsbAndroidSerial -Adb $taskAdb -Serial $Serial
     if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { throw 'Docker Desktop nao instalado.' }
     New-Item -ItemType Directory -Force -Path $taskLogs | Out-Null
     $env:ANDROID_HOME = $taskSdk
-    $env:ANDROID_AVD_HOME = Join-Path $taskSdk 'avd'
-    $taskAvds = @(& $taskEmulator -list-avds)
-    if ($LASTEXITCODE -ne 0 -or $Avd -notin $taskAvds) { throw "AVD nao encontrado: $Avd" }
-
-    Write-Host 'Preparando emulador em paralelo aos servicos...'
-    $taskEmulatorClock = [System.Diagnostics.Stopwatch]::StartNew()
-    $taskDeviceLines = @(& $taskAdb devices)
-    if ($LASTEXITCODE -ne 0) { throw 'Nao foi possivel consultar o ADB.' }
-    if (-not ($taskDeviceLines -match "^$taskSerial\s")) {
-        $taskEmulatorProcess = Start-Process -FilePath $taskEmulator -ArgumentList @(
-            '-avd', $Avd, '-port', "$Port", '-gpu', 'auto', '-no-boot-anim'
-        ) -WindowStyle Normal -PassThru `
-            -RedirectStandardOutput (Join-Path $taskLogs 'emulator.stdout.log') `
-            -RedirectStandardError (Join-Path $taskLogs 'emulator.stderr.log')
-    } else {
-        $taskCurrentAvd = (& $taskAdb -s $taskSerial emu avd name 2>$null | Select-Object -First 1)
-        if ($LASTEXITCODE -eq 0 -and $taskCurrentAvd -ne $Avd) {
-            throw "A porta $Port pertence a outro AVD ($taskCurrentAvd). Escolha outra porta com -Port."
-        }
-    }
+    $env:FILE_BASE_URL = 'http://127.0.0.1:8080'
+    Write-Host "Celular USB selecionado: $taskSerial"
 
     Write-Host '[1/5] Preparando Docker...'
     if (-not (Test-Docker)) {
@@ -125,8 +98,7 @@ try {
 
     Write-Host '[4/5] Aguardando Android ficar pronto...'
     Wait-Ready { Test-AndroidBoot } 240 'inicializacao do Android'
-    $taskEmulatorClock.Stop()
-    Write-Host ("Android pronto apos {0:N0} s desde a verificacao inicial (servicos preparados nesse intervalo)." -f $taskEmulatorClock.Elapsed.TotalSeconds)
+    Invoke-Device @('reverse', 'tcp:8080', 'tcp:8080') | Out-Host
 
     Write-Host '[5/5] Abrindo SamusChat...'
     $taskAndroidProject = Join-Path $taskRoot 'samuschat-android'
@@ -134,7 +106,7 @@ try {
     Write-Host 'Verificando o build atual do aplicativo...'
     Push-Location $taskAndroidProject
     try {
-        $taskGradleArguments = @(':app:assembleDebug', '-PapiBaseUrl=http://10.0.2.2:8080/', '-PcallsForceRelay=false')
+        $taskGradleArguments = @(':app:assembleDebug', '-PapiBaseUrl=http://127.0.0.1:8080/', '-PcallsForceRelay=false')
         if ($Rebuild) { $taskGradleArguments += '--rerun-tasks' }
         & .\gradlew.bat @taskGradleArguments
         if ($LASTEXITCODE -ne 0) { throw 'Falha ao gerar APK. O aplicativo instalado nao foi substituido.' }
@@ -149,16 +121,16 @@ try {
         }
     }
     if ($taskNeedsInstall) {
-        Write-Host 'Atualizando APK no emulador, preservando os dados da conta...'
+        Write-Host 'Atualizando APK no celular, preservando os dados da conta...'
         Invoke-Device @('install', '-r', $taskApk) | Out-Host
     } else {
         Write-Host 'O aplicativo instalado ja corresponde ao build atual.'
     }
     # Confirma conectividade TCP a partir do proprio Android antes de abrir o app.
-    Invoke-Device @('shell', 'toybox', 'nc', '-w', '3', '10.0.2.2', '8080', '</dev/null') | Out-Null
+    Invoke-Device @('shell', 'toybox', 'nc', '-w', '3', '127.0.0.1', '8080', '</dev/null') | Out-Null
     Invoke-Device @('shell', 'am', 'start', '-n', 'com.samuschat/.MainActivity') | Out-Host
-    Write-Host 'SamusChat pronto. API, banco, Redis e emulador continuam ativos apos este comando.'
+    Write-Host 'SamusChat pronto. API, banco e Redis continuam ativos. Mantenha o celular conectado por USB.'
 } finally {
     $env:ANDROID_HOME = $taskOldAndroidHome
-    $env:ANDROID_AVD_HOME = $taskOldAvdHome
+    $env:FILE_BASE_URL = $taskOldFileBaseUrl
 }

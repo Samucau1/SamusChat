@@ -20,16 +20,19 @@ class AuthRepository(private val api: ApiService, private val tokens: TokenManag
     suspend fun verifyRecovery(email: String, code: String) = api.verifyRecovery(RecoveryCode(email.trim(), code)).data().resetToken
     suspend fun resetPassword(email: String, token: String, password: String) = api.resetPassword(RecoveryReset(email.trim(), token, password)).data()
     suspend fun googleLogin(idToken: String, password: String?) {
-        val token = api.googleLogin(GoogleLogin(idToken, password)).data().token
-        tokens.saveSession(token, api.profile("Bearer $token").data().email)
+        val result = api.googleLogin(GoogleLogin(idToken, password)).data()
+        val token = result.token
+        tokens.saveSession(token, api.profile("Bearer $token").data().email, result.refreshToken)
     }
     suspend fun login(email: String, password: String) {
-        val token = api.login(LoginRequest(email.trim(), password)).data().token
-        tokens.saveSession(token, api.profile("Bearer $token").data().email)
+        val result = api.login(LoginRequest(email.trim(), password)).data()
+        val token = result.token
+        tokens.saveSession(token, api.profile("Bearer $token").data().email, result.refreshToken)
     }
     suspend fun register(username: String, email: String, password: String) {
-        val token = api.register(RegisterRequest(username.trim(), email.trim(), password)).data().token
-        tokens.saveSession(token, api.profile("Bearer $token").data().email)
+        val result = api.register(RegisterRequest(username.trim(), email.trim(), password)).data()
+        val token = result.token
+        tokens.saveSession(token, api.profile("Bearer $token").data().email, result.refreshToken)
     }
 }
 class ServerRepository(private val api: ApiService, private val tokens: TokenManager) {

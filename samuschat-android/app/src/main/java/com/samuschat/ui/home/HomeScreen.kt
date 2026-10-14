@@ -112,7 +112,7 @@ fun HomeScreen(
                     }
                     demoChat -> DemoConversation(demoMessages, { demoMessages = ArrayList(demoMessages + it) }) { demoChat = false }
                     contactEmail != null -> key(contactEmail) { DirectConversation(app, email, CallContact(contactEmail!!, contactName), calls) { contactEmail = null } }
-                    else -> FriendsScreen(callState.contacts, { contactEmail = it.email; contactName = it.username }, { calls.refreshContacts() }) { demoChat = true }
+                    else -> FriendsScreen(email, callState.contacts, { contactEmail = it.email; contactName = it.username }, { calls.refreshContacts() }) { demoChat = true }
                 }
                 }
             }
@@ -121,12 +121,13 @@ fun HomeScreen(
 }
 
 @Composable
-private fun FriendsScreen(contacts: List<CallContact>, onContact: (CallContact) -> Unit, onRefresh: () -> Unit, onChat: () -> Unit) {
+private fun FriendsScreen(email: String, contacts: List<CallContact>, onContact: (CallContact) -> Unit, onRefresh: () -> Unit, onChat: () -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         item {
             Text("Amigos", style = MaterialTheme.typography.headlineLarge)
             Text("Seu próximo papo começa aqui.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Conectado como $email", style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = onRefresh) { Text("Atualizar contatos") }
         }
         item {
@@ -159,7 +160,10 @@ private fun FriendsScreen(contacts: List<CallContact>, onContact: (CallContact) 
             Surface(onClick = { onContact(contact) }, color = PanelBackground, shape = MaterialTheme.shapes.large) {
                 Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     InitialAvatar(contact.username)
-                    Text(contact.username, Modifier.weight(1f).padding(horizontal = 12.dp))
+                    Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                        Text(contact.username)
+                        Text(contact.email, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Abrir conversa com ${contact.username}")
                 }
             }

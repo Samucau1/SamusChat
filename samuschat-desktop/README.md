@@ -16,6 +16,8 @@ Abra `http://127.0.0.1:5173` e entre com a mesma conta do celular. O Vite encami
 Testes reais de navegador: inicie `./scripts/start-desktop-test-api.ps1` na raiz, execute `npx playwright install chromium` nesta pasta e depois `npm run test:e2e`. O ambiente de testes usa H2 descartável na porta 18082.
 
 Veja o [plano, tecnologias, entradas e arquitetura](../docs/DESKTOP_MVC.md).
+Veja também a [seleção de microfone e áudio de transmissão entre PC e celular](../docs/REGRESSAO_AUDIO_PC_CELULAR_2026-10-14.md).
+Veja [tela cheia e rotação da transmissão](../docs/TELA_CHEIA_ROTACAO_PC_ANDROID.md): controles sobre a imagem, espectador nativo em tela cheia e adaptação entre retrato e paisagem.
 Veja também [funcionalidades, limites e testes da integração](../docs/DESKTOP_API.md).
 
 Veja [personalização compartilhada com Android e canais de chamada](../docs/PERSONALIZACAO_PC_ANDROID.md). A regressão inclui testes dos contratos REST, perfil/GIF, servidor, membros, salas e rascunhos; todos usam contas fictícias em H2 ou respostas simuladas.

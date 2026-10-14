@@ -39,6 +39,7 @@ class RoomRtc(
     private val peers = linkedMapOf<String, Link>()
     private var screen: ScreenCapturerAndroid? = null
     private var texture: SurfaceTextureHelper? = null
+    private var screenSizing: ScreenCaptureMonitor? = null
     private var generation = 0
     private var sharing = false
     private var closed = false
@@ -164,21 +165,25 @@ class RoomRtc(
         val capturer = ScreenCapturerAndroid(permission, object : MediaProjection.Callback() {
             override fun onStop() { main.post { if (!closed && current == generation && screen != null) { stopSharing(); onSharingStopped() } } }
             override fun onCapturedContentResize(width: Int, height: Int) {
-                if (width <= 0 || height <= 0) return
-                main.post { if (!closed && current == generation) {
-                    val scale = 960.0 / maxOf(width, height)
-                    screen?.changeCaptureFormat(maxOf(2, (width * scale).toInt() / 2 * 2), maxOf(2, (height * scale).toInt() / 2 * 2), 15)
-                } }
+                main.post { if (!closed && current == generation) screenSizing?.capturedContent(width, height) }
             }
         })
         screen = capturer
         texture = SurfaceTextureHelper.create("room-screen", egl.eglBaseContext)
         capturer.initialize(texture, context, videoSource.capturerObserver)
-        val metrics = context.resources.displayMetrics
-        capturer.startCapture(if (metrics.widthPixels > metrics.heightPixels) 960 else 540, if (metrics.widthPixels > metrics.heightPixels) 540 else 960, 15)
+        val sizing = ScreenCaptureMonitor(context) { size ->
+            if (!closed && current == generation && screen === capturer) {
+                capturer.changeCaptureFormat(size.width, size.height, 15)
+                if (BuildConfig.DEBUG) android.util.Log.i("ScreenCapture", "resized=${size.width}x${size.height}")
+            }
+        }
+        screenSizing = sizing
+        capturer.startCapture(sizing.dimensions.width, sizing.dimensions.height, 15)
+        sizing.start()
         sharing = true; peers.values.forEach { it.advertise() }
     }
     fun stopSharing() {
+        screenSizing?.stop(); screenSizing = null
         generation++
         val capture = screen; screen = null
         capture?.stopCapture(); capture?.dispose(); texture?.dispose(); texture = null

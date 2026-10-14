@@ -20,7 +20,7 @@ Abra a pasta `samuschat-android/` no Android Studio. Execute os comandos abaixo 
 .\gradlew.bat :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
 ```
 
-O APK fica em `app/build/outputs/apk/debug/app-debug.apk`. O emulador acessa o back-end por `http://10.0.2.2:8080/`. Para celular físico na mesma rede:
+O APK fica em `app/build/outputs/apk/debug/app-debug.apk`. O padr?o USB usa `http://127.0.0.1:8080/` com `adb reverse tcp:8080 tcp:8080`. Para celular físico na mesma rede:
 
 ```powershell
 .\gradlew.bat :app:assembleDebug -PapiBaseUrl=http://192.168.1.10:8080/
@@ -55,3 +55,5 @@ Validação automatizada realizada em 28/09/2026: 14 testes Maven aprovados (inc
 7. Com Firebase configurado, teste push em segundo plano e remoção do dispositivo ao sair.
 
 Referências: [compatibilidade AGP 8.7 / Gradle 8.9](https://developer.android.com/build/releases/agp-8-7-0-release-notes), [protocolo STOMP](https://stomp.github.io/stomp-specification-1.2.html).
+
+O login é restaurado ao reabrir o app e o acesso é renovado automaticamente por até 30 dias após entrar. Veja [sessão persistente Android](SESSAO_ANDROID.md).
