@@ -1,0 +1,3617 @@
+{
+  "checkedAt": "2026-10-13T02:08:12.058Z",
+  "source": "https://api.osv.dev/v1/querybatch",
+  "scope": "Resolved backend runtime and Android releaseRuntimeClasspath; public Maven coordinates only",
+  "counts": {
+    "backend": 207,
+    "Android": 152,
+    "affectedCoordinates": 1,
+    "distinctAdvisories": 2
+  },
+  "inventory": [
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.boot:spring-boot-starter-mail"
+      },
+      "version": "3.5.16"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.boot:spring-boot-starter"
+      },
+      "version": "3.5.16"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.boot:spring-boot"
+      },
+      "version": "3.5.16"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.boot:spring-boot-autoconfigure"
+      },
+      "version": "3.5.16"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.boot:spring-boot-starter-logging"
+      },
+      "version": "3.5.16"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "ch.qos.logback:logback-classic"
+      },
+      "version": "1.5.34"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "ch.qos.logback:logback-core"
+      },
+      "version": "1.5.34"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.apache.logging.log4j:log4j-to-slf4j"
+      },
+      "version": "2.26.1"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.apache.logging.log4j:log4j-api"
+      },
+      "version": "2.26.1"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.slf4j:jul-to-slf4j"
+      },
+      "version": "2.0.18"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "jakarta.annotation:jakarta.annotation-api"
+      },
+      "version": "2.1.1"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.yaml:snakeyaml"
+      },
+      "version": "2.4"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework:spring-context-support"
+      },
+      "version": "6.2.19"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework:spring-beans"
+      },
+      "version": "6.2.19"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework:spring-context"
+      },
+      "version": "6.2.19"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.eclipse.angus:jakarta.mail"
+      },
+      "version": "2.0.5"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "jakarta.activation:jakarta.activation-api"
+      },
+      "version": "2.1.4"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.eclipse.angus:angus-activation"
+      },
+      "version": "2.0.3"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.boot:spring-boot-starter-actuator"
+      },
+      "version": "3.5.16"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.boot:spring-boot-actuator-autoconfigure"
+      },
+      "version": "3.5.16"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.boot:spring-boot-actuator"
+      },
+      "version": "3.5.16"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.micrometer:micrometer-observation"
+      },
+      "version": "1.15.12"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.micrometer:micrometer-commons"
+      },
+      "version": "1.15.12"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.micrometer:micrometer-jakarta9"
+      },
+      "version": "1.15.12"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.micrometer:micrometer-core"
+      },
+      "version": "1.15.12"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.hdrhistogram:HdrHistogram"
+      },
+      "version": "2.2.2"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.latencyutils:LatencyUtils"
+      },
+      "version": "2.0.3"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.flywaydb:flyway-core"
+      },
+      "version": "11.7.2"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.fasterxml.jackson.dataformat:jackson-dataformat-toml"
+      },
+      "version": "2.21.7"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.fasterxml.jackson.core:jackson-core"
+      },
+      "version": "2.21.7"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
+      },
+      "version": "2.21.7"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.fasterxml.jackson.core:jackson-annotations"
+      },
+      "version": "2.21"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.flywaydb:flyway-database-postgresql"
+      },
+      "version": "11.7.2"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.boot:spring-boot-starter-data-jpa"
+      },
+      "version": "3.5.16"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.boot:spring-boot-starter-jdbc"
+      },
+      "version": "3.5.16"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.zaxxer:HikariCP"
+      },
+      "version": "6.3.3"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework:spring-jdbc"
+      },
+      "version": "6.2.19"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.hibernate.orm:hibernate-core"
+      },
+      "version": "6.6.53.Final"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "jakarta.persistence:jakarta.persistence-api"
+      },
+      "version": "3.1.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "jakarta.transaction:jakarta.transaction-api"
+      },
+      "version": "2.0.1"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.jboss.logging:jboss-logging"
+      },
+      "version": "3.6.3.Final"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.hibernate.common:hibernate-commons-annotations"
+      },
+      "version": "7.0.3.Final"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.smallrye:jandex"
+      },
+      "version": "3.2.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.fasterxml:classmate"
+      },
+      "version": "1.7.3"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "net.bytebuddy:byte-buddy"
+      },
+      "version": "1.17.8"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.glassfish.jaxb:jaxb-runtime"
+      },
+      "version": "4.0.9"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.glassfish.jaxb:jaxb-core"
+      },
+      "version": "4.0.9"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.glassfish.jaxb:txw2"
+      },
+      "version": "4.0.9"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.sun.istack:istack-commons-runtime"
+      },
+      "version": "4.1.2"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "jakarta.inject:jakarta.inject-api"
+      },
+      "version": "2.0.1"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.antlr:antlr4-runtime"
+      },
+      "version": "4.13.2"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.data:spring-data-jpa"
+      },
+      "version": "3.5.13"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.data:spring-data-commons"
+      },
+      "version": "3.5.13"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework:spring-orm"
+      },
+      "version": "6.2.19"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework:spring-tx"
+      },
+      "version": "6.2.19"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework:spring-aspects"
+      },
+      "version": "6.2.19"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.aspectj:aspectjweaver"
+      },
+      "version": "1.9.25.1"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.boot:spring-boot-starter-data-redis"
+      },
+      "version": "3.5.16"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.lettuce:lettuce-core"
+      },
+      "version": "6.6.0.RELEASE"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "redis.clients.authentication:redis-authx-core"
+      },
+      "version": "0.1.1-beta2"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.netty:netty-common"
+      },
+      "version": "4.1.137.Final"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.projectreactor:reactor-core"
+      },
+      "version": "3.7.19"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.reactivestreams:reactive-streams"
+      },
+      "version": "1.0.4"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.data:spring-data-redis"
+      },
+      "version": "3.5.13"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.data:spring-data-keyvalue"
+      },
+      "version": "3.5.13"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework:spring-oxm"
+      },
+      "version": "6.2.19"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.boot:spring-boot-starter-security"
+      },
+      "version": "3.5.16"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework:spring-aop"
+      },
+      "version": "6.2.19"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.security:spring-security-config"
+      },
+      "version": "6.5.11"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.security:spring-security-web"
+      },
+      "version": "6.5.11"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework:spring-expression"
+      },
+      "version": "6.2.19"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.boot:spring-boot-starter-validation"
+      },
+      "version": "3.5.16"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.apache.tomcat.embed:tomcat-embed-el"
+      },
+      "version": "10.1.61"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.hibernate.validator:hibernate-validator"
+      },
+      "version": "8.0.3.Final"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "jakarta.validation:jakarta.validation-api"
+      },
+      "version": "3.0.2"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.boot:spring-boot-starter-web"
+      },
+      "version": "3.5.16"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.boot:spring-boot-starter-json"
+      },
+      "version": "3.5.16"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.fasterxml.jackson.datatype:jackson-datatype-jdk8"
+      },
+      "version": "2.21.7"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.fasterxml.jackson.module:jackson-module-parameter-names"
+      },
+      "version": "2.21.7"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.boot:spring-boot-starter-tomcat"
+      },
+      "version": "3.5.16"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.apache.tomcat.embed:tomcat-embed-core"
+      },
+      "version": "10.1.61"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.apache.tomcat.embed:tomcat-embed-websocket"
+      },
+      "version": "10.1.61"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework:spring-web"
+      },
+      "version": "6.2.19"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework:spring-webmvc"
+      },
+      "version": "6.2.19"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.boot:spring-boot-starter-websocket"
+      },
+      "version": "3.5.16"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework:spring-messaging"
+      },
+      "version": "6.2.19"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework:spring-websocket"
+      },
+      "version": "6.2.19"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.postgresql:postgresql"
+      },
+      "version": "42.7.12"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.projectlombok:lombok"
+      },
+      "version": "1.18.46"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "jakarta.xml.bind:jakarta.xml.bind-api"
+      },
+      "version": "4.0.5"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework:spring-core"
+      },
+      "version": "6.2.19"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework:spring-jcl"
+      },
+      "version": "6.2.19"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.security:spring-security-core"
+      },
+      "version": "6.5.11"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework.security:spring-security-crypto"
+      },
+      "version": "6.5.11"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.apache.httpcomponents:httpclient"
+      },
+      "version": "4.5.13"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.apache.httpcomponents:httpcore"
+      },
+      "version": "4.4.16"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "commons-logging:commons-logging"
+      },
+      "version": "1.2"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "commons-codec:commons-codec"
+      },
+      "version": "1.18.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.bucket4j:bucket4j-core"
+      },
+      "version": "8.7.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.firebase:firebase-admin"
+      },
+      "version": "9.11.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.auth:google-auth-library-oauth2-http"
+      },
+      "version": "1.52.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.jspecify:jspecify"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.auto.value:auto-value-annotations"
+      },
+      "version": "1.11.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.code.findbugs:jsr305"
+      },
+      "version": "3.0.2"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.auth:google-auth-library-credentials"
+      },
+      "version": "1.52.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.http-client:google-http-client-gson"
+      },
+      "version": "2.2.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.errorprone:error_prone_annotations"
+      },
+      "version": "2.50.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.code.gson:gson"
+      },
+      "version": "2.13.2"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.api-client:google-api-client"
+      },
+      "version": "2.7.2"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.oauth-client:google-oauth-client"
+      },
+      "version": "1.36.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.http-client:google-http-client-apache-v2"
+      },
+      "version": "1.45.2"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.api-client:google-api-client-gson"
+      },
+      "version": "2.7.2"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.http-client:google-http-client"
+      },
+      "version": "2.2.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.j2objc:j2objc-annotations"
+      },
+      "version": "3.0.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.grpc:grpc-context"
+      },
+      "version": "1.70.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.opencensus:opencensus-api"
+      },
+      "version": "0.31.1"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.opencensus:opencensus-contrib-http-util"
+      },
+      "version": "0.31.1"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.api:api-common"
+      },
+      "version": "2.68.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "javax.annotation:javax.annotation-api"
+      },
+      "version": "1.3.2"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.cloud:google-cloud-storage"
+      },
+      "version": "2.73.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.fasterxml.jackson.dataformat:jackson-dataformat-xml"
+      },
+      "version": "2.21.7"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.codehaus.woodstox:stax2-api"
+      },
+      "version": "4.2.2"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.fasterxml.woodstox:woodstox-core"
+      },
+      "version": "7.0.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.guava:failureaccess"
+      },
+      "version": "1.0.3"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.guava:listenablefuture"
+      },
+      "version": "9999.0-empty-to-avoid-conflict-with-guava"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.http-client:google-http-client-jackson2"
+      },
+      "version": "2.2.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.cloud:google-cloud-core"
+      },
+      "version": "2.75.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.cloud:google-cloud-core-http"
+      },
+      "version": "2.75.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.http-client:google-http-client-appengine"
+      },
+      "version": "2.2.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.api:gax-httpjson"
+      },
+      "version": "2.85.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.conscrypt:conscrypt-openjdk-uber"
+      },
+      "version": "2.6.2"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.cloud:google-cloud-core-grpc"
+      },
+      "version": "2.75.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.api:gax"
+      },
+      "version": "2.85.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.api:gax-grpc"
+      },
+      "version": "2.85.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.grpc:grpc-inprocess"
+      },
+      "version": "1.83.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.grpc:grpc-alts"
+      },
+      "version": "1.83.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.grpc:grpc-auth"
+      },
+      "version": "1.83.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.opentelemetry:opentelemetry-context"
+      },
+      "version": "1.62.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.opentelemetry:opentelemetry-common"
+      },
+      "version": "1.62.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.api.grpc:proto-google-iam-v1"
+      },
+      "version": "1.71.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.protobuf:protobuf-java"
+      },
+      "version": "4.33.6"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.protobuf:protobuf-java-util"
+      },
+      "version": "4.33.6"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.grpc:grpc-core"
+      },
+      "version": "1.83.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.android:annotations"
+      },
+      "version": "4.1.1.4"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.codehaus.mojo:animal-sniffer-annotations"
+      },
+      "version": "1.27"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.perfmark:perfmark-api"
+      },
+      "version": "0.27.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.grpc:grpc-protobuf"
+      },
+      "version": "1.83.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.grpc:grpc-protobuf-lite"
+      },
+      "version": "1.83.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.api.grpc:proto-google-common-protos"
+      },
+      "version": "2.76.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.threeten:threetenbp"
+      },
+      "version": "1.7.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.api.grpc:proto-google-cloud-storage-v2"
+      },
+      "version": "2.73.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.api.grpc:grpc-google-cloud-storage-v2"
+      },
+      "version": "2.73.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.api.grpc:gapic-google-cloud-storage-v2"
+      },
+      "version": "2.73.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.opentelemetry:opentelemetry-sdk"
+      },
+      "version": "1.62.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.opentelemetry:opentelemetry-sdk-trace"
+      },
+      "version": "1.62.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.opentelemetry:opentelemetry-sdk-logs"
+      },
+      "version": "1.62.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.grpc:grpc-opentelemetry"
+      },
+      "version": "1.83.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.opentelemetry:opentelemetry-api"
+      },
+      "version": "1.62.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.opentelemetry:opentelemetry-sdk-metrics"
+      },
+      "version": "1.62.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.opentelemetry:opentelemetry-sdk-common"
+      },
+      "version": "1.62.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure-spi"
+      },
+      "version": "1.62.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.opentelemetry.semconv:opentelemetry-semconv"
+      },
+      "version": "1.29.0-alpha"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.cloud.opentelemetry:exporter-metrics"
+      },
+      "version": "0.33.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.cloud:google-cloud-monitoring"
+      },
+      "version": "3.52.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.api.grpc:proto-google-cloud-monitoring-v3"
+      },
+      "version": "3.52.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.grpc:grpc-grpclb"
+      },
+      "version": "1.83.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.cloud.opentelemetry:shared-resourcemapping"
+      },
+      "version": "0.33.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.opentelemetry.contrib:opentelemetry-gcp-resources"
+      },
+      "version": "1.37.0-alpha"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.cloud.opentelemetry:detector-resources-support"
+      },
+      "version": "0.33.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.checkerframework:checker-qual"
+      },
+      "version": "3.49.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.grpc:grpc-api"
+      },
+      "version": "1.83.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.grpc:grpc-netty-shaded"
+      },
+      "version": "1.83.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.grpc:grpc-util"
+      },
+      "version": "1.83.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.grpc:grpc-stub"
+      },
+      "version": "1.83.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.grpc:grpc-googleapis"
+      },
+      "version": "1.83.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.grpc:grpc-xds"
+      },
+      "version": "1.83.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.grpc:grpc-services"
+      },
+      "version": "1.83.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.re2j:re2j"
+      },
+      "version": "1.8"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "dev.cel:runtime"
+      },
+      "version": "0.13.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "dev.cel:common"
+      },
+      "version": "0.13.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.threeten:threeten-extra"
+      },
+      "version": "1.8.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "dev.cel:protobuf"
+      },
+      "version": "0.13.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.grpc:grpc-rls"
+      },
+      "version": "1.83.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.cloud:google-cloud-firestore"
+      },
+      "version": "3.47.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.api.grpc:proto-google-cloud-firestore-v1"
+      },
+      "version": "3.47.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.cloud:proto-google-cloud-firestore-bundle-v1"
+      },
+      "version": "3.47.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.opentelemetry.instrumentation:opentelemetry-grpc-1.6"
+      },
+      "version": "2.1.0-alpha"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.opentelemetry.instrumentation:opentelemetry-instrumentation-api"
+      },
+      "version": "2.1.0"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.opentelemetry:opentelemetry-extension-incubator"
+      },
+      "version": "1.35.0-alpha"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.opentelemetry.instrumentation:opentelemetry-instrumentation-api-incubator"
+      },
+      "version": "2.1.0-alpha"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.guava:guava"
+      },
+      "version": "33.6.0-jre"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.slf4j:slf4j-api"
+      },
+      "version": "2.0.18"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.netty:netty-codec-http"
+      },
+      "version": "4.1.137.Final"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.netty:netty-buffer"
+      },
+      "version": "4.1.137.Final"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.netty:netty-codec"
+      },
+      "version": "4.1.137.Final"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.netty:netty-handler"
+      },
+      "version": "4.1.137.Final"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.netty:netty-resolver"
+      },
+      "version": "4.1.137.Final"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.netty:netty-transport-native-unix-common"
+      },
+      "version": "4.1.137.Final"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.netty:netty-transport"
+      },
+      "version": "4.1.137.Final"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.apache.httpcomponents.client5:httpclient5"
+      },
+      "version": "5.6.3"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.apache.httpcomponents.core5:httpcore5"
+      },
+      "version": "5.4.3"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.apache.httpcomponents.core5:httpcore5-h2"
+      },
+      "version": "5.4.3"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.nimbusds:nimbus-jose-jwt"
+      },
+      "version": "10.9.1"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.jsonwebtoken:jjwt-api"
+      },
+      "version": "0.11.5"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.jsonwebtoken:jjwt-impl"
+      },
+      "version": "0.11.5"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.jsonwebtoken:jjwt-jackson"
+      },
+      "version": "0.11.5"
+    },
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.fasterxml.jackson.core:jackson-databind"
+      },
+      "version": "2.21.7"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.jetbrains.kotlin:kotlin-stdlib"
+      },
+      "version": "1.9.25"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.jetbrains:annotations"
+      },
+      "version": "23.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.code.gson:gson"
+      },
+      "version": "2.13.2"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.errorprone:error_prone_annotations"
+      },
+      "version": "2.41.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.java-websocket:Java-WebSocket"
+      },
+      "version": "1.6.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.slf4j:slf4j-api"
+      },
+      "version": "2.0.13"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.credentials:credentials"
+      },
+      "version": "1.3.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.annotation:annotation"
+      },
+      "version": "1.7.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.annotation:annotation-jvm"
+      },
+      "version": "1.7.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.jetbrains.kotlinx:kotlinx-coroutines-core"
+      },
+      "version": "1.7.3"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm"
+      },
+      "version": "1.7.3"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.jetbrains.kotlinx:kotlinx-coroutines-bom"
+      },
+      "version": "1.7.3"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.jetbrains.kotlin:kotlin-stdlib-common"
+      },
+      "version": "1.9.25"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+      },
+      "version": "1.9.10"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.jetbrains.kotlin:kotlin-stdlib-jdk7"
+      },
+      "version": "1.9.10"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.credentials:credentials-play-services-auth"
+      },
+      "version": "1.3.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.android.gms:play-services-auth"
+      },
+      "version": "21.1.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.fragment:fragment"
+      },
+      "version": "1.6.2"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.activity:activity"
+      },
+      "version": "1.8.2"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.collection:collection"
+      },
+      "version": "1.4.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.collection:collection-jvm"
+      },
+      "version": "1.4.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.core:core"
+      },
+      "version": "1.12.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.annotation:annotation-experimental"
+      },
+      "version": "1.4.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.concurrent:concurrent-futures"
+      },
+      "version": "1.1.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.guava:listenablefuture"
+      },
+      "version": "1.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.interpolator:interpolator"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.lifecycle:lifecycle-runtime"
+      },
+      "version": "2.7.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.arch.core:core-common"
+      },
+      "version": "2.2.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.arch.core:core-runtime"
+      },
+      "version": "2.2.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.lifecycle:lifecycle-common"
+      },
+      "version": "2.7.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.jetbrains.kotlinx:kotlinx-coroutines-android"
+      },
+      "version": "1.7.3"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.profileinstaller:profileinstaller"
+      },
+      "version": "1.3.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.startup:startup-runtime"
+      },
+      "version": "1.1.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.tracing:tracing"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.versionedparcelable:versionedparcelable"
+      },
+      "version": "1.1.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.lifecycle:lifecycle-viewmodel"
+      },
+      "version": "2.7.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.lifecycle:lifecycle-viewmodel-savedstate"
+      },
+      "version": "2.7.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.core:core-ktx"
+      },
+      "version": "1.12.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.lifecycle:lifecycle-livedata-core"
+      },
+      "version": "2.7.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.savedstate:savedstate"
+      },
+      "version": "1.2.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.loader:loader"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.lifecycle:lifecycle-livedata"
+      },
+      "version": "2.7.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.lifecycle:lifecycle-livedata-core-ktx"
+      },
+      "version": "2.7.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.viewpager:viewpager"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.customview:customview"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.android.gms:play-services-auth-api-phone"
+      },
+      "version": "18.0.2"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.android.gms:play-services-base"
+      },
+      "version": "18.3.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.android.gms:play-services-basement"
+      },
+      "version": "18.3.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.android.gms:play-services-tasks"
+      },
+      "version": "18.1.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.android.gms:play-services-auth-base"
+      },
+      "version": "18.0.10"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.android.gms:play-services-fido"
+      },
+      "version": "21.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.android.libraries.identity.googleid:googleid"
+      },
+      "version": "1.1.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.github.webrtc-sdk:android"
+      },
+      "version": "137.7151.05"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose:compose-bom"
+      },
+      "version": "2024.02.00"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.ui:ui-android"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.activity:activity-ktx"
+      },
+      "version": "1.8.2"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.lifecycle:lifecycle-runtime-ktx"
+      },
+      "version": "2.7.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.lifecycle:lifecycle-viewmodel-ktx"
+      },
+      "version": "2.7.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.savedstate:savedstate-ktx"
+      },
+      "version": "1.2.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.autofill:autofill"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.runtime:runtime"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.runtime:runtime-android"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.runtime:runtime-saveable"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.runtime:runtime-saveable-android"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.ui:ui-geometry"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.ui:ui-geometry-android"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.ui:ui-util"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.ui:ui-util-android"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.ui:ui-graphics"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.ui:ui-graphics-android"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.ui:ui-unit"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.ui:ui-unit-android"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.collection:collection-ktx"
+      },
+      "version": "1.4.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.ui:ui-text"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.ui:ui-text-android"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.emoji2:emoji2"
+      },
+      "version": "1.3.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.lifecycle:lifecycle-process"
+      },
+      "version": "2.7.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.customview:customview-poolingcontainer"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.material3:material3-android"
+      },
+      "version": "1.2.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.activity:activity-compose"
+      },
+      "version": "1.8.2"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.ui:ui"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.animation:animation-core"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.animation:animation-core-android"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.foundation:foundation"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.foundation:foundation-android"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.animation:animation"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.animation:animation-android"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.foundation:foundation-layout"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.foundation:foundation-layout-android"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.material:material-icons-core"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.material:material-icons-core-android"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.material:material-ripple"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.compose.material:material-ripple-android"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.lifecycle:lifecycle-common-java8"
+      },
+      "version": "2.7.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.fragment:fragment-ktx"
+      },
+      "version": "1.6.2"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.navigation:navigation-compose"
+      },
+      "version": "2.7.6"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.lifecycle:lifecycle-viewmodel-compose"
+      },
+      "version": "2.7.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.navigation:navigation-runtime-ktx"
+      },
+      "version": "2.7.6"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.navigation:navigation-common-ktx"
+      },
+      "version": "2.7.6"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.navigation:navigation-common"
+      },
+      "version": "2.7.6"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.navigation:navigation-runtime"
+      },
+      "version": "2.7.6"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.lifecycle:lifecycle-runtime-compose"
+      },
+      "version": "2.7.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.squareup.retrofit2:retrofit"
+      },
+      "version": "2.9.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.squareup.okhttp3:okhttp"
+      },
+      "version": "4.12.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.squareup.okio:okio"
+      },
+      "version": "3.6.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.squareup.okio:okio-jvm"
+      },
+      "version": "3.6.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.squareup.retrofit2:converter-gson"
+      },
+      "version": "2.9.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.squareup.okhttp3:logging-interceptor"
+      },
+      "version": "4.12.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.github.NaikSoftware:StompProtocolAndroid"
+      },
+      "version": "1.6.6"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.reactivex.rxjava2:rxjava"
+      },
+      "version": "2.2.21"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.reactivestreams:reactive-streams"
+      },
+      "version": "1.0.3"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.android.support:support-annotations"
+      },
+      "version": "28.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.reactivex.rxjava2:rxandroid"
+      },
+      "version": "2.1.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.coil-kt:coil-compose"
+      },
+      "version": "2.5.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.coil-kt:coil-compose-base"
+      },
+      "version": "2.5.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.accompanist:accompanist-drawablepainter"
+      },
+      "version": "0.32.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.coil-kt:coil-base"
+      },
+      "version": "2.5.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.appcompat:appcompat-resources"
+      },
+      "version": "1.6.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.vectordrawable:vectordrawable"
+      },
+      "version": "1.1.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.vectordrawable:vectordrawable-animated"
+      },
+      "version": "1.1.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.exifinterface:exifinterface"
+      },
+      "version": "1.3.6"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.coil-kt:coil"
+      },
+      "version": "2.5.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "io.coil-kt:coil-gif"
+      },
+      "version": "2.5.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.datastore:datastore-preferences"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.datastore:datastore"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.datastore:datastore-core"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.datastore:datastore-preferences-core"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.firebase:firebase-bom"
+      },
+      "version": "32.7.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.firebase:firebase-common"
+      },
+      "version": "20.4.2"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.jetbrains.kotlinx:kotlinx-coroutines-play-services"
+      },
+      "version": "1.7.3"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.firebase:firebase-components"
+      },
+      "version": "17.1.5"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.firebase:firebase-annotations"
+      },
+      "version": "16.2.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "javax.inject:javax.inject"
+      },
+      "version": "1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.firebase:firebase-common-ktx"
+      },
+      "version": "20.4.2"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.firebase:firebase-messaging"
+      },
+      "version": "23.4.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.firebase:firebase-encoders-proto"
+      },
+      "version": "16.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.firebase:firebase-encoders"
+      },
+      "version": "17.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.firebase:firebase-iid-interop"
+      },
+      "version": "17.1.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.android.datatransport:transport-api"
+      },
+      "version": "3.1.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.android.datatransport:transport-backend-cct"
+      },
+      "version": "3.1.8"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.android.datatransport:transport-runtime"
+      },
+      "version": "3.1.8"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.firebase:firebase-encoders-json"
+      },
+      "version": "18.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.android.gms:play-services-cloud-messaging"
+      },
+      "version": "17.1.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.android.gms:play-services-stats"
+      },
+      "version": "17.0.2"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.legacy:legacy-support-core-utils"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.documentfile:documentfile"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.localbroadcastmanager:localbroadcastmanager"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "androidx.print:print"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.firebase:firebase-datatransport"
+      },
+      "version": "18.1.7"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.firebase:firebase-installations-interop"
+      },
+      "version": "17.1.1"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.firebase:firebase-measurement-connector"
+      },
+      "version": "19.0.0"
+    },
+    {
+      "component": "Android",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.google.firebase:firebase-installations"
+      },
+      "version": "17.2.0"
+    }
+  ],
+  "findings": [
+    {
+      "component": "backend",
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework:spring-webmvc"
+      },
+      "version": "6.2.19",
+      "vulnerabilities": [
+        "GHSA-j9f9-w8pj-32f8",
+        "GHSA-pc63-qcmh-9cmg"
+      ]
+    }
+  ],
+  "advisories": [
+    {
+      "id": "GHSA-j9f9-w8pj-32f8",
+      "aliases": [
+        "CVE-2026-47890"
+      ],
+      "summary": "Spring Framework Server Sent Event stream corruption while rendering fragments",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        }
+      ],
+      "database_specific": {
+        "severity": "CRITICAL",
+        "github_reviewed": true,
+        "github_reviewed_at": "2026-10-07T13:20:36Z",
+        "nvd_published_at": "2026-08-27T06:17:20Z",
+        "cwe_ids": [
+          "CWE-93"
+        ]
+      },
+      "affected": [
+        {
+          "package": {
+            "name": "org.springframework:spring-webflux",
+            "ecosystem": "Maven",
+            "purl": "pkg:maven/org.springframework/spring-webflux"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "6.2.0"
+                },
+                {
+                  "last_affected": "6.2.19"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "6.2.0",
+            "6.2.1",
+            "6.2.10",
+            "6.2.11",
+            "6.2.12",
+            "6.2.13",
+            "6.2.14",
+            "6.2.15",
+            "6.2.16",
+            "6.2.17",
+            "6.2.18",
+            "6.2.19",
+            "6.2.2",
+            "6.2.3",
+            "6.2.4",
+            "6.2.5",
+            "6.2.6",
+            "6.2.7",
+            "6.2.8",
+            "6.2.9"
+          ],
+          "database_specific": {
+            "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2026/08/GHSA-j9f9-w8pj-32f8/GHSA-j9f9-w8pj-32f8.json"
+          }
+        },
+        {
+          "package": {
+            "name": "org.springframework:spring-webflux",
+            "ecosystem": "Maven",
+            "purl": "pkg:maven/org.springframework/spring-webflux"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "7.0.0"
+                },
+                {
+                  "fixed": "7.0.9"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "7.0.0",
+            "7.0.1",
+            "7.0.2",
+            "7.0.3",
+            "7.0.4",
+            "7.0.5",
+            "7.0.6",
+            "7.0.7",
+            "7.0.8"
+          ],
+          "database_specific": {
+            "last_known_affected_version_range": "<= 7.0.8",
+            "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2026/08/GHSA-j9f9-w8pj-32f8/GHSA-j9f9-w8pj-32f8.json"
+          }
+        },
+        {
+          "package": {
+            "name": "org.springframework:spring-webmvc",
+            "ecosystem": "Maven",
+            "purl": "pkg:maven/org.springframework/spring-webmvc"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "6.2.0"
+                },
+                {
+                  "last_affected": "6.2.19"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "6.2.0",
+            "6.2.1",
+            "6.2.10",
+            "6.2.11",
+            "6.2.12",
+            "6.2.13",
+            "6.2.14",
+            "6.2.15",
+            "6.2.16",
+            "6.2.17",
+            "6.2.18",
+            "6.2.19",
+            "6.2.2",
+            "6.2.3",
+            "6.2.4",
+            "6.2.5",
+            "6.2.6",
+            "6.2.7",
+            "6.2.8",
+            "6.2.9"
+          ],
+          "database_specific": {
+            "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2026/08/GHSA-j9f9-w8pj-32f8/GHSA-j9f9-w8pj-32f8.json"
+          }
+        },
+        {
+          "package": {
+            "name": "org.springframework:spring-webmvc",
+            "ecosystem": "Maven",
+            "purl": "pkg:maven/org.springframework/spring-webmvc"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "7.0.0"
+                },
+                {
+                  "fixed": "7.0.9"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "7.0.0",
+            "7.0.1",
+            "7.0.2",
+            "7.0.3",
+            "7.0.4",
+            "7.0.5",
+            "7.0.6",
+            "7.0.7",
+            "7.0.8"
+          ],
+          "database_specific": {
+            "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2026/08/GHSA-j9f9-w8pj-32f8/GHSA-j9f9-w8pj-32f8.json",
+            "last_known_affected_version_range": "<= 7.0.8"
+          }
+        }
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-47890"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/spring-projects/spring-framework"
+        },
+        {
+          "type": "WEB",
+          "url": "https://spring.io/security/cve-2026-47890"
+        }
+      ]
+    },
+    {
+      "id": "GHSA-pc63-qcmh-9cmg",
+      "aliases": [
+        "CVE-2026-47884"
+      ],
+      "summary": "Spring Framework Improper Path Limitation in XsltView",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        }
+      ],
+      "database_specific": {
+        "nvd_published_at": "2026-08-27T06:17:18Z",
+        "cwe_ids": [
+          "CWE-22"
+        ],
+        "severity": "CRITICAL",
+        "github_reviewed": true,
+        "github_reviewed_at": "2026-10-05T23:20:58Z"
+      },
+      "affected": [
+        {
+          "package": {
+            "name": "org.springframework:spring-webmvc",
+            "ecosystem": "Maven",
+            "purl": "pkg:maven/org.springframework/spring-webmvc"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "last_affected": "5.2.25.RELEASE"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "1.0",
+            "1.0-rc1",
+            "1.0.1",
+            "1.1",
+            "1.1-rc1",
+            "1.1-rc2",
+            "1.1.1",
+            "1.1.2",
+            "1.1.3",
+            "1.1.4",
+            "1.1.5",
+            "1.2",
+            "1.2-rc1",
+            "1.2-rc2",
+            "1.2.1",
+            "1.2.2",
+            "1.2.3",
+            "1.2.4",
+            "1.2.5",
+            "1.2.6",
+            "1.2.7",
+            "1.2.8",
+            "1.2.9",
+            "2.0",
+            "2.0-m1",
+            "2.0-m2",
+            "2.0-m3",
+            "2.0-m4",
+            "2.0-m5",
+            "2.0-rc1",
+            "2.0-rc2",
+            "2.0.1",
+            "2.0.2",
+            "2.0.3",
+            "2.0.4",
+            "2.0.5",
+            "2.0.6",
+            "2.0.7",
+            "2.0.8",
+            "2.5",
+            "2.5.1",
+            "2.5.2",
+            "2.5.3",
+            "2.5.4",
+            "2.5.5",
+            "2.5.6",
+            "2.5.6.SEC01",
+            "2.5.6.SEC02",
+            "2.5.6.SEC03",
+            "3.0.0.RELEASE",
+            "3.0.1.RELEASE",
+            "3.0.2.RELEASE",
+            "3.0.3.RELEASE",
+            "3.0.4.RELEASE",
+            "3.0.5.RELEASE",
+            "3.0.6.RELEASE",
+            "3.0.7.RELEASE",
+            "3.1.0.RELEASE",
+            "3.1.1.RELEASE",
+            "3.1.2.RELEASE",
+            "3.1.3.RELEASE",
+            "3.1.4.RELEASE",
+            "3.2.0.RELEASE",
+            "3.2.1.RELEASE",
+            "3.2.10.RELEASE",
+            "3.2.11.RELEASE",
+            "3.2.12.RELEASE",
+            "3.2.13.RELEASE",
+            "3.2.14.RELEASE",
+            "3.2.15.RELEASE",
+            "3.2.16.RELEASE",
+            "3.2.17.RELEASE",
+            "3.2.18.RELEASE",
+            "3.2.2.RELEASE",
+            "3.2.3.RELEASE",
+            "3.2.4.RELEASE",
+            "3.2.5.RELEASE",
+            "3.2.6.RELEASE",
+            "3.2.7.RELEASE",
+            "3.2.8.RELEASE",
+            "3.2.9.RELEASE",
+            "4.0.0.RELEASE",
+            "4.0.1.RELEASE",
+            "4.0.2.RELEASE",
+            "4.0.3.RELEASE",
+            "4.0.4.RELEASE",
+            "4.0.5.RELEASE",
+            "4.0.6.RELEASE",
+            "4.0.7.RELEASE",
+            "4.0.8.RELEASE",
+            "4.0.9.RELEASE",
+            "4.1.0.RELEASE",
+            "4.1.1.RELEASE",
+            "4.1.2.RELEASE",
+            "4.1.3.RELEASE",
+            "4.1.4.RELEASE",
+            "4.1.5.RELEASE",
+            "4.1.6.RELEASE",
+            "4.1.7.RELEASE",
+            "4.1.8.RELEASE",
+            "4.1.9.RELEASE",
+            "4.2.0.RELEASE",
+            "4.2.1.RELEASE",
+            "4.2.2.RELEASE",
+            "4.2.3.RELEASE",
+            "4.2.4.RELEASE",
+            "4.2.5.RELEASE",
+            "4.2.6.RELEASE",
+            "4.2.7.RELEASE",
+            "4.2.8.RELEASE",
+            "4.2.9.RELEASE",
+            "4.3.0.RELEASE",
+            "4.3.1.RELEASE",
+            "4.3.10.RELEASE",
+            "4.3.11.RELEASE",
+            "4.3.12.RELEASE",
+            "4.3.13.RELEASE",
+            "4.3.14.RELEASE",
+            "4.3.15.RELEASE",
+            "4.3.16.RELEASE",
+            "4.3.17.RELEASE",
+            "4.3.18.RELEASE",
+            "4.3.19.RELEASE",
+            "4.3.2.RELEASE",
+            "4.3.20.RELEASE",
+            "4.3.21.RELEASE",
+            "4.3.22.RELEASE",
+            "4.3.23.RELEASE",
+            "4.3.24.RELEASE",
+            "4.3.25.RELEASE",
+            "4.3.26.RELEASE",
+            "4.3.27.RELEASE",
+            "4.3.28.RELEASE",
+            "4.3.29.RELEASE",
+            "4.3.3.RELEASE",
+            "4.3.30.RELEASE",
+            "4.3.4.RELEASE",
+            "4.3.5.RELEASE",
+            "4.3.6.RELEASE",
+            "4.3.7.RELEASE",
+            "4.3.8.RELEASE",
+            "4.3.9.RELEASE",
+            "5.0.0.RELEASE",
+            "5.0.1.RELEASE",
+            "5.0.10.RELEASE",
+            "5.0.11.RELEASE",
+            "5.0.12.RELEASE",
+            "5.0.13.RELEASE",
+            "5.0.14.RELEASE",
+            "5.0.15.RELEASE",
+            "5.0.16.RELEASE",
+            "5.0.17.RELEASE",
+            "5.0.18.RELEASE",
+            "5.0.19.RELEASE",
+            "5.0.2.RELEASE",
+            "5.0.20.RELEASE",
+            "5.0.3.RELEASE",
+            "5.0.4.RELEASE",
+            "5.0.5.RELEASE",
+            "5.0.6.RELEASE",
+            "5.0.7.RELEASE",
+            "5.0.8.RELEASE",
+            "5.0.9.RELEASE",
+            "5.1.0.RELEASE",
+            "5.1.1.RELEASE",
+            "5.1.10.RELEASE",
+            "5.1.11.RELEASE",
+            "5.1.12.RELEASE",
+            "5.1.13.RELEASE",
+            "5.1.14.RELEASE",
+            "5.1.15.RELEASE",
+            "5.1.16.RELEASE",
+            "5.1.17.RELEASE",
+            "5.1.18.RELEASE",
+            "5.1.19.RELEASE",
+            "5.1.2.RELEASE",
+            "5.1.20.RELEASE",
+            "5.1.3.RELEASE",
+            "5.1.4.RELEASE",
+            "5.1.5.RELEASE",
+            "5.1.6.RELEASE",
+            "5.1.7.RELEASE",
+            "5.1.8.RELEASE",
+            "5.1.9.RELEASE",
+            "5.2.0.RELEASE",
+            "5.2.1.RELEASE",
+            "5.2.10.RELEASE",
+            "5.2.11.RELEASE",
+            "5.2.12.RELEASE",
+            "5.2.13.RELEASE",
+            "5.2.14.RELEASE",
+            "5.2.15.RELEASE",
+            "5.2.16.RELEASE",
+            "5.2.17.RELEASE",
+            "5.2.18.RELEASE",
+            "5.2.19.RELEASE",
+            "5.2.2.RELEASE",
+            "5.2.20.RELEASE",
+            "5.2.21.RELEASE",
+            "5.2.22.RELEASE",
+            "5.2.23.RELEASE",
+            "5.2.24.RELEASE",
+            "5.2.25.RELEASE",
+            "5.2.3.RELEASE",
+            "5.2.4.RELEASE",
+            "5.2.5.RELEASE",
+            "5.2.6.RELEASE",
+            "5.2.7.RELEASE",
+            "5.2.8.RELEASE",
+            "5.2.9.RELEASE"
+          ],
+          "database_specific": {
+            "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2026/08/GHSA-pc63-qcmh-9cmg/GHSA-pc63-qcmh-9cmg.json"
+          }
+        },
+        {
+          "package": {
+            "name": "org.springframework:spring-webmvc",
+            "ecosystem": "Maven",
+            "purl": "pkg:maven/org.springframework/spring-webmvc"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "5.3.0"
+                },
+                {
+                  "last_affected": "5.3.49"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "5.3.0",
+            "5.3.1",
+            "5.3.10",
+            "5.3.11",
+            "5.3.12",
+            "5.3.13",
+            "5.3.14",
+            "5.3.15",
+            "5.3.16",
+            "5.3.17",
+            "5.3.18",
+            "5.3.19",
+            "5.3.2",
+            "5.3.20",
+            "5.3.21",
+            "5.3.22",
+            "5.3.23",
+            "5.3.24",
+            "5.3.25",
+            "5.3.26",
+            "5.3.27",
+            "5.3.28",
+            "5.3.29",
+            "5.3.3",
+            "5.3.30",
+            "5.3.31",
+            "5.3.32",
+            "5.3.33",
+            "5.3.34",
+            "5.3.35",
+            "5.3.36",
+            "5.3.37",
+            "5.3.38",
+            "5.3.39",
+            "5.3.4",
+            "5.3.5",
+            "5.3.6",
+            "5.3.7",
+            "5.3.8",
+            "5.3.9"
+          ],
+          "database_specific": {
+            "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2026/08/GHSA-pc63-qcmh-9cmg/GHSA-pc63-qcmh-9cmg.json"
+          }
+        },
+        {
+          "package": {
+            "name": "org.springframework:spring-webmvc",
+            "ecosystem": "Maven",
+            "purl": "pkg:maven/org.springframework/spring-webmvc"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "6.0.0"
+                },
+                {
+                  "last_affected": "6.0.30"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "6.0.0",
+            "6.0.1",
+            "6.0.10",
+            "6.0.11",
+            "6.0.12",
+            "6.0.13",
+            "6.0.14",
+            "6.0.15",
+            "6.0.16",
+            "6.0.17",
+            "6.0.18",
+            "6.0.19",
+            "6.0.2",
+            "6.0.20",
+            "6.0.21",
+            "6.0.22",
+            "6.0.23",
+            "6.0.3",
+            "6.0.4",
+            "6.0.5",
+            "6.0.6",
+            "6.0.7",
+            "6.0.8",
+            "6.0.9"
+          ],
+          "database_specific": {
+            "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2026/08/GHSA-pc63-qcmh-9cmg/GHSA-pc63-qcmh-9cmg.json"
+          }
+        },
+        {
+          "package": {
+            "name": "org.springframework:spring-webmvc",
+            "ecosystem": "Maven",
+            "purl": "pkg:maven/org.springframework/spring-webmvc"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "6.1.0"
+                },
+                {
+                  "last_affected": "6.1.28"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "6.1.0",
+            "6.1.1",
+            "6.1.10",
+            "6.1.11",
+            "6.1.12",
+            "6.1.13",
+            "6.1.14",
+            "6.1.15",
+            "6.1.16",
+            "6.1.17",
+            "6.1.18",
+            "6.1.19",
+            "6.1.2",
+            "6.1.20",
+            "6.1.21",
+            "6.1.3",
+            "6.1.4",
+            "6.1.5",
+            "6.1.6",
+            "6.1.7",
+            "6.1.8",
+            "6.1.9"
+          ],
+          "database_specific": {
+            "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2026/08/GHSA-pc63-qcmh-9cmg/GHSA-pc63-qcmh-9cmg.json"
+          }
+        },
+        {
+          "package": {
+            "name": "org.springframework:spring-webmvc",
+            "ecosystem": "Maven",
+            "purl": "pkg:maven/org.springframework/spring-webmvc"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "6.2.0"
+                },
+                {
+                  "last_affected": "6.2.19"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "6.2.0",
+            "6.2.1",
+            "6.2.10",
+            "6.2.11",
+            "6.2.12",
+            "6.2.13",
+            "6.2.14",
+            "6.2.15",
+            "6.2.16",
+            "6.2.17",
+            "6.2.18",
+            "6.2.19",
+            "6.2.2",
+            "6.2.3",
+            "6.2.4",
+            "6.2.5",
+            "6.2.6",
+            "6.2.7",
+            "6.2.8",
+            "6.2.9"
+          ],
+          "database_specific": {
+            "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2026/08/GHSA-pc63-qcmh-9cmg/GHSA-pc63-qcmh-9cmg.json"
+          }
+        },
+        {
+          "package": {
+            "name": "org.springframework:spring-webmvc",
+            "ecosystem": "Maven",
+            "purl": "pkg:maven/org.springframework/spring-webmvc"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "7.0.0"
+                },
+                {
+                  "fixed": "7.0.9"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "7.0.0",
+            "7.0.1",
+            "7.0.2",
+            "7.0.3",
+            "7.0.4",
+            "7.0.5",
+            "7.0.6",
+            "7.0.7",
+            "7.0.8"
+          ],
+          "database_specific": {
+            "last_known_affected_version_range": "<= 7.0.8",
+            "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2026/08/GHSA-pc63-qcmh-9cmg/GHSA-pc63-qcmh-9cmg.json"
+          }
+        }
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-47884"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/spring-projects/spring-framework/commit/692dbc9160de3b5de50ccedeee014716d0cedb7b"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/spring-projects/spring-framework"
+        },
+        {
+          "type": "WEB",
+          "url": "https://spring.io/security/cve-2026-47884"
+        }
+      ]
+    }
+  ]
+}

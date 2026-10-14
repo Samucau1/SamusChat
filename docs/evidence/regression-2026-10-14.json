@@ -1,0 +1,619 @@
+{
+  "passed": true,
+  "date": "2026-10-14",
+  "timezone": "America/Sao_Paulo",
+  "completedAt": "2026-10-14T17:28:29.329Z",
+  "branch": "feature/call-channels",
+  "baseCommit": "209c75a8b601513ae7f6335b80ef0eca304b7609",
+  "backend": {
+    "tests": 132,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": [
+      {
+        "suite": "com.chatapp.chatapp_backend.AccountRecoveryTests",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.AppearanceApiTests",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.AttachmentMigrationPostgresTests",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.AuthSchemaUpgradeTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.call.CallApiTests",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.call.CallRulesTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.call.IceConfigurationTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.call.VoiceRoomApiTests",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.ChatappBackendApplicationTests",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.ChatWebSocketControllerTests",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.DesktopTestDatabaseLifetimeTests",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.DeviceControllerTests",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.DirectMessageTests",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.FileControllerTests",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.GoogleGisCsrfTests",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.GoogleTokenValidationTests",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.MessageControllerTests",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.NotificationConfigTests",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.PersistenceErrorResponseTests",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.ProductionSupportTests",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.security.AccountLoginLimiterRedisTests",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.security.JwtUtilTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.security.SecurityTransportAndDeliveryTests",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.SecurityControllerTests",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.SecurityFixesApiTests",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.ServerControllerTests",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.service.AuthServiceTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.service.MessageServiceTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.SessionRefreshTests",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.Stage10ApiRegressionTests",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.websocket.RedisFanOutIntegrationTests",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.websocket.RedisMessagingTests",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.chatapp.chatapp_backend.WebSocketAuthInterceptorTests",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "coverage": {
+    "INSTRUCTION": {
+      "covered": 6812,
+      "missed": 1059,
+      "percent": 86.55
+    },
+    "BRANCH": {
+      "covered": 578,
+      "missed": 273,
+      "percent": 67.92
+    },
+    "LINE": {
+      "covered": 1101,
+      "missed": 121,
+      "percent": 90.1
+    },
+    "COMPLEXITY": {
+      "covered": 488,
+      "missed": 278,
+      "percent": 63.71
+    },
+    "METHOD": {
+      "covered": 296,
+      "missed": 39,
+      "percent": 88.36
+    },
+    "CLASS": {
+      "covered": 85,
+      "missed": 2,
+      "percent": 97.7
+    }
+  },
+  "android": {
+    "tests": 42,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": [
+      {
+        "suite": "com.samuschat.ApiContractTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.samuschat.AppearanceContractTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.samuschat.AttachmentTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.samuschat.CallPolicyTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.samuschat.CompleteSdpTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.samuschat.HomeRulesTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.samuschat.ProtectedAttachmentTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.samuschat.ScreenCaptureDimensionsTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.samuschat.ServerSearchTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.samuschat.SessionAuthenticatorTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 16
+  },
+  "chromium": {
+    "passed": 23,
+    "elapsedSeconds": 49.2,
+    "log": "logs/regression-2026-10-14-chromium.log"
+  },
+  "edge": {
+    "passed": 23,
+    "elapsedSeconds": 49.4,
+    "log": "logs/regression-2026-10-14-edge.log"
+  },
+  "totalTestExecutions": 220,
+  "navigation": {
+    "passed": true,
+    "cycles": 50,
+    "stressTouches": 200,
+    "elapsedSeconds": 136.2,
+    "checked": [
+      "friends",
+      "demo conversation",
+      "profile",
+      "server drawer",
+      "same process after stress",
+      "responsive after stress"
+    ],
+    "sameProcess": true,
+    "deviceModel": "moto g(7) play",
+    "androidVersion": "10"
+  },
+  "session": {
+    "passed": true,
+    "identityRestored": true,
+    "storageUnchanged": true,
+    "encryptedTokens": true,
+    "freshUiRequired": true,
+    "checkedAt": "2026-10-14T17:22:01.754Z"
+  },
+  "security": {
+    "checkedAt": "2026-10-14T17:33:20.528Z",
+    "scannedTextFiles": 378,
+    "secretCandidates": 0,
+    "passwordsInPublication": false,
+    "manifests": {
+      "debug": {
+        "targetSdk": "35",
+        "cleartext": "true",
+        "debuggable": "true",
+        "backup": "false",
+        "source": "samuschat-android/app/build/intermediates/merged_manifest/debug/processDebugMainManifest/AndroidManifest.xml"
+      },
+      "validation": {
+        "targetSdk": "35",
+        "cleartext": "true",
+        "debuggable": "true",
+        "backup": "false",
+        "source": "samuschat-android/app/build/intermediates/merged_manifest/validation/processValidationMainManifest/AndroidManifest.xml"
+      },
+      "release": {
+        "targetSdk": "35",
+        "cleartext": "absent",
+        "debuggable": "absent",
+        "backup": "false",
+        "source": "samuschat-android/app/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml"
+      }
+    }
+  },
+  "builds": {
+    "backend": "verify",
+    "android": [
+      "debug",
+      "validation"
+    ],
+    "desktop": true,
+    "releaseManifestOnly": true,
+    "debugApkSha256": "b5b2268c849b338da851a007b37747e8d6f67e1a59b962f1d2e5623ec860f637"
+  },
+  "sourceManifest": [
+    {
+      "file": "chatapp-backend/src/main/java/com/chatapp/chatapp_backend/controller/AuthController.java",
+      "sha256": "6a15f35c4c502ee4fc43ffb2344f97a76c5ae9da57064d169183cd15a874144e"
+    },
+    {
+      "file": "chatapp-backend/src/main/java/com/chatapp/chatapp_backend/controller/GoogleAuthController.java",
+      "sha256": "5ec88e6b54f2e872ebb66ac7b15e2b5bfa81ac96ac0a4a156a818e48ad516ed7"
+    },
+    {
+      "file": "chatapp-backend/src/main/java/com/chatapp/chatapp_backend/security/JwtUtil.java",
+      "sha256": "715f42aaa3bb5df83d1521fee673285f0aca97eda948086d6742eb177cd79cbf"
+    },
+    {
+      "file": "chatapp-backend/src/main/java/com/chatapp/chatapp_backend/service/AuthService.java",
+      "sha256": "57487bedd34383948c24f015950481c049bf41f68d9b01dd4b89483abb316f1c"
+    },
+    {
+      "file": "chatapp-backend/src/test/java/com/chatapp/chatapp_backend/GoogleGisCsrfTests.java",
+      "sha256": "4f890d3a52b63d5d12d3b116d01815e2155633a69de67e8167b62b12338fe0ac"
+    },
+    {
+      "file": "chatapp-backend/src/test/java/com/chatapp/chatapp_backend/SessionRefreshTests.java",
+      "sha256": "868751488667de31362e5f6593166f15c15e237562b7b7b84e98b4cdab8ffce2"
+    },
+    {
+      "file": "chatapp-backend/src/test/java/com/chatapp/chatapp_backend/security/JwtUtilTest.java",
+      "sha256": "264b4fea135c7e96f35bbaad224acbd5e449ae8d92e765e0a771420268c3d811"
+    },
+    {
+      "file": "samuschat-android/app/build.gradle.kts",
+      "sha256": "43d16d60c58c12e80d73eb425352dd086c2f64474866879cfb2a38dba522ad27"
+    },
+    {
+      "file": "samuschat-android/app/src/main/java/com/samuschat/MainActivity.kt",
+      "sha256": "1f110bceb9ec05081bbccf2959c90c43c87294b935494a2a6f473a668f0fdddf"
+    },
+    {
+      "file": "samuschat-android/app/src/main/java/com/samuschat/SamusChatApplication.kt",
+      "sha256": "5b3826ec24e202ecc7139495f0fab314b2339750e9c00c5fe78387548b4a2189"
+    },
+    {
+      "file": "samuschat-android/app/src/main/java/com/samuschat/data/api/RetrofitClient.kt",
+      "sha256": "99c07748c28b3b8e528b7e2a7961d3b6d561839a11bdd0bbf46d9bc903be8057"
+    },
+    {
+      "file": "samuschat-android/app/src/main/java/com/samuschat/data/api/SessionAuthenticator.kt",
+      "sha256": "edb2ce88d8a5b85b5489a2b8ebf75b08b8810b9dee08af10fcac7171ec2de51b"
+    },
+    {
+      "file": "samuschat-android/app/src/main/java/com/samuschat/data/model/Models.kt",
+      "sha256": "29f193c9914aff43219c6e5e0efee232427d8f769259a67074eab9be67ee1d41"
+    },
+    {
+      "file": "samuschat-android/app/src/main/java/com/samuschat/data/repository/Repositories.kt",
+      "sha256": "165a30edb9356dc85fdb6ceb5f68a781880274f45b07950f71307473a59b8664"
+    },
+    {
+      "file": "samuschat-android/app/src/main/java/com/samuschat/ui/call/RoomRtc.kt",
+      "sha256": "174b9c034db8dcd9817738bcf00aa0d3f00a30e3b0133528872557d9436270ca"
+    },
+    {
+      "file": "samuschat-android/app/src/main/java/com/samuschat/ui/call/RtcCall.kt",
+      "sha256": "471920f78b4f2b819a4f4482d83cebfacdf4d881d053697ef57f5878f91c0ab1"
+    },
+    {
+      "file": "samuschat-android/app/src/main/java/com/samuschat/ui/call/ScreenCaptureMonitor.kt",
+      "sha256": "b9eb5db0b8112680ca2be047ea4e87be29a49eda4da5c971740f2be3c3fb7c77"
+    },
+    {
+      "file": "samuschat-android/app/src/main/java/com/samuschat/ui/call/ScreenShareVideo.kt",
+      "sha256": "7d4e84df688edd946717bb69a17f801aeb1dfb1b94c43ff95450d274b0300b4c"
+    },
+    {
+      "file": "samuschat-android/app/src/main/java/com/samuschat/ui/home/DirectConversation.kt",
+      "sha256": "400ac56cf7220e26089d24521348edc6960d6aab9fc17cbac88529c50ccf1c97"
+    },
+    {
+      "file": "samuschat-android/app/src/main/java/com/samuschat/ui/home/HomeScreen.kt",
+      "sha256": "05dd18652992dbc59fc2e3b316998c8df3cc2e5bcab92503b7431108d69d20d8"
+    },
+    {
+      "file": "samuschat-android/app/src/main/java/com/samuschat/util/TokenManager.kt",
+      "sha256": "9796a8b44577485dc45b0f5b719d0423e416a4b6567e913c89a2cb91af65a754"
+    },
+    {
+      "file": "samuschat-android/app/src/test/java/com/samuschat/ScreenCaptureDimensionsTest.kt",
+      "sha256": "181b265a827aa5bfd8d9469808d3d599d1fcd3929ed0b603403d33c543a07fcf"
+    },
+    {
+      "file": "samuschat-android/app/src/test/java/com/samuschat/SessionAuthenticatorTest.kt",
+      "sha256": "bf3fd210ef66d6d772ed4b1355fd6df2ad8dd8c86f1a833e47ed1b5688f688e8"
+    },
+    {
+      "file": "samuschat-desktop/public/device-audio-worklet.js",
+      "sha256": "0e3a871a831a3eb13686acd6b6d5ed235379f1f9fc760cfd7b2e98c75ac456b1"
+    },
+    {
+      "file": "samuschat-desktop/src/controllers/useCallController.ts",
+      "sha256": "d43576a24cbe3e7f1540418d1de138ed3965b4a7a98693f93ec149d5fb2b6b3c"
+    },
+    {
+      "file": "samuschat-desktop/src/controllers/useChatController.ts",
+      "sha256": "c7134187dd246e8b0c4167c148290c781dbea2cdd4083537812a2f73e47f98eb"
+    },
+    {
+      "file": "samuschat-desktop/src/controllers/useVoiceRoomController.ts",
+      "sha256": "8816ae771859a05d90b60a9b323328d5a2f23fc15a446e27be6fcd9971f9a13c"
+    },
+    {
+      "file": "samuschat-desktop/src/models/deviceAudio.ts",
+      "sha256": "2e371b136bf3f19d3c35bfc7a17ceb907292454753bfa92a22a0725257cc76d7"
+    },
+    {
+      "file": "samuschat-desktop/src/models/microphone.ts",
+      "sha256": "8516321a00cfa05be41ef89e2ca0c35cdc2892d73f42579922e6cfd63725e6b2"
+    },
+    {
+      "file": "samuschat-desktop/src/models/screenShare.ts",
+      "sha256": "c7e277ceb382bcfb90d5295f8be3806e4784f9fc6827b13ac0c89b493a5f6fde"
+    },
+    {
+      "file": "samuschat-desktop/src/styles.css",
+      "sha256": "c3c144c0cf7dc792e3195752dd68725f6f6d004c3ce6524cdaba3bef851253f4"
+    },
+    {
+      "file": "samuschat-desktop/src/views/CallStage.tsx",
+      "sha256": "7ef400113a30666455231bb00437b43613d34c4ac32a0e00cd07434c91ef8b8a"
+    },
+    {
+      "file": "samuschat-desktop/src/views/ChatApp.tsx",
+      "sha256": "422fb4938c3c289f29771c20b7f4e872ed8dcbe9d8e64db2caa0d01be5eebab9"
+    },
+    {
+      "file": "samuschat-desktop/src/views/MicrophoneSettings.tsx",
+      "sha256": "9b1361302ca0d11cfd20e21dc42bde2e713180989fc5a9938cefd664b37b3139"
+    },
+    {
+      "file": "samuschat-desktop/tests/desktop.spec.ts",
+      "sha256": "c5add4c1a3b80150c3c7196b1ff29e2db1750c992f23347eb3623ba0be98a460"
+    },
+    {
+      "file": "samuschat-desktop/tests/device-audio.spec.ts",
+      "sha256": "9f415042022c904d97ea64317a75d72359a18fd5430b77de789df250927e09a9"
+    },
+    {
+      "file": "samuschat-desktop/tests/fullscreen.spec.ts",
+      "sha256": "72b9d8eaa318e9d11cd55f629b8daefc861f8f4427af5b82dc82a1616e8839c1"
+    },
+    {
+      "file": "samuschat-desktop/tests/screen-policy.spec.ts",
+      "sha256": "aca7055497e0cf869138071505b0a08e7012813ac41cae7971847e0de4e8f3ff"
+    },
+    {
+      "file": "scripts/android-usb.ps1",
+      "sha256": "1090d9ae0ffa40e20e6ce8791e7f8a587271b60efcb1cf5184ff1c37c41be5e5"
+    },
+    {
+      "file": "scripts/build-apk-celular.ps1",
+      "sha256": "8cbf0ff279230b261f19ff4add1cf5649fd2027852cffe624d6d7ac3f5fa9e7e"
+    },
+    {
+      "file": "scripts/export-validation-report.ps1",
+      "sha256": "2748198cc345d370fd0b9c7cc42eeb8db7a549a427d1a3c8ea75f5cfd51ae973"
+    },
+    {
+      "file": "scripts/security-static.mjs",
+      "sha256": "da3400b55758dd2bbe9a604e81a9d1e1c6e75784cdf34c9d71fe7592d61a213b"
+    },
+    {
+      "file": "scripts/test-android-navigation.ps1",
+      "sha256": "c2f07e31e2dece0d54e9b578457c7fab831cb0e5c3ef0f9b9d223b87c402af6a"
+    },
+    {
+      "file": "scripts/test-android-usb.ps1",
+      "sha256": "cfa1a297cb20b0028bff717b8e0cdc8e20f300d486303b9c072f86ef1df3dc91"
+    }
+  ],
+  "limits": [
+    "Physical game/video rotation across PC and phone remains a manual acceptance test.",
+    "Browser audio sources and screenshots are synthetic; physical acoustic quality is not measured.",
+    "Google OAuth, external networks and production hosting are not validated by this local regression."
+  ]
+}

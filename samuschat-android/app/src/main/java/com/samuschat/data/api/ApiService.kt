@@ -5,6 +5,27 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiService {
+    @POST("api/auth/logout") suspend fun logout(@Header("Authorization") token: String): Response<ApiResponse<Unit>>
+    @PUT("api/users/me/appearance") suspend fun updateAppearance(@Header("Authorization") token: String, @Body request: ProfileAppearance): Response<ApiResponse<User>>
+    @Multipart @POST("api/users/me/media/{slot}") suspend fun uploadProfileMedia(@Header("Authorization") token: String, @Path("slot") slot: String, @Part file: okhttp3.MultipartBody.Part): Response<ApiResponse<User>>
+    @DELETE("api/users/me/media/{slot}") suspend fun deleteProfileMedia(@Header("Authorization") token: String, @Path("slot") slot: String): Response<ApiResponse<User>>
+    @PUT("api/servers/{id}/appearance") suspend fun updateServerAppearance(@Header("Authorization") token: String, @Path("id") id: Long, @Body request: ServerAppearance): Response<ApiResponse<Server>>
+    @Multipart @POST("api/servers/{id}/media/{slot}") suspend fun uploadServerMedia(@Header("Authorization") token: String, @Path("id") id: Long, @Path("slot") slot: String, @Part file: okhttp3.MultipartBody.Part): Response<ApiResponse<Server>>
+    @DELETE("api/servers/{id}/media/{slot}") suspend fun deleteServerMedia(@Header("Authorization") token: String, @Path("id") id: Long, @Path("slot") slot: String): Response<ApiResponse<Server>>
+    @Multipart
+    @POST("api/channels/{id}/upload")
+    suspend fun uploadAttachment(@Header("Authorization") token: String, @Path("id") id: Long,
+        @Part file: okhttp3.MultipartBody.Part, @Part("content") content: okhttp3.RequestBody?): Response<ApiResponse<Message>>
+    @GET("api/direct-messages") suspend fun directMessages(@Header("Authorization") token: String, @Query("contact") contact: String, @Query("page") page: Int): Response<ApiResponse<List<DirectMessage>>>
+    @POST("api/direct-messages") suspend fun sendDirectMessage(@Header("Authorization") token: String, @Query("contact") contact: String, @Body request: MessageRequest): Response<ApiResponse<DirectMessage>>
+    @POST("api/auth/password/request") suspend fun requestRecovery(@Body request: RecoveryEmail): Response<ApiResponse<String>>
+    @POST("api/auth/password/verify") suspend fun verifyRecovery(@Body request: RecoveryCode): Response<ApiResponse<ResetAuthorization>>
+    @POST("api/auth/password/reset") suspend fun resetPassword(@Body request: RecoveryReset): Response<ApiResponse<String>>
+    @POST("api/auth/google") suspend fun googleLogin(@Body request: GoogleLogin): Response<ApiResponse<TokenData>>
+    @POST("api/channels/{id}/call/join") suspend fun joinCallRoom(@Header("Authorization") token: String, @Path("id") id: Long): Response<ApiResponse<com.samuschat.ui.call.CallRoom>>
+    @GET("api/channels/{id}/call") suspend fun callRoom(@Header("Authorization") token: String, @Path("id") id: Long): Response<ApiResponse<com.samuschat.ui.call.CallRoom>>
+    @POST("api/channels/{id}/call/leave") suspend fun leaveCallRoom(@Header("Authorization") token: String, @Path("id") id: Long): Response<ApiResponse<String>>
+    @POST("api/servers/{id}/channels") suspend fun createChannel(@Header("Authorization") token: String, @Path("id") id: Long, @Body request: ChannelRequest): Response<ApiResponse<Channel>>
     @GET("api/calls/contacts") suspend fun callContacts(@Header("Authorization") token: String): Response<ApiResponse<List<com.samuschat.ui.call.CallContact>>>
     @GET("api/calls/ice") suspend fun callIce(@Header("Authorization") token: String): Response<ApiResponse<List<com.samuschat.ui.call.IceServerConfig>>>
     @GET("api/calls") suspend fun currentCalls(@Header("Authorization") token: String): Response<ApiResponse<List<com.samuschat.ui.call.CallSession>>>

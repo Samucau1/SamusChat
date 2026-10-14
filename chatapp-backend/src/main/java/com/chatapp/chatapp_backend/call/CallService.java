@@ -11,12 +11,15 @@ import java.util.*;
 public class CallService {
     private final CallRepository calls;
     private final UserRepository users;
+    private final VoicePresenceRepository presences;
+    private final com.chatapp.chatapp_backend.repository.ChannelRepository channels;
+    private final com.chatapp.chatapp_backend.service.PermissionService permissions;
     public record Contact(String email,String username) {}
-    public record View(String id,String caller,String callee,String state,String offer,String answer) {}
-    private View view(CallSession c) { return new View(c.getId(),c.getCaller(),c.getCallee(),c.getState(),c.getOffer(),c.getAnswer()); }
+    public record View(String id,String caller,String callee,String state,String offer,String answer,Long channelId) {}
+    public static View view(CallSession c) { return new View(c.getId(),c.getCaller(),c.getCallee(),c.getState(),c.getOffer(),c.getAnswer(),c.getChannelId()); }
     @Transactional(readOnly=true)
     public List<Contact> contacts(String email) {
-        return users.callContacts(email).stream().limit(100).map(u->new Contact(u.getEmail(),u.getUsername())).toList();
+        return users.findTop100ByEmailNotOrderByUsernameAsc(email).stream().map(u->new Contact(u.getEmail(),u.getUsername())).toList();
     }
     private void expire(CallSession c) {
         if(CallRules.expired(c,Instant.now())) { c.setState("EXPIRED");c.setOffer(null);c.setAnswer(null); }
@@ -34,7 +37,8 @@ public class CallService {
             if(!c.getCaller().equals(caller)||!c.getCallee().equals(callee))throw new SecurityException("Chamada privada");
             return view(c);
         }
-        if(users.callContacts(caller).stream().noneMatch(u->u.getEmail().equals(callee)))throw new SecurityException("Contato indisponivel");
+        for(String email:emails) if(presences.findById(email).filter(p->p.getSeenAt().isAfter(Instant.now().minusSeconds(45))).isPresent())
+            throw new IllegalArgumentException("Usuario ocupado em um canal de chamada");
         for(String email:emails)for(var stale:calls.active(email)) {
             var c=calls.locked(stale.getId()).orElseThrow();expire(c);
             if(!c.terminal())throw new IllegalArgumentException("Usuario ocupado em outra chamada");
@@ -47,6 +51,7 @@ public class CallService {
     public List<View> current(String email) {
         var result=new ArrayList<View>();
         for(var entry:calls.active(email)) {
+            if(entry.getChannelId()!=null) continue;
             var c=calls.locked(entry.getId()).orElseThrow();expire(c);
             if(!c.terminal()) {touch(c,email);result.add(view(c));}
         }
@@ -55,7 +60,7 @@ public class CallService {
     @Transactional
     public View get(String id,String email) {
         var c=calls.locked(id).orElseThrow(()->new IllegalArgumentException("Chamada inexistente"));
-        CallRules.participant(c,email);expire(c);if(!c.terminal())touch(c,email);return view(c);
+        authorize(c,email);expire(c);if(!c.terminal())touch(c,email);return view(c);
     }
     private void touch(CallSession c,String email) {
         if(c.getCaller().equals(email))c.setCallerSeen(Instant.now());else c.setCalleeSeen(Instant.now());
@@ -63,7 +68,7 @@ public class CallService {
     @Transactional
     public View action(String id,String email,String action,String sdp) {
         var c=calls.locked(id).orElseThrow(()->new IllegalArgumentException("Chamada inexistente"));
-        CallRules.participant(c,email);expire(c);
+        authorize(c,email);expire(c);
         if(c.terminal())return view(c);
         switch(action) {
             case "accept" -> {
@@ -92,5 +97,14 @@ public class CallService {
         touch(c,email);
         if(c.terminal()){c.setOffer(null);c.setAnswer(null);}
         return view(c);
+    }
+    private void authorize(CallSession call,String email) {
+        CallRules.participant(call,email);
+        if(call.getChannelId()!=null) {
+            var channel=channels.findById(call.getChannelId()).orElseThrow();
+            permissions.requireMember(channel.getServer().getId(),email);
+            if(!call.terminal() && presences.findById(email).filter(p->p.getChannelId().equals(call.getChannelId()) && p.getSeenAt().isAfter(Instant.now().minusSeconds(45))).isEmpty())
+                throw new SecurityException("Entre no canal para usar a chamada");
+        }
     }
 }

@@ -54,13 +54,19 @@ class ChatMessagingService : FirebaseMessagingService() {
             catch (e: CancellationException) { throw e }
             catch (_: Exception) { Log.w("SamusChat", "Token de notificações indisponível") }
         }
-        suspend fun logout(app: SamusChatApplication) {
+        suspend fun logout(app: SamusChatApplication): Boolean {
             try {
                 if (FirebaseApp.getApps(app).isNotEmpty()) {
                     withTimeout(5000) { app.api.unregisterDevice(app.tokens.authorization(), token()).checked() }
                 }
             } catch (_: Exception) { Log.w("SamusChat", "Não foi possível remover o dispositivo remoto") }
-            finally { app.tokens.clearSession() }
+            try { app.api.logout(app.tokens.authorization()).checked() }
+            catch (e: CancellationException) { throw e }
+            catch (e: com.samuschat.data.repository.ApiFailure) { if (e.status != 401) return false }
+            catch (_: Exception) { return false }
+            app.tokens.clearSession()
+            java.io.File(app.cacheDir, "attachments").listFiles()?.filter { it.isFile }?.forEach { it.delete() }
+            return true
         }
     }
 }

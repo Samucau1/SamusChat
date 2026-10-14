@@ -1,0 +1,657 @@
+{
+  "run": "66ddaeab",
+  "testedAt": "2026-10-12T21:28:23.739Z",
+  "api": "http://127.0.0.1:18085",
+  "desktop": "http://127.0.0.1:5175",
+  "requests": 115,
+  "counts": {
+    "checks": 73,
+    "controls": 55,
+    "findings": 18
+  },
+  "rows": [
+    {
+      "client": "PC",
+      "id": "auth_required:/api/users/me",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "PC",
+      "id": "auth_required:/api/servers",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "PC",
+      "id": "auth_required:/api/channels/7/messages",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "PC",
+      "id": "auth_required:/api/calls",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "PC",
+      "id": "auth_required:/actuator/env",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "PC",
+      "id": "auth_required:/actuator/metrics",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "PC",
+      "id": "jwt_malformed",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "PC",
+      "id": "jwt_tampered",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "PC",
+      "id": "jwt_alg_none",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "PC",
+      "id": "jwt_expired",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "PC",
+      "id": "idor_server",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "client": "PC",
+      "id": "idor_members",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "client": "PC",
+      "id": "idor_history",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "client": "PC",
+      "id": "idor_send",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "client": "PC",
+      "id": "idor_message_delete",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "client": "PC",
+      "id": "idor_server_appearance",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "client": "PC",
+      "id": "role_escalation",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "client": "PC",
+      "id": "direct_message_isolation",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "returnedMessages": 0
+      }
+    },
+    {
+      "client": "PC",
+      "id": "call_isolation",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "PC",
+      "id": "weak_password",
+      "result": "FINDING",
+      "evidence": {
+        "passwordLength": 6,
+        "commonPasswordAccepted": true
+      }
+    },
+    {
+      "client": "PC",
+      "id": "fixed_ip_throttling",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "attempts": 6,
+        "statuses": [
+          400,
+          400,
+          400,
+          400,
+          400,
+          429
+        ]
+      }
+    },
+    {
+      "client": "PC",
+      "id": "forwarded_ip_bypass",
+      "result": "FINDING",
+      "evidence": {
+        "afterFixedIpLimit": [
+          400,
+          400,
+          200
+        ],
+        "controlledAccountLoginSucceeded": true,
+        "changedHeaderNotNetworkAddress": true
+      }
+    },
+    {
+      "client": "PC",
+      "id": "registration_enumeration",
+      "result": "FINDING",
+      "evidence": {
+        "status": 400,
+        "reportsExistingEmail": true
+      }
+    },
+    {
+      "client": "PC",
+      "id": "login_injection",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400,
+        "noToken": true
+      }
+    },
+    {
+      "client": "PC",
+      "id": "error_stack",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400,
+        "stackTraceExposed": false
+      }
+    },
+    {
+      "client": "PC",
+      "id": "attachment_public_read",
+      "result": "FINDING",
+      "evidence": {
+        "status": 200,
+        "privateContentWithoutToken": true
+      }
+    },
+    {
+      "client": "PC",
+      "id": "attachment_cross_account_delete",
+      "result": "FINDING",
+      "evidence": {
+        "deleteStatus": 200,
+        "before": 200,
+        "after": 500,
+        "removedFromStorage": true
+      }
+    },
+    {
+      "client": "PC",
+      "id": "upload_before_authorization",
+      "result": "FINDING",
+      "evidence": {
+        "status": 400,
+        "fileSavedDespiteDenial": true
+      }
+    },
+    {
+      "client": "PC",
+      "id": "appearance_content_validation",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "client": "PC",
+      "id": "pagination_bound",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "client": "PC",
+      "id": "rest_cors",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 200,
+        "allowOrigin": null
+      }
+    },
+    {
+      "client": "PC",
+      "id": "websocket_auth",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "outcome": "ERROR"
+      }
+    },
+    {
+      "client": "PC",
+      "id": "websocket_cross_account",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "outcome": "ERROR"
+      }
+    },
+    {
+      "client": "PC",
+      "id": "websocket_after_membership_removal",
+      "result": "FINDING",
+      "evidence": {
+        "outcome": "MESSAGE"
+      }
+    },
+    {
+      "client": "Android",
+      "id": "auth_required:/api/users/me",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "Android",
+      "id": "auth_required:/api/servers",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "Android",
+      "id": "auth_required:/api/channels/8/messages",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "Android",
+      "id": "auth_required:/api/calls",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "Android",
+      "id": "auth_required:/actuator/env",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "Android",
+      "id": "auth_required:/actuator/metrics",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "Android",
+      "id": "jwt_malformed",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "Android",
+      "id": "jwt_tampered",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "Android",
+      "id": "jwt_alg_none",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "Android",
+      "id": "jwt_expired",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "Android",
+      "id": "idor_server",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "client": "Android",
+      "id": "idor_members",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "client": "Android",
+      "id": "idor_history",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "client": "Android",
+      "id": "idor_send",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "client": "Android",
+      "id": "idor_message_delete",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "client": "Android",
+      "id": "idor_server_appearance",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "client": "Android",
+      "id": "role_escalation",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "client": "Android",
+      "id": "direct_message_isolation",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "returnedMessages": 0
+      }
+    },
+    {
+      "client": "Android",
+      "id": "call_isolation",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "client": "Android",
+      "id": "weak_password",
+      "result": "FINDING",
+      "evidence": {
+        "passwordLength": 6,
+        "commonPasswordAccepted": true
+      }
+    },
+    {
+      "client": "Android",
+      "id": "fixed_ip_throttling",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "attempts": 6,
+        "statuses": [
+          400,
+          400,
+          400,
+          400,
+          400,
+          429
+        ]
+      }
+    },
+    {
+      "client": "Android",
+      "id": "forwarded_ip_bypass",
+      "result": "FINDING",
+      "evidence": {
+        "afterFixedIpLimit": [
+          400,
+          400,
+          200
+        ],
+        "controlledAccountLoginSucceeded": true,
+        "changedHeaderNotNetworkAddress": true
+      }
+    },
+    {
+      "client": "Android",
+      "id": "registration_enumeration",
+      "result": "FINDING",
+      "evidence": {
+        "status": 400,
+        "reportsExistingEmail": true
+      }
+    },
+    {
+      "client": "Android",
+      "id": "login_injection",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400,
+        "noToken": true
+      }
+    },
+    {
+      "client": "Android",
+      "id": "error_stack",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400,
+        "stackTraceExposed": false
+      }
+    },
+    {
+      "client": "Android",
+      "id": "attachment_public_read",
+      "result": "FINDING",
+      "evidence": {
+        "status": 200,
+        "privateContentWithoutToken": true
+      }
+    },
+    {
+      "client": "Android",
+      "id": "attachment_cross_account_delete",
+      "result": "FINDING",
+      "evidence": {
+        "deleteStatus": 200,
+        "before": 200,
+        "after": 500,
+        "removedFromStorage": true
+      }
+    },
+    {
+      "client": "Android",
+      "id": "upload_before_authorization",
+      "result": "FINDING",
+      "evidence": {
+        "status": 400,
+        "fileSavedDespiteDenial": true
+      }
+    },
+    {
+      "client": "Android",
+      "id": "appearance_content_validation",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "client": "Android",
+      "id": "pagination_bound",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "client": "Android",
+      "id": "rest_cors",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "status": 200,
+        "allowOrigin": null
+      }
+    },
+    {
+      "client": "Android",
+      "id": "websocket_auth",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "outcome": "ERROR"
+      }
+    },
+    {
+      "client": "Android",
+      "id": "websocket_cross_account",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "outcome": "ERROR"
+      }
+    },
+    {
+      "client": "Android",
+      "id": "websocket_after_membership_removal",
+      "result": "FINDING",
+      "evidence": {
+        "outcome": "MESSAGE"
+      }
+    },
+    {
+      "client": "Shared",
+      "id": "http_capture_and_replay",
+      "result": "FINDING",
+      "evidence": {
+        "observedSyntheticPassword": true,
+        "observedBearer": true,
+        "replayStatus": 200,
+        "environment": "local HTTP only; not a TLS interception test"
+      }
+    },
+    {
+      "client": "PC",
+      "id": "message_html_escaped",
+      "result": "CONTROL_OBSERVED",
+      "evidence": {
+        "textRenderedLiterally": true,
+        "scriptExecuted": false
+      }
+    },
+    {
+      "client": "PC",
+      "id": "logout_token_replay",
+      "result": "FINDING",
+      "evidence": {
+        "tokenRemovedLocally": true,
+        "replayStatus": 200
+      }
+    },
+    {
+      "client": "PC",
+      "id": "upload_active_html",
+      "result": "FINDING",
+      "evidence": {
+        "uploadAccepted": true,
+        "servedContentType": "text/html",
+        "contentDisposition": null,
+        "executed": true,
+        "sentinelReadable": true
+      }
+    },
+    {
+      "client": "Android",
+      "id": "upload_active_html_api",
+      "result": "FINDING",
+      "evidence": {
+        "status": 200,
+        "servedContentType": "text/html",
+        "nativeAndroidScriptExecutionTested": false
+      }
+    }
+  ]
+}

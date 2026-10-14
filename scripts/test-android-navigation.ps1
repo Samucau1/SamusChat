@@ -1,16 +1,24 @@
 param(
-    [string]$Serial = 'emulator-5554',
+    [string]$Serial = '',
     [int]$Cycles = 50,
     [string]$Adb = (Join-Path $PSScriptRoot '../.android-sdk/platform-tools/adb.exe')
 )
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'android-usb.ps1')
+$Serial = Get-UsbAndroidSerial -Adb $Adb -Serial $Serial
 if ($Cycles -lt 1 -or $Cycles -gt 500) { throw 'Cycles must be between 1 and 500.' }
 $output = Join-Path $PSScriptRoot '../samuschat-android/app/build/navigation-regression'
 New-Item -ItemType Directory -Force -Path $output | Out-Null
 function Invoke-Adb([string[]]$Arguments) {
-    $result = & $Adb -s $Serial @Arguments
-    if ($LASTEXITCODE -ne 0) { throw "ADB failed: $Arguments" }
-    return $result
+    $previousPreference = $ErrorActionPreference
+    try {
+        # ADB prints successful push/install progress on stderr in Windows PowerShell.
+        $ErrorActionPreference = 'Continue'
+        $result = @(& $Adb -s $Serial @Arguments 2>&1)
+        $code = $LASTEXITCODE
+    } finally { $ErrorActionPreference = $previousPreference }
+    if ($code -ne 0) { throw "ADB failed: $Arguments" }
+    return @($result | ForEach-Object { [string]$_ })
 }
 function Read-Ui {
     Start-Sleep -Milliseconds 400
@@ -20,13 +28,18 @@ function Read-Ui {
     return $xml
 }
 function Find-Node([string]$Text) {
-    $xml = Read-Ui
-    $nodes = @($xml.SelectNodes('//node') | Where-Object { $_.text -eq $Text -or $_.'content-desc' -eq $Text })
-    if (!$nodes.Count) { throw "UI missing: $Text" }
-    return $nodes[-1]
+    $deadline = (Get-Date).AddSeconds(10)
+    do {
+        $xml = Read-Ui
+        $nodes = @($xml.SelectNodes('//node') | Where-Object { $_.text -eq $Text -or $_.'content-desc' -eq $Text })
+        if ($nodes.Count) { return $nodes[-1] }
+    } while ((Get-Date) -lt $deadline)
+    throw "UI missing: $Text"
 }
 function Tap-Node([string]$Text) {
     $node = Find-Node $Text
+    $target = $node.SelectSingleNode('ancestor-or-self::node[@clickable="true"][1]')
+    if ($target) { $node = $target }
     $coords = [regex]::Matches($node.bounds, '\d+') | ForEach-Object { [int]$_.Value }
     $x = [int](($coords[0] + $coords[2]) / 2)
     $y = [int](($coords[1] + $coords[3]) / 2)
@@ -35,6 +48,8 @@ function Tap-Node([string]$Text) {
 function Assert-Text([string]$Text) { $null = Find-Node $Text }
 
 # Requires a logged-in test account. Never changes credentials or profile data.
+$initialUi = Read-Ui
+if ($initialUi.SelectSingleNode('//node[@content-desc="Fechar servidores"]')) { Tap-Node 'Fechar servidores' }
 Tap-Node 'Amigos'
 Assert-Text 'Alex'
 Tap-Node 'Alex'
@@ -49,7 +64,7 @@ if ($send.ParentNode.enabled -eq 'true' -and $send.enabled -eq 'true') {
 Tap-Node 'Voltar aos amigos'
 Tap-Node 'Perfil'
 Assert-Text 'Seu perfil'
-Assert-Text 'Escolher foto'
+Assert-Text 'Escolher foto ou GIF'
 Tap-Node 'Servidores'
 Assert-Text 'SEUS SERVIDORES'
 Tap-Node 'Fechar servidores'
@@ -58,6 +73,8 @@ Tap-Node 'Amigos'
 # Resolve coordinates from actual layout rather than assuming a screen resolution.
 function Get-Point([string]$Text) {
     $node = Find-Node $Text
+    $target = $node.SelectSingleNode('ancestor-or-self::node[@clickable="true"][1]')
+    if ($target) { $node = $target }
     $c = [regex]::Matches($node.bounds, '\d+') | ForEach-Object { [int]$_.Value }
     return "$([int](($c[0]+$c[2])/2)) $([int](($c[1]+$c[3])/2))"
 }

@@ -21,6 +21,8 @@ public class MessageFactory {
                                            String content, String url, String type) {
         Message message = createTextMessage(sender, channel, content != null ? content : "");
         message.setAttachmentUrl(url);
+        String path = java.net.URI.create(url).getPath();
+        message.setAttachmentName(path.substring(path.lastIndexOf('/') + 1));
         message.setAttachmentType(type);
         return message;
     }

@@ -35,6 +35,11 @@ public class InputSanitizer {
         if (password == null) {
             return false;
         }
-        return password.length() >= 6 && password.length() <= 100;
+        String lower = password.toLowerCase(java.util.Locale.ROOT);
+        return password.codePointCount(0, password.length()) >= 15
+            && password.getBytes(java.nio.charset.StandardCharsets.UTF_8).length <= 72
+            && password.chars().noneMatch(Character::isISOControl)
+            && !password.matches("(.)\\1+")
+            && !java.util.Set.of("passwordpassword", "123456789012345", "1234567890123456", "qwertyuiopasdfgh", "senha12345678901").contains(lower);
     }
 }

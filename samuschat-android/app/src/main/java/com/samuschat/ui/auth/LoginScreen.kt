@@ -29,14 +29,20 @@ fun LoginScreen(viewModel: AuthViewModel, onGoToRegister: () -> Unit) = AuthForm
 
 @Composable
 internal fun AuthForm(register: Boolean, viewModel: AuthViewModel, onSwitch: () -> Unit) {
+    var recovering by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    if (recovering) {
+        RecoveryScreen(viewModel) { recovering = false; viewModel.closeRecovery() }
+        return
+    }
     var username by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val submit = { viewModel.submit(register, username, email, password); Unit }
-    val valid = email.isNotBlank() && password.isNotBlank() && (!register || username.isNotBlank())
-    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF353A70), RailBackground)))) {
+    val valid = email.isNotBlank() && password.isNotBlank() && (!register || (username.isNotBlank() && password.length >= 15))
+    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF252A68), RailBackground)))) {
         Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(28.dp),
             verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             Surface(color = Blurple, shape = RoundedCornerShape(22.dp)) {
@@ -57,7 +63,7 @@ internal fun AuthForm(register: Boolean, viewModel: AuthViewModel, onSwitch: () 
                     OutlinedTextField(email, { email = it }, Modifier.fillMaxWidth(), label = { Text("Email") },
                         singleLine = true, enabled = !busy,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next))
-                    OutlinedTextField(password, { password = it }, Modifier.fillMaxWidth(), label = { Text("Senha") },
+                    OutlinedTextField(password, { password = it }, Modifier.fillMaxWidth(), label = { Text(if (register) "Senha (mínimo 15 caracteres)" else "Senha") },
                         visualTransformation = PasswordVisualTransformation(), singleLine = true, enabled = !busy,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = { if (valid && !busy) submit() }))
@@ -65,6 +71,8 @@ internal fun AuthForm(register: Boolean, viewModel: AuthViewModel, onSwitch: () 
                     Button(onClick = submit, enabled = valid && !busy, modifier = Modifier.fillMaxWidth()) {
                         Text(if (busy) "Aguarde…" else if (register) "Criar conta" else "Entrar", Modifier.padding(8.dp))
                     }
+                    if (!register) TextButton(onClick = { viewModel.closeRecovery(); recovering = true }, enabled = !busy) { Text("Esqueci minha senha") }
+                    OutlinedButton(onClick = { viewModel.google(context, password) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("Entrar com Google") }
                     TextButton(onClick = onSwitch, enabled = !busy, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                         Text(if (register) "Já tenho uma conta" else "Criar uma conta")
                     }

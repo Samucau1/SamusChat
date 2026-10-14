@@ -1,0 +1,67 @@
+{
+  "scope": "Selected existing authentication, recovery, JWT, Google and WebSocket suites; isolated test configuration",
+  "totals": {
+    "tests": 45,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "suites": [
+    {
+      "name": "com.chatapp.chatapp_backend.AccountRecoveryTests",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timeSeconds": 33.499
+    },
+    {
+      "name": "com.chatapp.chatapp_backend.GoogleGisCsrfTests",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timeSeconds": 0.307
+    },
+    {
+      "name": "com.chatapp.chatapp_backend.GoogleTokenValidationTests",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timeSeconds": 0.701
+    },
+    {
+      "name": "com.chatapp.chatapp_backend.security.JwtUtilTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timeSeconds": 0.105
+    },
+    {
+      "name": "com.chatapp.chatapp_backend.SecurityControllerTests",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timeSeconds": 7.613
+    },
+    {
+      "name": "com.chatapp.chatapp_backend.service.AuthServiceTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timeSeconds": 0.562
+    },
+    {
+      "name": "com.chatapp.chatapp_backend.WebSocketAuthInterceptorTests",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timeSeconds": 0.215
+    }
+  ]
+}

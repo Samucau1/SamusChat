@@ -1,5 +1,7 @@
 # Regressão de chamadas — 02/10/2026
 
+Este documento registra a etapa de chamadas individuais do PR #1. A etapa seguinte tem seu próprio [relatório de perfis e canais de chamada](REGRESSAO_CANAIS_DE_CHAMADA.md).
+
 Validação local no Windows, JDK 21 e dois emuladores Android API 35. A versão conserva o mute com `JavaAudioDeviceModule.setMicrophoneMute`: o capturador continua funcionando e o módulo substitui as amostras do microfone por silêncio. O teste agora exige os mesmos processos Android depois de 25 ciclos de mute/unmute e salva capturas da ligação e da transmissão recebida.
 
 ## Resultados

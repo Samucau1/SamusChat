@@ -18,11 +18,11 @@ Um aplicativo Android e uma interface para PC conectados à mesma API.
 
 ## O projeto
 
-A implementação apresentada está na branch [`feature/call-channels`](https://github.com/Samucau1/SamusChat/tree/feature/call-channels). As capturas e os guias abaixo apontam para essa versão.
+As melhorias de PC/Android desta entrega estão no [PR #2](https://github.com/Samucau1/SamusChat/pull/2). As imagens e os guias deste documento acompanham a implementação nesta branch.
 
 O SamusChat é um MVP de comunicação para reunir pessoas em servidores e canais, continuar conversas privadas e compartilhar a tela durante chamadas. O projeto reúne **Android nativo, uma versão para computador no navegador e um backend compartilhado**: contas, servidores e histórico pertencem à mesma estrutura, independentemente da interface utilizada.
 
-**Estado em 09/10/2026:** aplicativo Android em funcionamento e primeira entrega para PC aceita em teste manual local. A regressão de backend, Android, navegador e API foi aprovada. A próxima etapa é disponibilizar uma beta para um pequeno grupo com acesso pela internet; a hospedagem externa ainda está pendente.
+**Estado em 12/10/2026:** Android e PC compartilham personalização, chat e chamadas. A ligação PC tem qualidade na engrenagem, prévia e feedback de transmissão. Regressões locais de backend, Android, navegador e Postman aprovadas; validação de CI e integração com main acompanham o PR. A próxima etapa é disponibilizar uma beta para um pequeno grupo com acesso pela internet; a hospedagem externa ainda está pendente.
 
 <a id="interfaces"></a>
 
@@ -30,7 +30,7 @@ O SamusChat é um MVP de comunicação para reunir pessoas em servidores e canai
 
 ### Computador · espaço para conversar
 
-![SamusChat no navegador: servidores, canais e conversa com três contas de demonstração](https://raw.githubusercontent.com/Samucau1/SamusChat/feature/call-channels/docs/images/desktop/chat-desktop.png)
+![SamusChat no navegador: servidores, canais e conversa com três contas de demonstração](docs/images/desktop/chat-desktop.png)
 
 O layout para PC distribui servidores na lateral, canais em um painel próprio e a conversa na área principal. A interface usa React, TypeScript e CSS, com organização MVC e integração à API existente. A entrega atual funciona no navegador; o instalador desktop é uma etapa futura.
 
@@ -45,9 +45,9 @@ O layout para PC distribui servidores na lateral, canais em um painel próprio e
     <th>Conversa</th>
   </tr>
   <tr>
-    <td align="center"><a href="https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/images/login.png"><img src="https://raw.githubusercontent.com/Samucau1/SamusChat/feature/call-channels/docs/images/login.png" width="230" alt="Tela de login do SamusChat Android"></a></td>
-    <td align="center"><a href="https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/images/servers.png"><img src="https://raw.githubusercontent.com/Samucau1/SamusChat/feature/call-channels/docs/images/servers.png" width="230" alt="Servidores e canais no Android"></a></td>
-    <td align="center"><a href="https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/images/chat.png"><img src="https://raw.githubusercontent.com/Samucau1/SamusChat/feature/call-channels/docs/images/chat.png" width="230" alt="Conversa no canal geral do Android"></a></td>
+    <td align="center"><a href="docs/images/login.png"><img src="docs/images/login.png" width="230" alt="Tela de login do SamusChat Android"></a></td>
+    <td align="center"><a href="docs/images/servers.png"><img src="docs/images/servers.png" width="230" alt="Servidores e canais no Android"></a></td>
+    <td align="center"><a href="docs/images/chat.png"><img src="docs/images/chat.png" width="230" alt="Conversa no canal geral do Android"></a></td>
   </tr>
 </table>
 
@@ -61,12 +61,12 @@ O aplicativo usa Kotlin e Jetpack Compose. A navegação reúne Servidores, Amig
     <th>Tela recebida pelo outro participante</th>
   </tr>
   <tr>
-    <td align="center"><a href="https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/images/validacao-midia-2026-10-08/screen-local-preview.png"><img src="https://raw.githubusercontent.com/Samucau1/SamusChat/feature/call-channels/docs/images/validacao-midia-2026-10-08/screen-local-preview.png" width="250" alt="Prévia local do compartilhamento de tela Android"></a></td>
-    <td align="center"><a href="https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/images/validacao-midia-2026-10-08/screen-received.png"><img src="https://raw.githubusercontent.com/Samucau1/SamusChat/feature/call-channels/docs/images/validacao-midia-2026-10-08/screen-received.png" width="250" alt="Tela compartilhada recebida no segundo emulador Android"></a></td>
+    <td align="center"><a href="docs/images/validacao-midia-2026-10-08/screen-local-preview.png"><img src="docs/images/validacao-midia-2026-10-08/screen-local-preview.png" width="250" alt="Prévia local do compartilhamento de tela Android"></a></td>
+    <td align="center"><a href="docs/images/validacao-midia-2026-10-08/screen-received.png"><img src="docs/images/validacao-midia-2026-10-08/screen-received.png" width="250" alt="Tela compartilhada recebida no segundo emulador Android"></a></td>
   </tr>
 </table>
 
-Capturas da [validação de mídia e estabilidade de 08/10/2026](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/REGRESSAO_MIDIA_ESTABILIDADE_2026-10-08.md), realizada em dois emuladores. O Android possui chamadas individuais, salas de chamada e transmissão da tela, incluindo áudio do dispositivo quando a versão do Android e o aplicativo capturado permitem.
+Capturas da [validação de mídia e estabilidade de 08/10/2026](docs/REGRESSAO_MIDIA_ESTABILIDADE_2026-10-08.md), realizada em dois emuladores. O Android possui chamadas individuais, salas de chamada e transmissão da tela, incluindo áudio do dispositivo quando a versão do Android e o aplicativo capturado permitem.
 
 <a id="funcionalidades"></a>
 
@@ -75,7 +75,7 @@ Capturas da [validação de mídia e estabilidade de 08/10/2026](https://github.
 | Recurso | Android | PC no navegador |
 | --- | --- | --- |
 | Cadastro, login, sessão e logout | Implementado | Implementado |
-| Perfil e alteração do nome | Implementado; foto local por conta | Implementado; alteração do nome |
+| Perfil, foto/GIF, capa e fundo | Implementado; sincronizado pela API | Implementado; sincronizado pela API |
 | Recuperação de senha | Implementada; envio depende de SMTP | Implementada; envio depende de SMTP |
 | Criar servidor e entrar por ID | Implementado | Implementado |
 | Canais de texto e histórico paginado | Implementado | Implementado |
@@ -84,7 +84,7 @@ Capturas da [validação de mídia e estabilidade de 08/10/2026](https://github.
 | Anexos em canais de texto | Implementado; até 10 MB | Implementado; até 10 MB |
 | Chamada individual com microfone | Implementado | Implementado |
 | Compartilhamento de tela individual | Implementado | Implementado |
-| Salas de chamada com vários participantes | Implementado | Próxima etapa |
+| Salas de chamada com vários participantes | Implementado | Implementado |
 | Áudio interno do dispositivo | Implementado no Android compatível | Próxima etapa |
 | Login Google | Código integrado; configuração OAuth pendente | Interface de login Google pendente |
 | Notificações push | Integração opcional com Firebase | Próxima etapa |
@@ -139,9 +139,9 @@ SamusChat/
 
 ### Infraestrutura preparada para a próxima etapa
 
-O repositório já inclui um [Compose de produção](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docker-compose.prod.yml) com Nginx, três instâncias da API, PostgreSQL, Redis com réplica e volumes persistentes. O perfil de produção usa migrações Flyway e validação do esquema. A [pipeline GitHub Actions](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/.github/workflows/ci-cd.yml) define testes do backend com Redis, build/testes/lint Android, build desktop e smoke test dos containers.
+O repositório já inclui um [Compose de produção](docker-compose.prod.yml) com Nginx, três instâncias da API, PostgreSQL, Redis com réplica e volumes persistentes. O perfil de produção usa migrações Flyway e validação do esquema. A [pipeline GitHub Actions](.github/workflows/ci-cd.yml) define testes do backend com Redis, build/testes/lint Android, build desktop e smoke test dos containers.
 
-Essa estrutura está preparada no código; a beta pública ainda precisa de servidor, domínio/HTTPS, configuração de TURN e validação em redes externas. Réplica Redis e múltiplas APIs, por si só, não garantem alta disponibilidade de toda a infraestrutura. Detalhes em [CI/CD e escalabilidade](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/ETAPA_13.md).
+Essa estrutura está preparada no código; a beta pública ainda precisa de servidor, domínio/HTTPS, configuração de TURN e validação em redes externas. Réplica Redis e múltiplas APIs, por si só, não garantem alta disponibilidade de toda a infraestrutura. Detalhes em [CI/CD e escalabilidade](docs/ETAPA_13.md).
 
 ### Tecnologias
 
@@ -159,7 +159,7 @@ Essa estrutura está preparada no código; a beta pública ainda precisa de serv
 
 ## Testes e evidências
 
-Resultados da [regressão aprovada em 09/10/2026](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/REGRESSAO_ACEITE_DESKTOP_2026-10-09.md):
+Resultados da [regressão aprovada em 09/10/2026](docs/REGRESSAO_ACEITE_DESKTOP_2026-10-09.md):
 
 | Verificação | Resultado registrado |
 | --- | --- |
@@ -172,7 +172,7 @@ Resultados da [regressão aprovada em 09/10/2026](https://github.com/Samucau1/Sa
 
 Os cenários de navegador cobrem cadastro e sessão, perfil/logout, servidores e canais, mensagens STOMP, anexos, conversas privadas, preservação do rascunho em erro, paginação e chamada individual com tela recebida pelo segundo cliente. A coleção Postman cobre fluxos HTTP e sinalização das chamadas.
 
-Também há uma [regressão de mídia e estabilidade com 19 cenários em emuladores](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/REGRESSAO_MIDIA_ESTABILIDADE_2026-10-08.md), incluindo transmissão, áudio do dispositivo, controles de microfone e ciclo de vida da chamada. O aceite manual da primeira entrega PC registrou a localização e o carregamento de servidores existentes pelo usuário.
+Também há uma [regressão de mídia e estabilidade com 19 cenários em emuladores](docs/REGRESSAO_MIDIA_ESTABILIDADE_2026-10-08.md), incluindo transmissão, áudio do dispositivo, controles de microfone e ciclo de vida da chamada. O aceite manual da primeira entrega PC registrou a localização e o carregamento de servidores existentes pelo usuário.
 
 **Limites dessas evidências:** a suite de navegador usa microfone simulado e tela gerada por canvas. Postman verifica sinalização, sem transportar mídia. Qualidade do áudio físico no PC, seletor nativo de tela, interoperabilidade PC–Android, Google real e redes de operadoras ainda exigem validação específica. As contagens acima registram a execução de 09/10/2026; não representam a execução de toda a suite a cada edição deste README.
 
@@ -181,12 +181,6 @@ Também há uma [regressão de mídia e estabilidade com 19 cenários em emulado
 ## Execute localmente
 
 Pré-requisitos: **JDK 21**, **Docker Desktop com containers Linux** e, para o navegador, **Node.js 22**. Para Android, use Android Studio e SDK Android 35.
-
-Após clonar o repositório, selecione a versão apresentada:
-
-```powershell
-git switch feature/call-channels
-```
 
 **1. Banco, Redis e API** — na raiz do repositório:
 
@@ -206,9 +200,9 @@ npm run dev
 
 Abra **http://127.0.0.1:5173**. O Vite encaminha API, WebSocket e anexos ao backend local. É possível entrar com a mesma conta utilizada no Android.
 
-**3. Aplicativo Android** — abra `samuschat-android/` no Android Studio e execute no emulador. A URL padrão da API é `http://10.0.2.2:8080/`. O [README Android](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/samuschat-android/README.md) explica como gerar o APK e configurar a URL para um celular físico.
+**3. Aplicativo Android** ? conecte o celular por USB, ative Depura??o USB e autorize o computador no aparelho. Execute `.\iniciar-samuschat.ps1` para preparar os servi?os, encaminhar a API pelo cabo e instalar/abrir o app.
 
-Para iniciar o ambiente Android com o launcher do projeto, use `.\iniciar-samuschat.ps1`. Consulte o [guia de inicialização automática](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/INICIALIZACAO_AUTOMATICA.md) para seus pré-requisitos.
+Para iniciar o ambiente Android com o launcher do projeto, use `.\iniciar-samuschat.ps1`. Consulte o [guia de inicialização automática](docs/INICIALIZACAO_AUTOMATICA.md) para seus pré-requisitos.
 
 <a id="documentacao"></a>
 
@@ -218,9 +212,9 @@ Escolha uma aba abaixo para abrir o README ou o guia da área:
 
 <table>
   <tr>
-    <th><a href="https://github.com/Samucau1/SamusChat/blob/feature/call-channels/samuschat-android/README.md">📱 Android</a></th>
-    <th><a href="https://github.com/Samucau1/SamusChat/blob/feature/call-channels/samuschat-desktop/README.md">🖥️ Computador</a></th>
-    <th><a href="https://github.com/Samucau1/SamusChat/blob/feature/call-channels/chatapp-backend/README.md">⚙️ API / Backend</a></th>
+    <th><a href="samuschat-android/README.md">📱 Android</a></th>
+    <th><a href="samuschat-desktop/README.md">🖥️ Computador</a></th>
+    <th><a href="chatapp-backend/README.md">⚙️ API / Backend</a></th>
   </tr>
   <tr>
     <td>Aplicativo, arquitetura, APK e testes</td>
@@ -228,9 +222,9 @@ Escolha uma aba abaixo para abrir o README ou o guia da área:
     <td>Contratos, segurança, dados e infraestrutura</td>
   </tr>
   <tr>
-    <th><a href="https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/postman/README.md">🧪 Postman / API</a></th>
-    <th><a href="https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/REGRESSAO_ACEITE_DESKTOP_2026-10-09.md">✅ Regressão e aceite</a></th>
-    <th><a href="https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/README.md">📚 Todos os documentos</a></th>
+    <th><a href="docs/postman/README.md">🧪 Postman / API</a></th>
+    <th><a href="docs/REGRESSAO_ACEITE_DESKTOP_2026-10-09.md">✅ Regressão e aceite</a></th>
+    <th><a href="docs/README.md">📚 Todos os documentos</a></th>
   </tr>
   <tr>
     <td>Coleção importável, ambiente e Newman</td>
@@ -244,13 +238,13 @@ Escolha uma aba abaixo para abrir o README ou o guia da área:
 
 | Assunto | Guia |
 | --- | --- |
-| Instalação e ambiente | [Guia do projeto](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/GUIA_PROJETO.md) · [Inicialização automática](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/INICIALIZACAO_AUTOMATICA.md) |
-| Desktop | [Plano MVC](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/DESKTOP_MVC.md) · [Integração e funcionalidades](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/DESKTOP_API.md) |
-| Autenticação | [Recuperação de senha e Google](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/AUTENTICACAO.md) |
-| Conversas | [Mensagens privadas](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/MENSAGENS_PRIVADAS.md) · [Anexos Android](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/ANEXOS_ANDROID.md) |
-| Chamadas | [Individuais, tela e áudio](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/CHAMADAS_INDIVIDUAIS.md) · [Salas e permissões](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/CANAIS_DE_CHAMADA.md) |
-| Mídia e estabilidade | [Regressão com capturas](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/REGRESSAO_MIDIA_ESTABILIDADE_2026-10-08.md) |
-| Infraestrutura | [CI/CD e escalabilidade](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/ETAPA_13.md) · [Estudo de hospedagem](https://github.com/Samucau1/SamusChat/blob/feature/call-channels/docs/ESTUDO_HOSPEDAGEM_CELULARES_ATUALIZACOES.md) |
+| Instalação e ambiente | [Guia do projeto](docs/GUIA_PROJETO.md) · [Inicialização automática](docs/INICIALIZACAO_AUTOMATICA.md) |
+| Desktop | [Plano MVC](docs/DESKTOP_MVC.md) · [Integração e funcionalidades](docs/DESKTOP_API.md) |
+| Autenticação | [Recuperação de senha e Google](docs/AUTENTICACAO.md) |
+| Conversas | [Mensagens privadas](docs/MENSAGENS_PRIVADAS.md) · [Anexos Android](docs/ANEXOS_ANDROID.md) |
+| Chamadas | [Individuais, tela e áudio](docs/CHAMADAS_INDIVIDUAIS.md) · [Salas e permissões](docs/CANAIS_DE_CHAMADA.md) |
+| Mídia e estabilidade | [Regressão com capturas](docs/REGRESSAO_MIDIA_ESTABILIDADE_2026-10-08.md) |
+| Infraestrutura | [CI/CD e escalabilidade](docs/ETAPA_13.md) · [Estudo de hospedagem](docs/ESTUDO_HOSPEDAGEM_CELULARES_ATUALIZACOES.md) |
 
 </details>
 

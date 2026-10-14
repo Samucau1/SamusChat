@@ -12,6 +12,11 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private String avatarUrl;
+    private String bannerUrl;
+    private String backgroundUrl;
+    private String accentColor;
+    private String bio;
 
     @Column(unique = true, nullable = false)
     private String username;
@@ -21,6 +26,13 @@ public class User {
 
     @Column(nullable = false)
     private String password;
+
+    @Column(name="google_subject", unique=true)
+    private String googleSubject;
+
+    @Column(name="auth_version", nullable=false)
+    @org.hibernate.annotations.ColumnDefault("0")
+    private int authVersion;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();

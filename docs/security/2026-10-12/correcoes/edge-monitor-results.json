@@ -1,0 +1,26 @@
+{
+  "browser": "Microsoft Edge",
+  "version": "155.0.4283.45",
+  "headless": true,
+  "physicalMonitor": true,
+  "result": {
+    "stage": "complete",
+    "source": {
+      "width": 1600,
+      "height": 900,
+      "fps": 30,
+      "surface": "monitor"
+    },
+    "configured": {
+      "width": 1600,
+      "height": 900,
+      "fps": 30,
+      "surface": "monitor"
+    },
+    "preference": "maintain-framerate-and-resolution",
+    "received": {
+      "width": 1600,
+      "height": 900
+    }
+  }
+}

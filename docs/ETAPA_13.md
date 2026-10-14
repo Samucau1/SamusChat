@@ -2,12 +2,12 @@
 
 O workflow em `.github/workflows/ci-cd.yml` valida o backend Java 21 em pushes e
 pull requests para `main` e `develop`. Usa Spring Boot 3.5.16 estável, Maven
-Wrapper, testes com H2, um teste de fan-out com Redis real e relatórios JaCoCo.
+Wrapper, testes com H2, fan-out e limite de login com Redis real, migração em PostgreSQL descartável e relatórios JaCoCo. O workflow informa `REDIS_TEST_PORT=6379`; testes locais podem usar outra porta explicitamente.
 Os relatórios ficam disponíveis como artifacts do GitHub Actions por sete dias.
 
 Depois dos testes, o job `container-smoke` constrói a imagem e sobe uma instalação
 descartável com PostgreSQL, Redis, três backends e Nginx. Verifica a migração do
-banco, saúde de cada backend, autenticação, roteamento e uploads compartilhados.
+banco, saúde de cada backend, autenticação, roteamento e uploads compartilhados. O overlay `docker-compose.smoke.yml` adiciona TLS com certificado de localhost, proxy confiável de IP fixo na rede exclusiva do teste e validação do certificado pelo cliente. HTTP com cabeçalho HTTPS forjado é rejeitado; downloads exigem Bearer e logout revoga o token.
 Esse job não utiliza credenciais de produção.
 
 ## Fluxo das mensagens
@@ -37,7 +37,7 @@ replay ou entrega exatamente uma vez em falhas de rede.
   Hibernate em `validate`, Flyway, desligamento gracioso e logs por instância.
 - Readiness inclui aplicação, banco e Redis. Somente `/actuator/health/**` é
   público no backend e fica fora do rate limiter. Nginx não publica Actuator;
-  `/health` verifica apenas o proxy. `info` e `metrics` exigem autenticação.
+  `/health` verifica apenas o proxy. `info` e `metrics` estão bloqueados na configuração atual.
 
 O Compose escala os backends em **um único servidor**. Banco, proxy e Redis master
 continuam sendo pontos únicos de falha. A réplica Redis não configura Sentinel,
@@ -55,6 +55,8 @@ variables → Actions → Variables**:
 | `ENABLE_IMAGE_PUBLISH` | `true` para publicar imagens no GHCR em pushes da `main` |
 | `ENABLE_PRODUCTION_DEPLOY` | `true` depois de preparar o servidor |
 | `PRODUCTION_URL` | URL pública HTTPS, sem barra final |
+| `WEB_ORIGINS` | Origens HTTPS do PC autorizadas para WebSocket, separadas por vírgula |
+| `TRUSTED_PROXY_IPS` | IPs exatos dos proxies vistos pelo backend, separados por vírgula |
 
 A imagem é publicada em `ghcr.io/samucau1/samuschat-backend` com tags SHA e `latest`.
 O workflow usa o `GITHUB_TOKEN` temporário com `packages: write` somente no job de
@@ -85,8 +87,7 @@ No servidor Linux:
    A configuração Docker temporária é removida ao fim do deploy, preservando
    qualquer login Docker que já exista no servidor. Para deploy ou rollback
    manual de uma imagem privada, faça login no GHCR com um token de leitura próprio.
-3. Configure um proxy TLS na frente de `127.0.0.1:8080`, permitindo WebSocket e
-   uploads de 11 MB. O Compose não abre uma porta HTTPS sem certificado.
+3. Configure TLS com certificado real no Nginx e acesso HTTPS, permitindo WebSocket e uploads de 11 MB. O Compose base escuta HTTP; o perfil prod retorna 426 para APIs encaminhadas com esse transporte. Um proxy externo que termina TLS precisa de encaminhamento validado até o Nginx/backend; o Nginx atual substitui `X-Forwarded-Proto` pelo próprio transporte. Configure os IPs exatos em `TRUSTED_PROXY_IPS`. O overlay de smoke e seu certificado temporário são exclusivamente de testes, sem configurar TLS de produção.
 4. Ajuste o bloco `http` do Nginx para confiar **somente** no IP/CIDR desse proxy
    (`set_real_ip_from`, `real_ip_header X-Forwarded-For`, `real_ip_recursive on`).
    Sem esse ajuste, clientes atrás do proxy compartilham IP, rate limit e afinidade.

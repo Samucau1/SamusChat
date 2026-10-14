@@ -47,8 +47,9 @@ public class MessageController {
     @DeleteMapping("/{messageId}")
     public ResponseEntity<ApiResponse<Void>> deleteMessage(
             Authentication auth,
+            @PathVariable Long channelId,
             @PathVariable Long messageId) {
-        messageService.deleteMessage(auth.getName(), messageId);
+        messageService.deleteMessage(auth.getName(), channelId, messageId);
         return ResponseEntity.ok(ApiResponse.success(null, "Mensagem deletada com sucesso"));
     }
 }

@@ -19,6 +19,10 @@ public class ServerMapper {
 
         return ServerResponse.builder()
                 .id(server.getId())
+                .iconUrl(server.getIconUrl())
+                .bannerUrl(server.getBannerUrl())
+                .backgroundUrl(server.getBackgroundUrl())
+                .accentColor(server.getAccentColor())
                 .name(server.getName())
                 .description(server.getDescription())
                 .ownerEmail(server.getOwnerEmail())

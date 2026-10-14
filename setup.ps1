@@ -32,7 +32,7 @@ try {
     }
 
     # Parse only known settings as data; never execute contents of .env.
-    $taskAllowed = @('DB_USER', 'DB_PASSWORD', 'JWT_SECRET', 'NOTIFICATION_STRATEGY', 'FILE_BASE_URL')
+    $taskAllowed = @('DB_USER', 'DB_PASSWORD', 'JWT_SECRET', 'NOTIFICATION_STRATEGY', 'FILE_BASE_URL', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USERNAME', 'SMTP_PASSWORD', 'SMTP_AUTH', 'SMTP_STARTTLS', 'AUTH_MAIL_FROM', 'GOOGLE_CLIENT_ID')
     foreach ($taskLine in Get-Content -LiteralPath $taskEnvPath -Encoding UTF8) {
         if ($taskLine -match '^\s*(#|$)') { continue }
         if ($taskLine -notmatch '^\s*([A-Z_][A-Z0-9_]*)\s*=(.*)$') {

@@ -25,6 +25,7 @@ public class DeviceService {
         userDeviceRepository.findByFcmToken(token)
                 .ifPresentOrElse(
                         device -> {
+                            if (!device.getUserEmail().equals(userEmail)) throw new org.springframework.security.access.AccessDeniedException("Dispositivo pertence a outra conta");
                             device.setUserEmail(userEmail);
                             device.setDeviceModel(request.getDeviceModel());
                             device.setLastSeen(LocalDateTime.now());
@@ -41,11 +42,14 @@ public class DeviceService {
     }
 
     @Transactional
-    public void unregisterDevice(String fcmToken) {
+    public void unregisterDevice(String email, String fcmToken) {
         if (fcmToken == null || fcmToken.isBlank()) {
             throw new RuntimeException("Token FCM invalido");
         }
 
-        userDeviceRepository.deleteByFcmToken(fcmToken.trim());
+        userDeviceRepository.findByFcmToken(fcmToken.trim()).ifPresent(device -> {
+            if (!device.getUserEmail().equals(email)) throw new org.springframework.security.access.AccessDeniedException("Dispositivo pertence a outra conta");
+            userDeviceRepository.delete(device);
+        });
     }
 }

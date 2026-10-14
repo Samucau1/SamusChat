@@ -44,6 +44,27 @@ class JwtUtilTest {
     }
 
     @Test
+    void refreshSurvivesAccessExpiryAndCannotAuthorizeApiRequests() {
+        String refresh = jwt.generateRefreshToken("samus@test.com");
+        ReflectionTestUtils.setField(jwt, "expiration", -60000L);
+        assertThat(jwt.isTokenValid(jwt.generateToken("samus@test.com"))).isFalse();
+        ReflectionTestUtils.setField(jwt, "expiration", 86400000L);
+        assertThat(jwt.isTokenValid(jwt.refreshAccessToken(refresh))).isTrue();
+        assertThat(jwt.isTokenValid(refresh)).isFalse();
+        assertThatThrownBy(() -> jwt.refreshAccessToken(jwt.generateToken("samus@test.com")))
+            .isInstanceOf(SecurityException.class);
+    }
+
+    @Test
+    void expiredRefreshCannotBeRenewed() {
+        String refresh = io.jsonwebtoken.Jwts.builder().setSubject("samus@test.com")
+            .claim("kind", "refresh").setExpiration(new java.util.Date(System.currentTimeMillis() - 60000))
+            .signWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor("chave_exclusiva_dos_testes_jwt_minimo_32_chars".getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+            .compact();
+        assertThatThrownBy(() -> jwt.refreshAccessToken(refresh)).isInstanceOf(SecurityException.class);
+    }
+
+    @Test
     void tokenSignedWithAnotherSecretIsRejected() {
         String token = jwt.generateToken("samus@test.com");
         ReflectionTestUtils.setField(jwt, "secret", "outra_chave_exclusiva_de_testes_minimo_32_chars");

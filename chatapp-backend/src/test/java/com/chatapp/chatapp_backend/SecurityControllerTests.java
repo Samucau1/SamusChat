@@ -100,7 +100,7 @@ class SecurityControllerTests {
                                 {
                                   "username": "<script>alert(1)</script>",
                                   "email": "xss@test.com",
-                                  "password": "123456"
+                                  "password": "IntegrationTest123!"
                                 }
                                 """))
                 .andExpect(status().isBadRequest())
@@ -115,7 +115,7 @@ class SecurityControllerTests {
                         .content("""
                                 {
                                   "email": "naoexiste@test.com",
-                                  "password": "123456"
+                                  "password": "IntegrationTest123!"
                                 }
                                 """))
                 .andExpect(status().isBadRequest())

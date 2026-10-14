@@ -28,4 +28,11 @@ class HomeRulesTest {
         assertTrue(canSaveProfileName(" " + "a".repeat(50) + " ", "Ana"))
         assertFalse(canSaveProfileName("a".repeat(51), "Ana"))
     }
+    @Test fun profileNameRejectsTagsAndControlCharactersButAcceptsAccents() {
+        assertTrue(validProfileName(" João Silva "))
+        for (name in listOf("<b>Ana</b>", "Ana\nSilva", "Ana\tSilva", "a".repeat(51), "")) {
+            assertFalse(validProfileName(name))
+            assertFalse(canSaveProfileName(name, "Ana"))
+        }
+    }
 }

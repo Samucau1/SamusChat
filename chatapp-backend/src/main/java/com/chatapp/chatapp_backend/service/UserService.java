@@ -21,12 +21,17 @@ public class UserService {
 
     public UserResponse updateUsername(String email, String newUsername) {
         User user = findUser(email);
+        String username = newUsername == null ? "" : newUsername.strip();
+        if (username.isEmpty() || username.length() > 50 || username.codePoints().anyMatch(c -> Character.isISOControl(c) || c == '<' || c == '>')) {
+            throw new IllegalArgumentException("Use um nome de 1 a 50 caracteres, sem tags ou caracteres de controle.");
+        }
+        if (username.equals(user.getUsername())) return userMapper.toResponse(user);
 
-        if (userRepository.existsByUsername(newUsername)) {
+        if (userRepository.existsByUsername(username)) {
             throw new RuntimeException("Username ja esta em uso");
         }
 
-        user.setUsername(newUsername);
+        user.setUsername(username);
         userRepository.save(user);
         return userMapper.toResponse(user);
     }

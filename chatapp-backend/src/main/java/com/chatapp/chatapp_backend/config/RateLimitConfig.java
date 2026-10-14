@@ -13,9 +13,19 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RateLimitConfig {
 
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final Map<String, Long> lastUsed = new ConcurrentHashMap<>();
+    @org.springframework.beans.factory.annotation.Value("${app.security.rate-limit.general:120}") private long general = 120;
+    @org.springframework.beans.factory.annotation.Value("${app.security.rate-limit.auth:60}") private long auth = 60;
+    private synchronized Bucket limited(String key, long capacity) {
+        long now = System.currentTimeMillis();
+        if (buckets.size() >= 10000) { lastUsed.entrySet().removeIf(item -> { if (now - item.getValue() > 120000) { buckets.remove(item.getKey()); return true; } return false; }); }
+        if (!buckets.containsKey(key) && buckets.size() >= 10000) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.TOO_MANY_REQUESTS);
+        lastUsed.put(key, now);
+        return buckets.computeIfAbsent(key, ignored -> Bucket.builder().addLimit(Bandwidth.classic(capacity, Refill.intervally(capacity, Duration.ofMinutes(1)))).build());
+    }
 
     public Bucket resolveBucket(String ip) {
-        return buckets.computeIfAbsent(ip, this::createBucket);
+        return limited(ip, general);
     }
 
     private Bucket createBucket(String ip) {
@@ -24,14 +34,13 @@ public class RateLimitConfig {
     }
 
     public Bucket resolveAuthBucket(String ip) {
-        return buckets.computeIfAbsent("auth_" + ip, key -> {
-            Bandwidth limit = Bandwidth.classic(5, Refill.intervally(5, Duration.ofMinutes(1)));
-            return Bucket.builder().addLimit(limit).build();
-        });
+        return limited("auth_" + ip, auth);
     }
 
     public Bucket resolveCallBucket(String ip) {
-        return buckets.computeIfAbsent("calls_" + ip, key -> Bucket.builder()
-            .addLimit(Bandwidth.classic(180, Refill.intervally(180, Duration.ofMinutes(1)))).build());
+        return limited("calls_" + ip, 180);
+    }
+    public Bucket resolveRoomBucket(String ip) {
+        return limited("rooms_" + ip, 360);
     }
 }

@@ -9,20 +9,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-val RailBackground = Color(0xFF1E1F22)
-val PanelBackground = Color(0xFF2B2D31)
-val ChatBackground = Color(0xFF313338)
-val Blurple = Color(0xFF5865F2)
+val RailBackground = Color.Black
+val PanelBackground = Color(0xFF101116)
+val ChatBackground = Color.Black
+val Blurple = Color(0xFF5562FF)
+val ControlBackground = Color(0xFF242631)
+val LiveGreen = Color(0xFF20C66B)
+val DangerRed = Color(0xFFE02F44)
 
 private val Colors = darkColorScheme(
     primary = Blurple, onPrimary = Color.White,
-    primaryContainer = Color(0xFF353B70), onPrimaryContainer = Color(0xFFE0E3FF),
-    secondary = Color(0xFFB5BAC1), onSecondary = RailBackground,
-    background = PanelBackground, onBackground = Color(0xFFF2F3F5),
-    surface = PanelBackground, onSurface = Color(0xFFF2F3F5),
-    surfaceVariant = Color(0xFF383A40), onSurfaceVariant = Color(0xFFB5BAC1),
-    outline = Color(0xFF4E5058), error = Color(0xFFFF8D96),
-    errorContainer = Color(0xFF4A262D), onErrorContainer = Color(0xFFFFDADD)
+    primaryContainer = Color(0xFF252A68), onPrimaryContainer = Color(0xFFE5E7FF),
+    secondary = Color(0xFFC4C8D4), onSecondary = RailBackground,
+    background = Color.Black, onBackground = Color(0xFFF5F6FA),
+    surface = PanelBackground, onSurface = Color(0xFFF5F6FA),
+    surfaceVariant = ControlBackground, onSurfaceVariant = Color(0xFFC4C8D4),
+    outline = Color(0xFF666B7E), error = Color(0xFFFF6577),
+    errorContainer = Color(0xFF410E1A), onErrorContainer = Color(0xFFFFDFE4)
 )
 
 @Composable

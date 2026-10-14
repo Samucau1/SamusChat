@@ -32,6 +32,7 @@ __pycache__/
 local.properties
 *.apk
 *.aab
+dist/celular/
 
 # Local credentials and signing keys
 google-services.json

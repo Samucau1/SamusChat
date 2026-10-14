@@ -20,6 +20,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
     private final JwtUtil jwtUtil;
     private final com.chatapp.chatapp_backend.repository.ChannelRepository channelRepository;
     private final com.chatapp.chatapp_backend.service.PermissionService permissionService;
+    private final WebSocketSessions sessions;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -41,6 +42,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                         new UsernamePasswordAuthenticationToken(email, null, List.of());
 
                     accessor.setUser(auth);
+                    sessions.connect(accessor.getSessionId(), email, token);
                 }
             }
         }
@@ -50,6 +52,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
         }
         if (accessor != null && (StompCommand.SUBSCRIBE.equals(accessor.getCommand()) || StompCommand.SEND.equals(accessor.getCommand()))) {
             if (accessor.getUser() == null) throw new SecurityException("Nao autorizado");
+            if (accessor.getSessionId() != null && !sessions.valid(accessor.getSessionId())) throw new SecurityException("Sessao expirada");
             String destination = accessor.getDestination();
             String prefix = StompCommand.SUBSCRIBE.equals(accessor.getCommand()) ? "/topic/channel/" : "/app/channel/";
             if (destination == null || !destination.startsWith(prefix)) throw new SecurityException("Destino invalido");

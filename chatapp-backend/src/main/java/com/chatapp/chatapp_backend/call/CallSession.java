@@ -16,5 +16,6 @@ public class CallSession {
     @Column(nullable=false) private Instant calleeSeen;
     @Column(columnDefinition="text") private String offer;
     @Column(columnDefinition="text") private String answer;
+    private Long channelId;
     public boolean terminal() { return state.equals("ENDED") || state.equals("DECLINED") || state.equals("EXPIRED"); }
 }

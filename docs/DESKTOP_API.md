@@ -1,0 +1,73 @@
+# SamusChat desktop integrado — 09/10/2026
+
+Atualização em 12/10/2026: contratos REST ampliados, gestão de membros, exclusão de mensagens, canais de chamada em grupo e personalização compartilhada com Android. A transmissão no PC permite escolher de 750p a 2160p e 30 ou 60 fps, com sugestão de capacidade, ajuste por feedback nativo e prévia visível por padrão, com opção de ocultar/ampliar. As configurações ficam na engrenagem da ligação. Consulte [qualidade e limites](TRANSMISSAO_PC_HARDWARE.md). Consulte [personalização e limites de mídia](PERSONALIZACAO_PC_ANDROID.md) e [regressão da entrega](REGRESSAO_PERSONALIZACAO_PC_ANDROID_2026-10-12.md).
+
+A escolha de qualidade e o ajuste por desempenho foram validados na [regressão de transmissão por hardware](REGRESSAO_TRANSMISSAO_PC_HARDWARE_2026-10-12.md). A [regressão anterior de transmissão fixa a 30 fps](REGRESSAO_TRANSMISSAO_PC_30FPS_2026-10-12.md) preserva o histórico daquela entrega.
+
+O front desktop agora utiliza a mesma API Spring Boot, PostgreSQL, Redis, contratos REST e STOMP do Android. A interface mantém a paleta e usa barra de servidores, lista lateral e conversa em colunas. Nenhuma alteração de contrato do backend foi necessária.
+
+Aceite manual em 09/10/2026: o usuário informou que conseguiu localizar e carregar servidores já existentes no banco por meio da pesquisa e validou a primeira entrega para PC. O fluxo foi exercitado no navegador com a API local. Esse relato não equivale a aprovar os cenários externos, instalador ou todas as combinações de mídia. A regressão de publicação está no [relatório do aceite desktop](REGRESSAO_ACEITE_DESKTOP_2026-10-09.md).
+
+## Funcionalidades
+
+- Login/cadastro por email e senha, restauração de sessão na mesma aba, logout e edição do nome no backend.
+- Recuperação de senha em três etapas pelos endpoints existentes; entrega de email depende de SMTP configurado.
+- Listagem, criação e entrada em servidores por ID; criação de canais de texto e busca lateral.
+- Histórico paginado, envio por Enter, quebra de linha com Shift+Enter e preservação do rascunho em falhas.
+- Em 12/10/2026: rascunhos de texto e anexos preservados por conversa ao alternar canais, servidores e amigos, com indicador na lista lateral. O envio concluído limpa somente o conteúdo enviado, mesmo após trocar de conversa. Rascunhos permanecem apenas em memória e são descartados ao recarregar ou sair da conta.
+- Mensagens de canal recebidas por STOMP, reconexão automática e deduplicação por ID. Conversas privadas usam leitura REST a cada três segundos, conforme o contrato existente sem destino STOMP privado.
+- Upload de anexo em canal até 10 MB. Download exige autenticação e associação ao canal; o PC usa Bearer e blobs locais. Exclusão exige autoria ou moderação autorizada. Fotos de aparência permanecem públicas. O backend não oferece upload em conversa privada no contrato atual.
+- Chamadas individuais: convite, aceite/recusa, microfone, encerramento e compartilhamento de tela com prévia. SDP e credenciais ICE vêm da mesma API do Android.
+
+O token fica em `sessionStorage`, separado do app Android. A sessão persiste ao recarregar a mesma aba e é removida ao sair; não há senha armazenada. Ao receber HTTP 401 em uma sessão conectada, retorna ao login. A sessão de navegador não usa cookies de autenticação.
+
+## Executar
+
+Na raiz, iniciar a API com `./setup.ps1`. Em outro terminal:
+
+```powershell
+cd samuschat-desktop
+npm ci
+npm run dev
+```
+
+Abrir `http://127.0.0.1:5173`. Usar a conta do celular. O proxy Vite mantém API e WebSocket na mesma origem do navegador; não exige ampliar CORS. `SAMUSCHAT_API_URL` seleciona a API no servidor Vite, sem colocar segredos no bundle.
+
+O build `npm run build` gera `dist/`. Hospedagem precisa servir esses arquivos e encaminhar `/api`, `/uploads` e `/ws` para a API, incluindo upgrade WebSocket. Para revisão local, `npm run preview` reutiliza o proxy Vite configurado; esse comando não é a hospedagem de produção. Não há instalador Electron/Tauri nesta entrega.
+
+## Organização MVC
+
+`models/apiRepository.ts` centraliza contratos HTTP, erros, anexos e ordenação de mensagens. `controllers/useSession.ts`, `useChatController.ts` e `useCallController.ts` mantêm o estado e os recursos de rede/mídia. `views/AuthScreen.tsx` e `ChatApp.tsx` adaptam os fluxos a mouse e teclado. O repositório fictício original permanece como referência histórica, sem entrar na composição da aplicação conectada.
+
+## Validação
+
+Para preparar uma API descartável, na raiz:
+
+```powershell
+./scripts/start-desktop-test-api.ps1
+```
+
+O script usa explicitamente H2 em memória, classpath de testes, uploads em `target` e integrações externas desligadas. Encerrar esse processo descarta o banco. Não usar somente `spring-boot:run` com perfil test como garantia de isolamento: os recursos de teste precisam estar no classpath e as propriedades de banco devem ser explícitas.
+
+Em outro terminal, na pasta desktop:
+
+```powershell
+npx playwright install chromium
+npm run test:e2e
+```
+
+A suíte abre clientes Chromium e exercita a API real com contas fictícias. Os seis cenários passaram em 09/10/2026, em 22,6 segundos: cadastro/sessão/perfil/logout; servidores/STOMP/anexo/canal; mensagens privadas/falha de envio; paginação; chamada/microfone/tela/encerramento; erro de login e largura de 1024 px. TypeScript e build Vite aprovados.
+
+O microfone é simulado pelo navegador e a fonte de tela é um canvas sintético, transmitido pelo WebRTC e decodificado no segundo cliente. Isso não mede qualidade acústica nem testa o seletor nativo de compartilhamento. O cabeçalho de clientes de teste distingue as origens simuladas para não desativar os limites de requisições do backend. Logs ficam em `logs/desktop-e2e-final.log`; capturas e traces ficam fora do Git em `samuschat-desktop/test-results`.
+
+Na primeira tentativa, o perfil test via Maven não carregou os recursos H2 e utilizou PostgreSQL local. A instância foi encerrada; os três usuários fictícios, um servidor, seu canal, duas mensagens e um arquivo criados por essa tentativa foram identificados e removidos com critérios exatos. As dez contas anteriores permaneceram no banco. A suíte aprovada foi repetida em H2; o launcher agora define explicitamente banco e integrações externas.
+
+A [regressão da nova ligação](REGRESSAO_LIGACAO_PC_2026-10-12.md) acrescenta captura nativa com dispositivo sintético e recuperação de NotSupported, além de prévia em chamadas individuais/canais e qualidade na engrenagem. As fixtures X-Forwarded-For são ignoradas sem proxy confiável; o perfil local aumenta o orçamento global para a regressão.
+
+## Limites da entrega
+
+Validação da melhoria de rascunhos em 12/10/2026: TypeScript/build e cenário Playwright com REST simulado. O cenário verifica isolamento entre canais e conversa privada, restauração de anexo, resposta de envio após troca de conversa, falha de envio e descarte ao recarregar. Essa rodada não repete a integração com API real ou mídia.
+
+Instalador, push desktop e interface de login Google ainda não integram este MVP. O adaptador REST de Google está disponível, mas o fluxo completo depende da configuração OAuth e da interface de autenticação correspondente. Recuperação exige SMTP disponível. Compartilhamento transmite vídeo da tela; áudio interno do dispositivo Android usa um canal de dados próprio que ainda não foi portado ao desktop. Microfone continua disponível na chamada. Canais em grupo agora têm áudio e compartilhamento no desktop.
+
+Chamadas e captura de tela exigem localhost ou HTTPS e permissões do navegador. Acesso entre redes diferentes depende de TURN alcançável. Validação de áudio físico, escolha real da tela/janela e interoperabilidade desktop–Android precisa ser realizada com os dispositivos; sucesso entre navegadores com mídia simulada não substitui esses testes.
