@@ -111,7 +111,7 @@ class ChatWebSocketControllerTests {
         assertThat(stompFailure.get()).isNull();
         assertThat(message.getId()).isEqualTo(1);
         assertThat(message.getContent()).isEqualTo("Mensagem em tempo real!");
-        assertThat(message.getSenderEmail()).isEqualTo("samus@test.com");
+        assertThat(message.getSenderEmail()).startsWith("usr_").doesNotContain("samus@test.com");
         assertThat(message.getSenderUsername()).isEqualTo("samus");
         assertThat(message.getChannelId()).isEqualTo(channelId);
         assertThat(message.getType()).isEqualTo("CHAT");

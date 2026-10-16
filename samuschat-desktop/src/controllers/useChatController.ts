@@ -23,7 +23,7 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
   const selected = useRef(conversation); selected.current = conversation;
   const working = useRef(false);
   const errorRef = useRef(onError); errorRef.current = onError;
-  const available: Conversation[] = serverId === null ? contacts.map(item => ({ id: `dm:${item.email}`, name: item.username, description: item.email, contact: item.email })) :
+  const available: Conversation[] = serverId === null ? contacts.map(item => ({ id: `dm:${item.email}`, name: item.username, description: 'Conversa privada', contact: item.email })) :
     (servers.find(item => item.id === serverId)?.channels ?? []).filter(channel => channel.type === 'TEXT').map(channel => ({ id: `channel:${channel.id}`, name: channel.name, description: 'Conversa do servidor', channelId: channel.id, serverId }));
   const conversations = available.filter(item => [item.name, item.contact ?? ''].some(value => value.toLocaleLowerCase('pt-BR').includes(query.toLocaleLowerCase('pt-BR'))));
   async function refresh() {
@@ -59,14 +59,14 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
     };
     setLoading(true); void sync(true);
     let client: Client | undefined;
-    if (current.channelId !== undefined) {
+    if (current.channelId !== undefined || current.contact) {
       setConnection('Conectando');
       const url = new URL('/ws/websocket', window.location.href); url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
       client = new Client({ brokerURL: url.href, connectHeaders: { Authorization: `Bearer ${api.token}` }, reconnectDelay: 3000, connectionTimeout: 10000,
         onConnect: () => {
           if (!alive) return; connected = true; setConnection('Ao vivo');
-          client!.subscribe(`/topic/channel/${current.channelId}`, event => {
-            try { const item = JSON.parse(event.body) as ApiMessage; if (alive && item.id !== undefined) setMessages(previous => item.type === 'DELETE' ? previous.filter(existing => existing.id !== item.id) : mergeApiMessages(previous, [item])); }
+          client!.subscribe(current.channelId !== undefined ? `/topic/channel/${current.channelId}` : '/user/queue/direct-messages', event => {
+            try { const item = JSON.parse(event.body) as ApiMessage; if (alive && item.id !== undefined && (current.channelId !== undefined || (item.senderEmail === (user.publicId ?? user.email) && item.recipientEmail === current.contact) || (item.senderEmail === current.contact && item.recipientEmail === (user.publicId ?? user.email)))) setMessages(previous => item.type === 'DELETE' ? previous.filter(existing => existing.id !== item.id) : mergeApiMessages(previous, [item])); }
             catch { if (alive) void sync(); }
           }); void sync();
         },
@@ -74,8 +74,10 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
         onStompError: () => { connected = false; if (alive) setConnection('Atualização periódica'); },
       }); client.activate();
     } else setConnection('Atualização periódica');
+    const offline = () => { connected = false; if (alive) setConnection('Reconectando'); client?.forceDisconnect(); };
+    window.addEventListener('offline', offline);
     const timer = window.setInterval(() => { if (!connected) void sync(); }, 3000);
-    return () => { alive = false; abort.abort(); clearInterval(timer); void client?.deactivate(); };
+    return () => { alive = false; window.removeEventListener('offline', offline); abort.abort(); clearInterval(timer); void client?.deactivate(); };
   }, [api, conversation?.id]);
   async function loadOlder() {
     if (!conversation || loading || !hasOlder) return;
@@ -116,6 +118,6 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
   async function deleteMessage(id: number) { const current = conversation; if (current?.channelId === undefined) return false; return run(async () => { await api.deleteMessage(current.channelId!, id); if (selected.current?.id === current.id) setMessages(previous => previous.filter(item => item.id !== id)); }); }
   function hasDraft(id: string) { const saved = drafts.current.get(id); return Boolean(saved && (saved.text || saved.file)); }
   async function loadAttachment(url: string) { try { return await api.attachment(url); } catch (problem) { errorRef.current(problem); return null; } }
-  return { loadAttachment, user, saveAppearance, profileMedia, saveServerAppearance, serverMedia, members, loadMembers, updateRole, removeMember, deleteMessage, hasDraft, servers, serverId, conversations, conversation, messages, draft, setDraft: updateDraft, query, setQuery, profile: { name: user.username, status: user.email }, profileOpen, setProfileOpen, selectArea, selectConversation, sendMessage, saveProfile, createServer, joinServer, createChannel, busy, loading, connection, hasOlder, loadOlder, file, chooseFile, refresh: () => run(refresh) };
+  return { contacts, loadAttachment, user, saveAppearance, profileMedia, saveServerAppearance, serverMedia, members, loadMembers, updateRole, removeMember, deleteMessage, hasDraft, servers, serverId, conversations, conversation, messages, draft, setDraft: updateDraft, query, setQuery, profile: { name: user.username, status: user.publicId ?? user.email }, profileOpen, setProfileOpen, selectArea, selectConversation, sendMessage, saveProfile, createServer, joinServer, createChannel, busy, loading, connection, hasOlder, loadOlder, file, chooseFile, refresh: () => run(refresh) };
 }
 export type ChatController = ReturnType<typeof useChatController>;

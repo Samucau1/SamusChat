@@ -53,15 +53,16 @@ fun CallPanel(model: CallViewModel) {
         onDispose { owner.lifecycle.removeObserver(observer) }
     }
     state.call?.let { call ->
+        val peerName = state.contacts.firstOrNull { it.email == call.peer(model.email) }?.username ?: "Participante"
         Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false, usePlatformDefaultWidth = false)) {
             Surface(Modifier.fillMaxSize(), color = CallBackground, contentColor = Color.White) {
                 BoxWithConstraints(Modifier.fillMaxSize().systemBarsPadding()) {
                     Column(Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + maxHeight * 0.15f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            Text(call.peer(model.email), style = MaterialTheme.typography.titleLarge)
+                            Text(peerName, style = MaterialTheme.typography.titleLarge)
                             Text(when { state.connected -> "Em chamada"; call.state == "RINGING" -> if (call.callee == model.email) "Chamada recebida" else "Chamando…"; else -> "Conectando…" })
                             state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                            CallParticipant(call.peer(model.email), if (state.connected) "Em chamada" else "Aguardando conexão", state.remoteSharing)
+                            CallParticipant(peerName, if (state.connected) "Em chamada" else "Aguardando conexão", state.remoteSharing)
                             model.rtc?.let { engine ->
                                 if (state.sharing) {
                                     CallParticipant("Sua tela", "Prévia da transmissão", sharing = true) {
@@ -71,8 +72,8 @@ fun CallPanel(model: CallViewModel) {
                                     }
                                 }
                                 if (state.remoteSharing) video?.let { track ->
-                                    CallParticipant(call.peer(model.email), "Transmitindo tela", sharing = true) {
-                                        Text("Tela de ${call.peer(model.email)}", style = MaterialTheme.typography.labelMedium)
+                                    CallParticipant(peerName, "Transmitindo tela", sharing = true) {
+                                        Text("Tela de ${peerName}", style = MaterialTheme.typography.labelMedium)
                                         ScreenShareVideo(track, engine.egl.eglBaseContext,
                                             Modifier.fillMaxWidth().height(240.dp))
                                     }

@@ -4,7 +4,7 @@ data class ApiResponse<T>(val success: Boolean, val message: String?, val data: 
 data class LoginRequest(val email: String, val password: String)
 data class RegisterRequest(val username: String, val email: String, val password: String)
 data class TokenData(val token: String, val refreshToken: String? = null)
-data class User(val id: Long, val username: String, val email: String, val avatarUrl: String? = null, val bannerUrl: String? = null, val backgroundUrl: String? = null, val accentColor: String? = null, val bio: String? = null)
+data class User(val id: Long, val username: String, val email: String, val avatarUrl: String? = null, val bannerUrl: String? = null, val backgroundUrl: String? = null, val accentColor: String? = null, val bio: String? = null, val publicId: String? = null)
 data class Server(val id: Long, val name: String, val description: String?, val ownerEmail: String, val channels: List<Channel>, val createdAt: String, val iconUrl: String? = null, val bannerUrl: String? = null, val backgroundUrl: String? = null, val accentColor: String? = null)
 data class Channel(val id: Long, val name: String, val type: String, val createdAt: String)
 data class ServerRequest(val name: String, val description: String?)

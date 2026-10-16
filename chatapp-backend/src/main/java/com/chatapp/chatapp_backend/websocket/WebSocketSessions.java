@@ -19,6 +19,12 @@ public class WebSocketSessions implements ChannelInterceptor {
     private final JwtUtil jwt;
     private final ChannelRepository channels;
     private final PermissionService permissions;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.chatapp.chatapp_backend.security.PublicIdentityService identities;
+    private Message<?> external(Message<?> message) {
+        if (identities == null || !(message.getPayload() instanceof byte[] bytes)) return message;
+        return org.springframework.messaging.support.MessageBuilder.createMessage(identities.externalFrame(bytes), message.getHeaders());
+    }
     public void connect(String id, String email, String token) { if (id != null) sessions.put(id, new Session(email, token)); }
     @EventListener public void disconnect(SessionDisconnectEvent event) { sessions.remove(event.getSessionId()); }
     public boolean valid(String id) { var session = sessions.get(id); return session != null && jwt.isTokenValid(session.token); }
@@ -27,8 +33,10 @@ public class WebSocketSessions implements ChannelInterceptor {
         String id = SimpMessageHeaderAccessor.getSessionId(message.getHeaders());
         var session = id == null ? null : sessions.get(id);
         String destination = SimpMessageHeaderAccessor.getDestination(message.getHeaders());
-        if (session == null || !jwt.isTokenValid(session.token) || destination == null || !destination.matches("/topic/channel/[0-9]+")) return null;
+        if (session == null || !jwt.isTokenValid(session.token) || destination == null) return null;
+        if (destination.equals("/queue/direct-messages-user" + id)) return external(message);
+        if (!destination.matches("/topic/channel/[0-9]+")) return null;
         var target = channels.findById(Long.valueOf(destination.substring("/topic/channel/".length())));
-        return target.isPresent() && permissions.isMember(target.get().getServer().getId(), session.email) ? message : null;
+        return target.isPresent() && permissions.isMember(target.get().getServer().getId(), session.email) ? external(message) : null;
     }
 }

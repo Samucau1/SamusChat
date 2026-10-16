@@ -15,8 +15,12 @@ import java.util.Map;
 public class GoogleAuthController {
     private final GoogleAuthService auth;
     private final com.chatapp.chatapp_backend.service.AuthService sessions;
-    public record GoogleRequest(String idToken,String password) {}
-    public record GisRequest(String credential, @JsonProperty("g_csrf_token") String csrfToken, String password) {}
+    public record GoogleRequest(String idToken,String password) {
+        @Override public String toString() { return "GoogleRequest[redacted]"; }
+    }
+    public record GisRequest(String credential, @JsonProperty("g_csrf_token") String csrfToken, String password) {
+        @Override public String toString() { return "GisRequest[redacted]"; }
+    }
 
     // Native Credential Manager sends JSON and does not authenticate using cookies.
     @PostMapping(value="/google", consumes=MediaType.APPLICATION_JSON_VALUE)

@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.samuschat.SamusChatApplication
 import com.samuschat.data.model.*
 import com.samuschat.data.repository.data
@@ -29,14 +30,19 @@ fun DirectConversation(app: SamusChatApplication, email: String, contact: CallCo
     var loadingOlder by remember { mutableStateOf(false) }
     var oldestPage by remember { mutableStateOf(0) }
     var hasOlder by remember { mutableStateOf(false) }
+    var live by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val session by app.tokens.session.collectAsStateWithLifecycle(initialValue = null)
     fun merge(incoming: List<DirectMessage>) {
-        messages = (messages + incoming).associateBy { it.id }.values.sortedByDescending { it.id }
+        messages = mergeDirectMessages(messages, incoming)
     }
-    LaunchedEffect(contact.email, lifecycle) {
+    LaunchedEffect(contact.email, lifecycle, session?.token) {
+        val token = session?.token ?: return@LaunchedEffect
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            while (isActive) {
+            val socket = DirectMessageSocket()
+            var connected = false
+            suspend fun sync() {
                 try {
                     val latest = app.api.directMessages(app.tokens.authorization(), contact.email, 0).data()
                     merge(latest)
@@ -44,8 +50,21 @@ fun DirectConversation(app: SamusChatApplication, email: String, contact: CallCo
                     error = null
                 } catch (cancelled: CancellationException) { throw cancelled }
                 catch (failure: Exception) { error = failure.message ?: "Não foi possível atualizar a conversa" }
-                delay(3000)
             }
+            try {
+                while (isActive) {
+                    if (!connected) {
+                        sync()
+                        socket.connect(token,
+                            onMessage = { message -> launch {
+                                if (belongsToDirectConversation(message, email, contact.email)) merge(listOf(message))
+                            } },
+                            onOpen = { launch { connected = true; live = true; sync() } },
+                            onClose = { launch { connected = false; live = false } })
+                    }
+                    delay(3000)
+                }
+            } finally { live = false; socket.disconnect() }
         }
     }
     Column(Modifier.fillMaxSize().imePadding()) {
@@ -53,7 +72,7 @@ fun DirectConversation(app: SamusChatApplication, email: String, contact: CallCo
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar aos amigos") }
             Column(Modifier.weight(1f).padding(12.dp)) {
                 Text(contact.username, style = MaterialTheme.typography.titleLarge)
-                Text(contact.email, style = MaterialTheme.typography.bodySmall)
+                Text(if (live) "Ao vivo" else "Reconectando", style = MaterialTheme.typography.labelSmall)
             }
             FriendCallButton(calls, contact)
         }

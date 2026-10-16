@@ -1,5 +1,7 @@
 # Regressão HTTP com Postman / Newman
 
+Em 16/10/2026, a validação de destinatário privado passou a comparar `publicId` e conferir ausência de emails. A coleção continua com 143 itens; uma consulta auxiliar ao perfil autenticado resulta em **144 requisições e 248 verificações**, aprovadas na API H2 isolada. Veja [privacidade](../PRIVACIDADE_CONTAS_2026-10-16.md).
+
 Atualização de 12/10/2026: coleção compartilhada com **143 requisições e 247 verificações**, aprovada nos ambientes PC e Android. Cada execução cria contas, servidores e canais fictícios. Execute a coleção inteira, na ordem, exclusivamente em uma API descartável. Não exporte tokens preenchidos para o Git.
 
 Na raiz, inicie a API em um terminal:

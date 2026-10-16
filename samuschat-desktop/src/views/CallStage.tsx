@@ -88,9 +88,10 @@ function Stage({ title, status, participants, preferences, locked, feedback, chi
   </section>;
 }
 
-export function DirectCallPanel({ calls, preferences, email, name, avatarUrl }: { calls: CallController; preferences: ScreenPreferences; email: string; name: string; avatarUrl?: string }) {
+export function DirectCallPanel({ calls, contacts, preferences, email, name, avatarUrl }: { contacts: {email: string; username: string}[]; calls: CallController; preferences: ScreenPreferences; email: string; name: string; avatarUrl?: string }) {
   const call = calls.call; if (!call) return null;
-  const contact = call.caller === email ? call.callee : call.caller;
+  const peer = call.caller === email ? call.callee : call.caller;
+  const contact = contacts.find(item => item.email === peer)?.username ?? 'Participante';
   return <Stage title="Chamada" status={calls.status} preferences={preferences} locked={calls.sharing || calls.screenStarting} feedback={calls.feedback}
     participants={[{ id: 'self', name, self: true, avatarUrl, stream: calls.preview, sharing: !!calls.preview }, { id: 'remote', name: contact, stream: calls.remote, sharing: calls.remoteSharing }]}>
     {call.state === 'RINGING' && call.callee === email ? <><button className="primary call-accept" disabled={calls.busy} onClick={() => { void calls.accept(); }}>Aceitar</button><Action label="Recusar" icon="phone" danger onClick={() => { void calls.end(true); }} /></> : <>

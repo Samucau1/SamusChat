@@ -1,11 +1,11 @@
-export interface User { id: number; username: string; email: string; avatarUrl?: string; bannerUrl?: string; backgroundUrl?: string; accentColor?: string; bio?: string }
+export interface User { publicId?: string; id: number; username: string; email: string; avatarUrl?: string; bannerUrl?: string; backgroundUrl?: string; accentColor?: string; bio?: string }
 export interface Channel { id: number; name: string; type: string }
 export interface ApiServer { id: number; name: string; description?: string; ownerEmail?: string; channels: Channel[]; iconUrl?: string; bannerUrl?: string; backgroundUrl?: string; accentColor?: string }
 export interface Contact { email: string; username: string }
 export type MemberRole = 'ADMIN' | 'MOD' | 'USER';
 export interface Member { id: number; userEmail: string; username: string; role: MemberRole; joinedAt: string }
 export interface VoiceRoom { channelId: number; participants: Contact[]; sessions: CallSession[]; capacity: number }
-export interface ApiMessage { id: number; content: string | null; senderEmail: string; senderUsername: string; createdAt: string; attachmentUrl?: string; attachmentType?: string; type?: string }
+export interface ApiMessage { recipientEmail?: string; id: number; content: string | null; senderEmail: string; senderUsername: string; createdAt: string; attachmentUrl?: string; attachmentType?: string; type?: string }
 export interface CallSession { id: string; caller: string; callee: string; state: string; offer: string | null; answer: string | null; channelId: number | null }
 export class ApiError extends Error { constructor(message: string, public status: number) { super(message); } }
 export class ApiRepository {

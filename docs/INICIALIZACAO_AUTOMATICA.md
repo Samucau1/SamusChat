@@ -25,3 +25,7 @@ Logs da API: `logs/api.stdout.log` e `logs/api.stderr.log`. Limites de espera: D
 Desde 14/10/2026 o fluxo padr?o usa celular USB. Relat?rios anteriores de emulador permanecem como hist?rico; scripts de chamadas entre emuladores s?o ferramentas legadas fora do launcher.
 
 Valida??o em 14/10/2026: moto g(7) play com Android 10 reconhecido por USB; testes do seletor e dos probes aprovados; 35 testes Android sem falhas; build e lint aprovados. Execu??o completa do launcher confirmou Docker, PostgreSQL, Redis, API, encaminhamento USB, instala??o com preserva??o de dados, conectividade TCP a partir do celular e abertura da MainActivity. Login, chamadas e transmiss?o no aparelho n?o foram exercitados nesta rodada.
+
+## Computador
+
+Dê dois cliques em `iniciar-samuschat-pc.cmd`, na raiz, ou execute `./iniciar-samuschat-pc.ps1`. O launcher PC reutiliza os serviços do celular, prepara o que falta e abre o navegador. Veja [instruções e validação](LAUNCHER_PC.md).

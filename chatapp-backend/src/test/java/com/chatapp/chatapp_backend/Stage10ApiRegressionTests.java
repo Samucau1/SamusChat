@@ -41,7 +41,7 @@ class Stage10ApiRegressionTests {
         long serverId = server.path("id").asLong();
         assertThat(server.path("name").asText()).isEqualTo("Servidor");
         assertThat(server.path("description").asText()).isEqualTo("Descricao");
-        assertThat(server.path("ownerEmail").asText()).isEqualTo("owner@test.com");
+        assertThat(server.path("ownerEmail").asText()).startsWith("usr_").doesNotContain("owner@test.com");
         assertThat(server.path("channels").get(0).path("name").asText()).isEqualTo("geral");
         assertThat(server.path("channels").get(0).path("type").asText()).isEqualTo("TEXT");
         success(api.perform(post("/api/servers/{id}/join", serverId).header("Authorization", member)));
@@ -69,7 +69,7 @@ class Stage10ApiRegressionTests {
         long channel = createServer(owner).path("channels").get(0).path("id").asLong();
         JsonNode first = data(success(send(owner, channel, "  primeira  "))
                 .andExpect(jsonPath("$.data.content").value("primeira"))
-                .andExpect(jsonPath("$.data.senderEmail").value("owner@test.com"))
+                .andExpect(jsonPath("$.data.senderEmail").value(org.hamcrest.Matchers.startsWith("usr_")))
                 .andExpect(jsonPath("$.data.senderUsername").value("owner"))
                 .andExpect(jsonPath("$.data.type").value("CHAT")));
         JsonNode second = data(success(send(owner, channel, "segunda")));
