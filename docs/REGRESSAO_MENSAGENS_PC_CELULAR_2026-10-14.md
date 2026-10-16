@@ -1,5 +1,7 @@
 # Mensagens privadas PC ↔ celular — 14/10/2026
 
+Nota de 16/10/2026: este diagnóstico é histórico. A exibição de emails descrita abaixo foi substituída por nomes e identificadores públicos; veja [correção de privacidade](PRIVACIDADE_CONTAS_2026-10-16.md).
+
 O usuário relatou mensagens ausentes nos dois sentidos. A conta conectada no Android foi confirmada como `testecell@gmail.com`; o usuário inicialmente informou `amigo.regressao.0510@test.com` no PC e depois corrigiu: o PC estava em `samus.regressao.0510@test.com`.
 
 A leitura dos metadados do PostgreSQL encontrou duas mensagens de `testecell@gmail.com` para `amigo.regressao.0510@test.com` e uma de `samus.regressao.0510@test.com` para `testecell@gmail.com`. A conversa aberta no celular era com `samus_regressao_0510`, compatível com a conta posteriormente confirmada no PC. As duas mensagens enviadas pelo celular haviam sido direcionadas a amigo, e não a samus. Não foi necessário ler ou copiar o conteúdo das mensagens para o diagnóstico.

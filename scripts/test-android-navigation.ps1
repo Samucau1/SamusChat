@@ -49,7 +49,7 @@ function Assert-Text([string]$Text) { $null = Find-Node $Text }
 
 # Requires a logged-in test account. Never changes credentials or profile data.
 $initialUi = Read-Ui
-if ($initialUi.SelectSingleNode('//node[@content-desc="Fechar servidores"]')) { Tap-Node 'Fechar servidores' }
+if ($initialUi.SelectSingleNode('//node[@content-desc="Fechar servidores"]')) { Tap-Node 'Amigos' }
 Tap-Node 'Amigos'
 Assert-Text 'Alex'
 Tap-Node 'Alex'
@@ -67,8 +67,48 @@ Assert-Text 'Seu perfil'
 Assert-Text 'Escolher foto ou GIF'
 Tap-Node 'Servidores'
 Assert-Text 'SEUS SERVIDORES'
-Tap-Node 'Fechar servidores'
 Tap-Node 'Amigos'
+Tap-Node 'Amigos'
+
+# Gesture contract: semantic selection, screen-relative coordinates and bounded polling.
+function Assert-Page([string]$Label) {
+    $node = Find-Node $Label
+    $selected = $node.SelectSingleNode('ancestor-or-self::node[@selected="true"][1]')
+    if (-not $selected) { throw "Navigation item is not selected: $Label" }
+}
+function Swipe-Page([bool]$Left, [int]$Duration = 350) {
+    $xml = Read-Ui
+    $bounds = [regex]::Matches($xml.hierarchy.node.bounds, '\d+') | ForEach-Object { [int]$_.Value }
+    if ($bounds.Count -ne 4) { throw 'Unable to resolve screen bounds.' }
+    $width = $bounds[2] - $bounds[0]; $height = $bounds[3] - $bounds[1]
+    $from = [int]($bounds[0] + $width * 0.8); $to = [int]($bounds[0] + $width * 0.2)
+    $y = [int]($bounds[1] + $height * 0.45)
+    if (-not $Left) { $temp = $from; $from = $to; $to = $temp }
+    Invoke-Adb @('shell','input','swipe',"$from","$y","$to","$y","$Duration") | Out-Null
+}
+foreach ($duration in @(250, 500)) {
+    Tap-Node 'Servidores'
+    Assert-Page 'Servidores'
+    $xml = Read-Ui
+    if ($xml.SelectSingleNode('//node[@content-desc="Fechar servidores"]')) { throw 'Removed close header still exists.' }
+    Swipe-Page $false $duration
+    Assert-Page 'Servidores'
+    Swipe-Page $true $duration
+    Assert-Page 'Amigos'
+    Assert-Text 'Alex'
+    Swipe-Page $true $duration
+    Assert-Page 'Perfil'
+    Assert-Text 'Seu perfil'
+    Swipe-Page $true $duration
+    Assert-Page 'Perfil'
+    Swipe-Page $false $duration
+    Assert-Page 'Amigos'
+    Swipe-Page $false $duration
+    Assert-Page 'Servidores'
+}
+Tap-Node 'Perfil'
+Invoke-Adb @('shell','input','keyevent','4') | Out-Null
+Assert-Page 'Amigos'
 
 # Resolve coordinates from actual layout rather than assuming a screen resolution.
 function Get-Point([string]$Text) {
@@ -82,8 +122,8 @@ $friends = Get-Point 'Amigos'
 $profile = Get-Point 'Perfil'
 $servers = Get-Point 'Servidores'
 Tap-Node 'Servidores'
-$close = Get-Point 'Fechar servidores'
-Tap-Node 'Fechar servidores'
+$close = Get-Point 'Amigos'
+Tap-Node 'Amigos'
 $appPid = (Invoke-Adb @('shell','pidof','com.samuschat')).Trim()
 $started = Get-Date
 $commands = @('i=0', "while [ `$i -lt $Cycles ]; do",
@@ -103,6 +143,6 @@ $crashes = Invoke-Adb @('logcat','-d','-b','crash',"--pid=$appPid")
 if ($crashes -match 'FATAL EXCEPTION|ANR in com.samuschat') { throw 'Crash detected.' }
 $result = [ordered]@{ passed = $true; cycles = $Cycles; stressTouches = $Cycles * 4;
     elapsedSeconds = [math]::Round(((Get-Date) - $started).TotalSeconds, 1);
-    serial = $Serial; processId = $appPid; checked = @('friends','demo conversation','profile','server drawer','same process after stress','responsive after stress') }
+    serial = $Serial; processId = $appPid; checked = @('friends','demo conversation','profile','server page','bidirectional gestures at 250/500ms','page boundaries','system back','close header absent','same process after stress','responsive after stress') }
 $result | ConvertTo-Json | Set-Content -Encoding UTF8 (Join-Path $output 'result.json')
 $result | ConvertTo-Json

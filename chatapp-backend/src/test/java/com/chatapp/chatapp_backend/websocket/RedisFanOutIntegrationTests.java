@@ -44,6 +44,15 @@ class RedisFanOutIntegrationTests {
             verify(firstClient, timeout(5000).times(1)).convertAndSend("/topic/channel/91", payload);
             verify(secondClient, timeout(5000).times(1)).convertAndSend("/topic/channel/91", payload);
             verify(firstClient, after(200).times(1)).convertAndSend("/topic/channel/91", payload);
+            var direct = new com.chatapp.chatapp_backend.entity.DirectMessage();
+            direct.setId(92L); direct.setSenderEmail("first@test.com"); direct.setRecipientEmail("second@test.com");
+            direct.setSenderUsername("first"); direct.setContent("Privada entre instâncias 🚀");
+            new DirectMessageBroadcaster(firstClient, beans.getBeanProvider(StringRedisTemplate.class), mapper)
+                    .created(new DirectMessageCreatedEvent(direct));
+            for (var target : new SimpMessagingTemplate[]{firstClient, secondClient}) {
+                verify(target, timeout(5000).times(1)).convertAndSendToUser("first@test.com", DirectMessageBroadcaster.QUEUE, direct);
+                verify(target, timeout(5000).times(1)).convertAndSendToUser("second@test.com", DirectMessageBroadcaster.QUEUE, direct);
+            }
             verifyNoMoreInteractions(firstClient, secondClient);
         } finally {
             first.destroy();

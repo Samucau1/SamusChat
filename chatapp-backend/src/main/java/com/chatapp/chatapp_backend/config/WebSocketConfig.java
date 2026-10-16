@@ -24,7 +24,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // Prefixo dos tópicos que os clientes vão ESCUTAR
         // Exemplo: cliente se inscreve em /topic/channel/1
         // e recebe todas as mensagens daquele canal
-        registry.enableSimpleBroker("/topic");
+        registry.enableSimpleBroker("/topic", "/queue");
 
         // Prefixo das mensagens enviadas pelo cliente AO servidor
         // Exemplo: cliente envia para /app/channel/1

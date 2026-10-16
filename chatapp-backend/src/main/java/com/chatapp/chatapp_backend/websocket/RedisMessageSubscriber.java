@@ -24,6 +24,13 @@ public class RedisMessageSubscriber implements MessageListener {
     @Override
     public void onMessage(Message message, byte[] pattern) {
         try {
+            if (DirectMessageBroadcaster.REDIS_CHANNEL.equals(new String(message.getChannel(), StandardCharsets.UTF_8))) {
+                var direct = objectMapper.readValue(message.getBody(), com.chatapp.chatapp_backend.entity.DirectMessage.class);
+                if (direct.getId() == null || direct.getSenderEmail() == null || direct.getRecipientEmail() == null) return;
+                messaging.convertAndSendToUser(direct.getSenderEmail(), DirectMessageBroadcaster.QUEUE, direct);
+                messaging.convertAndSendToUser(direct.getRecipientEmail(), DirectMessageBroadcaster.QUEUE, direct);
+                return;
+            }
             MessageResponse payload = objectMapper.readValue(message.getBody(), MessageResponse.class);
             String channel = new String(message.getChannel(), StandardCharsets.UTF_8);
             if (payload.getChannelId() == null || !channel.equals(CHANNEL_PREFIX + payload.getChannelId())) {

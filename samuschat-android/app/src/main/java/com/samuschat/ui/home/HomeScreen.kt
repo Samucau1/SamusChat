@@ -1,6 +1,9 @@
 package com.samuschat.ui.home
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,21 +35,44 @@ import com.samuschat.ui.call.CallViewModel
 import com.samuschat.ui.call.CallContact
 import com.samuschat.ui.call.FriendCallButton
 import com.samuschat.ui.call.CallRoomScreen
+import com.samuschat.data.repository.data
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     app: SamusChatApplication,
     email: String,
     servers: ServerViewModel,
     onLogout: () -> Unit,
-    channelContent: @Composable (Long, String, () -> Unit) -> Unit
+    channelContent: @Composable (Long, String, String, () -> Unit) -> Unit
 ) {
-    val calls: CallViewModel = viewModel(key = "calls-$email", factory = object : ViewModelProvider.Factory {
+    var publicId by rememberSaveable(email) { mutableStateOf<String?>(null) }
+    var identityError by remember { mutableStateOf(false) }
+    var retry by remember { mutableStateOf(0) }
+    LaunchedEffect(email, retry) {
+        try {
+            publicId = app.api.profile(app.tokens.authorization()).data().publicId
+            identityError = publicId == null
+        } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+        catch (_: Exception) { identityError = true }
+    }
+    val identity = publicId
+    if (identity == null) {
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            if (identityError) {
+                Text("Não foi possível carregar sua conta. Confira a conexão com a API.")
+                TextButton(onClick = { identityError = false; retry++ }) { Text("Tentar novamente") }
+                TextButton(onClick = onLogout) { Text("Sair da conta") }
+            } else CircularProgressIndicator()
+        }
+        return
+    }
+    val calls: CallViewModel = viewModel(key = "calls-$identity", factory = object : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T = CallViewModel(app, email) as T
+        override fun <T : ViewModel> create(modelClass: Class<T>): T = CallViewModel(app, identity) as T
     })
-    var tab by rememberSaveable { mutableStateOf("friends") }
+    val pager = rememberPagerState(initialPage = 1, pageCount = { 3 })
+    val tab = listOf("servers", "friends", "profile")[pager.currentPage]
     var channelId by rememberSaveable { mutableStateOf<Long?>(null) }
     var channelName by rememberSaveable { mutableStateOf("") }
     var channelType by rememberSaveable { mutableStateOf("TEXT") }
@@ -55,66 +81,51 @@ fun HomeScreen(
     val callState by calls.state.collectAsStateWithLifecycle()
     var demoChat by rememberSaveable { mutableStateOf(false) }
     var demoMessages by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
-    val drawer = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    BackHandler(drawer.isOpen || tab != "friends" || demoChat || contactEmail != null) {
-        if (drawer.isOpen) scope.launch { drawer.close() }
-        else { tab = "friends"; demoChat = false; contactEmail = null }
+    fun navigate(page: Int) { scope.launch { pager.animateScrollToPage(page) } }
+    BackHandler(pager.currentPage != 1 || demoChat || contactEmail != null) {
+        demoChat = false; contactEmail = null
+        navigate(1)
     }
-    ModalNavigationDrawer(
-        drawerState = drawer,
-        gesturesEnabled = drawer.isOpen,
-        drawerContent = {
-            ModalDrawerSheet(drawerContainerColor = PanelBackground) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    IconButton(onClick = { scope.launch { drawer.close() } }) {
-                        Icon(Icons.Default.Close, "Fechar servidores")
-                    }
-                }
-                ServerListScreen(servers, email) { id, name, type ->
-                    channelId = id; channelName = name; channelType = type; tab = "servers"
-                    scope.launch { drawer.close() }
-                }
+    Scaffold(
+        modifier = Modifier.imePadding().dismissKeyboardOnOutsideTap(),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        bottomBar = {
+            if (!WindowInsets.isImeVisible) {
+            NavigationBar(containerColor = RailBackground, windowInsets = WindowInsets(0, 0, 0, 0)) {
+                NavigationBarItem(selected = tab == "servers",
+                    onClick = { channelId = null; navigate(0) },
+                    icon = { Icon(Icons.Default.Menu, null) }, label = { Text("Servidores") })
+                NavigationBarItem(selected = tab == "friends",
+                    onClick = { navigate(1); demoChat = false; contactEmail = null; calls.refreshContacts() },
+                    icon = { Icon(Icons.Default.Face, null) }, label = { Text("Amigos") })
+                NavigationBarItem(selected = tab == "profile",
+                    onClick = { navigate(2) },
+                    icon = { Icon(Icons.Default.Person, null) }, label = { Text("Perfil") })
+            }
             }
         }
-    ) {
-        Scaffold(
-            modifier = Modifier.imePadding().dismissKeyboardOnOutsideTap(),
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            bottomBar = {
-                if (!WindowInsets.isImeVisible) {
-                NavigationBar(containerColor = RailBackground, windowInsets = WindowInsets(0, 0, 0, 0)) {
-                    NavigationBarItem(selected = drawer.isOpen || tab == "servers",
-                        onClick = { scope.launch { drawer.open() } },
-                        icon = { Icon(Icons.Default.Menu, null) }, label = { Text("Servidores") })
-                    NavigationBarItem(selected = tab == "friends" && !drawer.isOpen,
-                        onClick = { tab = "friends"; demoChat = false; contactEmail = null; calls.refreshContacts() },
-                        icon = { Icon(Icons.Default.Face, null) }, label = { Text("Amigos") })
-                    NavigationBarItem(selected = tab == "profile" && !drawer.isOpen,
-                        onClick = { tab = "profile" },
-                        icon = { Icon(Icons.Default.Person, null) }, label = { Text("Perfil") })
-                }
-                }
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).background(ChatBackground)) {
+            CallPanel(calls)
+            callState.error?.let { Text(it, Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.error) }
+            callState.room?.let { room ->
+                if (tab != "servers" || channelId != room.channelId) TextButton(onClick = { channelId = room.channelId; channelName = callState.roomName; channelType = "VOICE"; navigate(0) }) { Text("Voltar à chamada: ${callState.roomName}") }
             }
-        ) { padding ->
-            Column(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).background(ChatBackground)) {
-                CallPanel(calls)
-                callState.error?.let { Text(it, Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.error) }
-                callState.room?.let { room ->
-                    if (tab != "servers" || channelId != room.channelId) TextButton(onClick = { channelId = room.channelId; channelName = callState.roomName; channelType = "VOICE"; tab = "servers" }) { Text("Voltar à chamada: ${callState.roomName}") }
+            HorizontalPager(state = pager, modifier = Modifier.weight(1f).fillMaxWidth(), key = { it }) { page ->
+            when {
+                page == 2 -> ProfileScreen(app, email) { calls.end(); onLogout() }
+                page == 0 && channelId != null && channelType == "VOICE" -> CallRoomScreen(calls, channelId!!, channelName) { channelId = null; navigate(0) }
+                page == 0 && channelId != null -> channelContent(channelId!!, channelName, identity) {
+                    channelId = null; navigate(0)
                 }
-                Box(Modifier.weight(1f)) {
-                when {
-                    tab == "profile" -> ProfileScreen(app, email) { calls.end(); onLogout() }
-                    tab == "servers" && channelId != null && channelType == "VOICE" -> CallRoomScreen(calls, channelId!!, channelName) { scope.launch { drawer.open() } }
-                    tab == "servers" && channelId != null -> channelContent(channelId!!, channelName) {
-                        scope.launch { drawer.open() }
-                    }
-                    demoChat -> DemoConversation(demoMessages, { demoMessages = ArrayList(demoMessages + it) }) { demoChat = false }
-                    contactEmail != null -> key(contactEmail) { DirectConversation(app, email, CallContact(contactEmail!!, contactName), calls) { contactEmail = null } }
-                    else -> FriendsScreen(email, callState.contacts, { contactEmail = it.email; contactName = it.username }, { calls.refreshContacts() }) { demoChat = true }
+                page == 0 -> ServerListScreen(servers, identity) { id, name, type ->
+                    channelId = id; channelName = name; channelType = type
                 }
-                }
+                demoChat -> DemoConversation(demoMessages, { demoMessages = ArrayList(demoMessages + it) }) { demoChat = false }
+                contactEmail != null -> key(contactEmail) { DirectConversation(app, identity, CallContact(contactEmail!!, contactName), calls) { contactEmail = null } }
+                else -> FriendsScreen(email, callState.contacts, { contactEmail = it.email; contactName = it.username }, { calls.refreshContacts() }) { demoChat = true }
+            }
             }
         }
     }
@@ -127,7 +138,6 @@ private fun FriendsScreen(email: String, contacts: List<CallContact>, onContact:
         item {
             Text("Amigos", style = MaterialTheme.typography.headlineLarge)
             Text("Seu próximo papo começa aqui.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("Conectado como $email", style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = onRefresh) { Text("Atualizar contatos") }
         }
         item {
@@ -162,7 +172,6 @@ private fun FriendsScreen(email: String, contacts: List<CallContact>, onContact:
                     InitialAvatar(contact.username)
                     Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                         Text(contact.username)
-                        Text(contact.email, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Abrir conversa com ${contact.username}")
                 }

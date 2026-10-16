@@ -1188,7 +1188,9 @@
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "pm.test('Envelope da API', () => pm.expect(pm.response.json().success).to.eql(true));",
                   "if (pm.response.code === 200) pm.collectionVariables.set('desktopPrivateId', pm.response.json().data.id);",
-                  "pm.test('Destinatario correto', () => pm.expect(pm.response.json().data.recipientEmail).to.eql('regressionb' + pm.collectionVariables.get('runId') + '@example.test'));"
+                  "const privateMessage = pm.response.json().data;",
+                  "pm.test('Emails nao expostos no privado', () => { pm.expect(privateMessage.senderEmail).to.match(/^usr_/); pm.expect(privateMessage.recipientEmail).to.match(/^usr_/); pm.expect(JSON.stringify(privateMessage)).not.to.include('@example.test'); });",
+                  "pm.sendRequest({ url: pm.variables.replaceIn('{{baseUrl}}/api/users/me'), method: 'GET', header: { Authorization: 'Bearer ' + pm.collectionVariables.get('tokenB') } }, (err, response) => { pm.test('Destinatario correto', () => { pm.expect(err).to.eql(null); pm.expect(response.code).to.eql(200); pm.expect(privateMessage.recipientEmail).to.eql(response.json().data.publicId); }); });"
                 ]
               }
             }

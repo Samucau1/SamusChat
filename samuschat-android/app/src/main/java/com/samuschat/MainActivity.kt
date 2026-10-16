@@ -54,10 +54,10 @@ class MainActivity : ComponentActivity() {
                                 composable("home") {
                                     val servers: ServerViewModel = viewModel(factory = factory { ServerViewModel(app) })
                                     com.samuschat.ui.home.HomeScreen(app, session!!.email, servers,
-                                        onLogout = { scope.launch { if (!ChatMessagingService.logout(app)) android.widget.Toast.makeText(this@MainActivity, "Não foi possível encerrar as sessões. Confira sua conexão.", android.widget.Toast.LENGTH_LONG).show() } }) { id, name, back ->
+                                        onLogout = { scope.launch { if (!ChatMessagingService.logout(app)) android.widget.Toast.makeText(this@MainActivity, "Não foi possível encerrar as sessões. Confira sua conexão.", android.widget.Toast.LENGTH_LONG).show() } }) { id, name, identity, back ->
                                         key(id) {
                                             val chat: ChatViewModel = viewModel(key = "chat-$id", factory = factory { ChatViewModel(app, id) })
-                                            ChatScreen(chat, name, session!!.email, back)
+                                            ChatScreen(chat, name, identity, back)
                                         }
                                     }
                                 }

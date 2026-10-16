@@ -23,6 +23,7 @@ import java.util.List;
 public class MemberController {
 
     private final MemberService memberService;
+    private final com.chatapp.chatapp_backend.security.PublicIdentityService identities;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<MemberResponse>>> getMembers(
@@ -36,6 +37,7 @@ public class MemberController {
             Authentication auth,
             @PathVariable Long serverId,
             @RequestBody UpdateRoleRequest request) {
+        request.setUserEmail(identities.resolve(request.getUserEmail()));
         MemberResponse response = memberService.updateRole(serverId, auth.getName(), request);
         return ResponseEntity.ok(ApiResponse.success(response, "Cargo atualizado com sucesso"));
     }
@@ -45,7 +47,7 @@ public class MemberController {
             Authentication auth,
             @PathVariable Long serverId,
             @PathVariable String email) {
-        memberService.removeMember(serverId, auth.getName(), email);
+        memberService.removeMember(serverId, auth.getName(), identities.resolve(email));
         return ResponseEntity.ok(ApiResponse.success(null, "Membro removido com sucesso"));
     }
 }

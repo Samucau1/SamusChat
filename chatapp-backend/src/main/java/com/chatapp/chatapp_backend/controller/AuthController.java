@@ -20,7 +20,9 @@ public class AuthController {
 
     private final AuthService authService;
 
-    public record RefreshRequest(String refreshToken) {}
+    public record RefreshRequest(String refreshToken) {
+        @Override public String toString() { return "RefreshRequest[redacted]"; }
+    }
 
     @PostMapping("/refresh")
     public ApiResponse<Map<String, String>> refresh(@RequestBody RefreshRequest request) {

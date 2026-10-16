@@ -1,5 +1,7 @@
 # SamusChat Desktop
 
+Para abrir tudo automaticamente, dê dois cliques em **`iniciar-samuschat-pc.cmd`**, na raiz, ou execute `./iniciar-samuschat-pc.ps1`. O launcher reutiliza a API já iniciada pelo celular, prepara o que falta e abre o navegador. Veja [uso e diagnóstico](../docs/LAUNCHER_PC.md).
+
 MVP para computador em TypeScript, React e CSS, organizado em MVC e integrado à mesma API Spring Boot usada pelo Android. A versão atual roda no navegador; o instalador desktop continua como etapa futura.
 
 Inicie a API na raiz com `./setup.ps1`. Em outro terminal, nesta pasta:

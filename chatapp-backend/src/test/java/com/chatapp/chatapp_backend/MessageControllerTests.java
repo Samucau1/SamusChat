@@ -76,7 +76,7 @@ class MessageControllerTests {
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.content").value("Ol\u00e1 pessoal!"))
                 .andExpect(jsonPath("$.data.senderUsername").value("samus"))
-                .andExpect(jsonPath("$.data.senderEmail").value("samus@test.com"))
+                .andExpect(jsonPath("$.data.senderEmail").value(org.hamcrest.Matchers.startsWith("usr_")))
                 .andExpect(jsonPath("$.data.channelId").value(channelId))
                 .andExpect(jsonPath("$.data.createdAt").exists())
                 .andReturn();

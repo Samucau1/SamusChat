@@ -16,7 +16,7 @@ async function viewer(page: Page) {
     draw(); const timer = setInterval(draw, 33), stream = canvas.captureStream(30), root = createRoot(container);
     const calls = { call: { caller: 'pc@example.test', callee: 'android@example.test', state: 'ACTIVE' }, status: 'Em chamada', remoteSharing: true, remote: stream,
       preview: null, sharing: false, muted: false, busy: false, screenStarting: false, feedback: null, toggleMute() {}, share() {}, end() {}, setPreviewVisible() {} };
-    const props = { calls, preferences: { profile: { width: 1600, height: 900, frameRate: 30 }, automatic: false }, email: 'pc@example.test', name: 'PC' };
+    const props = { calls, contacts: [{ email: 'android@example.test', username: 'Android' }], preferences: { profile: { width: 1600, height: 900, frameRate: 30 }, automatic: false }, email: 'pc@example.test', name: 'PC' };
     const render = () => root.render(React.createElement(DirectCallPanel, props)); render();
     (window as any).viewer = {
       size: (width: number, height: number) => { canvas.width = width; canvas.height = height; draw(); },
@@ -31,7 +31,7 @@ test('tela cheia nativa acompanha retrato → paisagem → retrato e oferece pre
   await viewer(page);
   try {
     await page.locator('.call-video').click();
-    await page.getByRole('button', { name: 'Tela cheia da transmissão de android@example.test', exact: true }).click();
+    await page.getByRole('button', { name: 'Tela cheia da transmissão de Android', exact: true }).click();
     await expect.poll(() => page.evaluate(() => (document.fullscreenElement as HTMLElement)?.dataset.participantId)).toBe('remote');
     await page.evaluate(() => (window as any).viewer.size(960, 456));
     await expect.poll(() => page.locator('.call-video').evaluate((video: HTMLVideoElement) => [video.videoWidth, video.videoHeight])).toEqual([960, 456]);
@@ -60,7 +60,7 @@ test('fim da transmissão fecha tela cheia e preserva painel da ligação', asyn
   await viewer(page);
   try {
     await page.locator('.call-video').click();
-    await page.getByRole('button', { name: 'Tela cheia da transmissão de android@example.test', exact: true }).click();
+    await page.getByRole('button', { name: 'Tela cheia da transmissão de Android', exact: true }).click();
     await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true);
     await page.evaluate(() => (window as any).viewer.stopSharing());
     await expect.poll(() => page.evaluate(() => document.fullscreenElement === null)).toBe(true);

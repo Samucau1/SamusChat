@@ -53,9 +53,35 @@ test('duas contas: criar/entrar em servidor, STOMP, anexo e canal novo', async (
 test('mensagem privada chega ao outro cliente e falha preserva rascunho', async ({ page, browser, request }) => {
   const a = await register(request, 'dm_a'); const b = await register(request, 'dm_b');
   const context = await browser.newContext({ extraHTTPHeaders: { 'X-Forwarded-For': clientIp() } }); const other = await context.newPage();
+  const received: string[] = [];
+  other.on('websocket', socket => socket.on('framereceived', frame => received.push(String(frame.payload))));
   try {
     await login(page, a.email); await login(other, b.email); await page.getByRole('button', { name: `@ ${b.name}`, exact: true }).click(); await other.getByRole('button', { name: `@ ${a.name}`, exact: true }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Ao vivo' })).toBeVisible();
+    await expect(other.getByRole('status').filter({ hasText: 'Ao vivo' })).toBeVisible();
+    const contactResponse = await request.get('/api/calls/contacts', { headers: { Authorization: `Bearer ${a.token}` } });
+    const contactBody = await contactResponse.text();
+    expect(contactResponse.ok()).toBeTruthy();
+    expect(contactBody).not.toContain(a.email); expect(contactBody).not.toContain(b.email);
+    expect(contactBody).toContain('usr_');
+    await expect(page.getByRole('navigation', { name: 'Conversas', exact: true })).not.toContainText(b.email);
+    await expect(page.locator('.chat-header')).not.toContainText(b.email);
+    // Forbid history refresh: the receiver must obtain the message over STOMP.
+    await other.route('**/api/direct-messages?*', async route => {
+      if (route.request().method() === 'GET') await route.abort(); else await route.continue();
+    });
     await page.getByLabel(/^Mensagem para/).fill('Privada entre computadores'); await page.getByLabel(/^Mensagem para/).press('Enter'); await expect(other.locator('.message p').filter({ hasText: 'Privada entre computadores' })).toHaveCount(1);
+    await expect.poll(() => received.some(frame => frame.startsWith('MESSAGE') && frame.includes('Privada entre computadores'))).toBe(true);
+    expect(received.filter(frame => frame.startsWith('MESSAGE')).every(frame => !frame.includes(a.email) && !frame.includes(b.email))).toBe(true);
+    await expect(page.locator('.message p').filter({ hasText: 'Privada entre computadores' })).toHaveCount(1);
+    await other.unroute('**/api/direct-messages?*');
+    await context.setOffline(true);
+    await expect(other.getByRole('status').filter({ hasText: 'Reconectando' })).toBeVisible();
+    await page.getByLabel(/^Mensagem para/).fill('Durante desconexao');
+    await page.getByLabel(/^Mensagem para/).press('Enter');
+    await context.setOffline(false);
+    await expect(other.getByRole('status').filter({ hasText: 'Ao vivo' })).toBeVisible();
+    await expect(other.locator('.message p').filter({ hasText: 'Durante desconexao' })).toHaveCount(1);
     await page.route('**/api/direct-messages?*', async route => { if (route.request().method() === 'POST') await route.fulfill({ status: 503, json: { success: false, error: 'Falha simulada de rede' } }); else await route.continue(); });
     await page.getByLabel(/^Mensagem para/).fill('Preservar meu rascunho'); await page.getByRole('button', { name: 'Enviar ↗' }).click(); await expect(page.getByRole('alert')).toContainText('Falha simulada'); await expect(page.getByLabel(/^Mensagem para/)).toHaveValue('Preservar meu rascunho');
   } finally { await context.close(); }

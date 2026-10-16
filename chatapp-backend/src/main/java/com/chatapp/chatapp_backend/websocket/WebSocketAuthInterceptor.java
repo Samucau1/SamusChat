@@ -54,6 +54,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
             if (accessor.getUser() == null) throw new SecurityException("Nao autorizado");
             if (accessor.getSessionId() != null && !sessions.valid(accessor.getSessionId())) throw new SecurityException("Sessao expirada");
             String destination = accessor.getDestination();
+            if (StompCommand.SUBSCRIBE.equals(accessor.getCommand()) && "/user/queue/direct-messages".equals(destination)) return message;
             String prefix = StompCommand.SUBSCRIBE.equals(accessor.getCommand()) ? "/topic/channel/" : "/app/channel/";
             if (destination == null || !destination.startsWith(prefix)) throw new SecurityException("Destino invalido");
             Long channelId = Long.valueOf(destination.substring(prefix.length()));

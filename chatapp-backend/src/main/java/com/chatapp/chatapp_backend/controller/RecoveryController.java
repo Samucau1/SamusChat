@@ -8,8 +8,12 @@ import java.util.Map;
 public class RecoveryController {
     private final PasswordRecoveryService recovery;
     public record EmailRequest(String email) {}
-    public record VerifyRequest(String email,String code) {}
-    public record ResetRequest(String email,String resetToken,String password) {}
+    public record VerifyRequest(String email,String code) {
+        @Override public String toString() { return "VerifyRequest[redacted]"; }
+    }
+    public record ResetRequest(String email,String resetToken,String password) {
+        @Override public String toString() { return "ResetRequest[redacted]"; }
+    }
     @PostMapping("/request") public ApiResponse<String> request(@RequestBody EmailRequest r) {
         recovery.request(r.email()); return ApiResponse.success("Se a conta existir, voce recebera um codigo. Aguarde 10 minutos para reenviar.");
     }

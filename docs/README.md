@@ -1,5 +1,13 @@
 # Documentação do SamusChat
 
+- [Launcher PC: iniciar serviços e abrir o navegador](LAUNCHER_PC.md)
+
+- [Privacidade e limpeza das contas locais — 16/10/2026](PRIVACIDADE_CONTAS_2026-10-16.md)
+
+- [Mensagens privadas por WebSocket: implementação e regressão — 16/10/2026](REGRESSAO_WEBSOCKET_PRIVADO_2026-10-16.md)
+
+- [Navegação por gestos e remoção do X no Android — 16/10/2026](NAVEGACAO_GESTOS_ANDROID_2026-10-16.md)
+
 - [Relatório de desenvolvimento e validação — 14/10/2026](RELATORIO_DESENVOLVIMENTO_2026-10-14.md)
 - [Relatório Word com imagens — 14/10/2026](SamusChat_Relatorio_2026-10-14.docx)
 - [Regressão antes da publicação — 14/10/2026](REGRESSAO_PUBLICACAO_2026-10-14.md)

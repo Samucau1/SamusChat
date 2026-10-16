@@ -37,6 +37,7 @@ public class RedisConfig {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(factory);
         container.addMessageListener(subscriber, new PatternTopic(RedisMessageSubscriber.CHANNEL_PREFIX + "*"));
+        container.addMessageListener(subscriber, new org.springframework.data.redis.listener.ChannelTopic(com.chatapp.chatapp_backend.websocket.DirectMessageBroadcaster.REDIS_CHANNEL));
         return container;
     }
 }

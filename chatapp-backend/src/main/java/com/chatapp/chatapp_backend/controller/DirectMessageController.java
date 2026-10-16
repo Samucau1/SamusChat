@@ -15,6 +15,8 @@ import java.util.List;
 public class DirectMessageController {
     private final DirectMessageRepository messages;
     private final UserRepository users;
+    private final org.springframework.context.ApplicationEventPublisher events;
+    private final com.chatapp.chatapp_backend.security.PublicIdentityService identities;
 
     private void validateContact(String me, String contact) {
         if (me.equals(contact)) throw new IllegalArgumentException("Escolha outro contato");
@@ -24,13 +26,16 @@ public class DirectMessageController {
     @GetMapping
     public ApiResponse<List<DirectMessage>> history(Authentication auth, @RequestParam String contact,
             @RequestParam(defaultValue = "0") int page) {
+        contact = identities.resolve(contact);
         validateContact(auth.getName(), contact);
         if (page < 0) throw new IllegalArgumentException("Página inválida");
         return ApiResponse.success(messages.conversation(auth.getName(), contact, PageRequest.of(page, 50)));
     }
 
     @PostMapping
+    @org.springframework.transaction.annotation.Transactional
     public ApiResponse<DirectMessage> send(Authentication auth, @RequestParam String contact, @RequestBody MessageRequest request) {
+        contact = identities.resolve(contact);
         validateContact(auth.getName(), contact);
         String text = request.getContent();
         if (text == null || text.isBlank() || text.length() > 2000)
@@ -41,6 +46,8 @@ public class DirectMessageController {
         message.setSenderUsername(sender.getUsername());
         message.setRecipientEmail(contact);
         message.setContent(text.trim());
-        return ApiResponse.success(messages.save(message));
+        var saved = messages.save(message);
+        events.publishEvent(new com.chatapp.chatapp_backend.websocket.DirectMessageCreatedEvent(saved));
+        return ApiResponse.success(saved);
     }
 }

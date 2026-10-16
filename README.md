@@ -80,7 +80,7 @@ Capturas da [validação de mídia e estabilidade de 08/10/2026](docs/REGRESSAO_
 | Criar servidor e entrar por ID | Implementado | Implementado |
 | Canais de texto e histórico paginado | Implementado | Implementado |
 | Mensagens de canal em tempo real | STOMP/WebSocket | STOMP/WebSocket |
-| Mensagens privadas reais | Implementado | Implementado; atualização por consulta periódica |
+| Mensagens privadas reais | REST + STOMP/WebSocket | REST + STOMP/WebSocket |
 | Anexos em canais de texto | Implementado; até 10 MB | Implementado; até 10 MB |
 | Chamada individual com microfone | Implementado | Implementado |
 | Compartilhamento de tela individual | Implementado | Implementado |
