@@ -122,7 +122,7 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
     working.current = true; setBusy(true); const generation = epoch.current;
     let captured: MediaStream | undefined;
     try {
-      audio.current = new DeviceAudioTransport(setAudioBlocked);
+      audio.current = new DeviceAudioTransport(setAudioBlocked, setAudioNotice);
       void audio.current.activate().catch(() => setAudioBlocked(true));
       captured = await captureMicrophone();
       const config = await api.ice();

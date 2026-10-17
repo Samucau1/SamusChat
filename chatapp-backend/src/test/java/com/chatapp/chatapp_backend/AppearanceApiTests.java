@@ -32,6 +32,25 @@ class AppearanceApiTests {
         ImageIO.write(new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB), format, bytes);
         return new MockMultipartFile("file", "untrusted-name.html", "image/" + format, bytes.toByteArray());
     }
+    @Test void anotherAccountSeesCurrentAvatarInContactsAndPrivateHistoryWithoutLoginEmail() throws Exception {
+        String owner = register("ownerphoto"), viewer = register("viewerphoto");
+        var profile = mvc.perform(get("/api/users/me").header("Authorization", owner)).andReturn();
+        String ownerId = json.readTree(profile.getResponse().getContentAsString()).path("data").path("publicId").asText();
+        profile = mvc.perform(get("/api/users/me").header("Authorization", viewer)).andReturn();
+        String viewerId = json.readTree(profile.getResponse().getContentAsString()).path("data").path("publicId").asText();
+        var uploaded = mvc.perform(multipart("/api/users/me/media/avatar").file(image("png", 40, 40)).header("Authorization", owner)).andExpect(status().isOk()).andReturn();
+        String avatar = json.readTree(uploaded.getResponse().getContentAsString()).path("data").path("avatarUrl").asText();
+        mvc.perform(get("/api/calls/contacts").header("Authorization", viewer))
+                .andExpect(jsonPath("$.data[?(@.email == '" + ownerId + "')].avatarUrl", hasItem(avatar)))
+                .andExpect(content().string(not(containsString("@example.com"))));
+        mvc.perform(post("/api/direct-messages").param("contact", viewerId).header("Authorization", owner).contentType("application/json").content("{\"content\":\"Foto compartilhada\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.senderAvatarUrl").value(avatar));
+        mvc.perform(get("/api/direct-messages").param("contact", ownerId).header("Authorization", viewer))
+                .andExpect(jsonPath("$.data[0].senderAvatarUrl").value(avatar));
+        mvc.perform(delete("/api/users/me/media/avatar").header("Authorization", owner)).andExpect(status().isOk());
+        mvc.perform(get("/api/direct-messages").param("contact", ownerId).header("Authorization", viewer))
+                .andExpect(jsonPath("$.data[0].senderAvatarUrl").doesNotExist());
+    }
     @Test void profileAppearancePersistsAndRejectsInvalidInput() throws Exception {
         String token = register("profile");
         mvc.perform(put("/api/users/me/appearance").header("Authorization", token).header("X-Forwarded-For", "appearance-" + UUID.randomUUID()).contentType("application/json").content("{\"bio\":\" Meu perfil \" ,\"accentColor\":\"#aabbcc\"}"))

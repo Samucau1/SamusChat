@@ -8,6 +8,7 @@ public class MemberResponse {
     private Long id;
     private String userEmail;
     private String username;
+    private String avatarUrl;
     private String role;
     private LocalDateTime joinedAt;
 }

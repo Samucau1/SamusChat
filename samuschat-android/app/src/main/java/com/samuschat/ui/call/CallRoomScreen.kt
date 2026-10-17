@@ -49,11 +49,14 @@ fun CallRoomScreen(model: CallViewModel, id: Long, name: String, onBack: () -> U
                         val local = participant.email == model.email
                         val sharing = if (local) state.sharing else link?.id in state.roomSharing
                         val track = if (local) engine?.localVideo else videos[link?.id]
-                        CallParticipant(participant.username, when { local -> "Você • conectado"; link?.id in state.roomConnected -> "Conectado"; else -> "Conectando…" }, sharing) {
+                        CallParticipant(participant.username, when { local -> "Você • conectado"; link?.id in state.roomConnected -> "Conectado"; else -> "Conectando…" }, sharing,
+                            avatarUrl = if (local) state.ownAvatarUrl else participant.avatarUrl,
+                            speaking = if (local) model.email in state.speaking && !state.muted else link?.id in state.speaking) {
                             if (sharing && track != null && engine != null) {
                                 Text(if (local) "Sua tela • prévia" else "Tela de ${participant.username}", style = MaterialTheme.typography.labelMedium)
                                 ScreenShareVideo(track, engine.egl.eglBaseContext,
-                                    Modifier.fillMaxWidth().height(220.dp), local = local)
+                                    Modifier.fillMaxWidth().height(220.dp), local = local, name = participant.username, avatarUrl = participant.avatarUrl,
+                                    speaking = if (local) model.email in state.speaking && !state.muted else link?.id in state.speaking)
                             }
                         }
                     }

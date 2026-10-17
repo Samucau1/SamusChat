@@ -31,6 +31,13 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
     setServers(nextServers); setContacts(nextContacts);
   }
   useEffect(() => { let alive = true; Promise.all([api.servers(), api.contacts()]).then(([s, c]) => { if (alive) { setServers(s); setContacts(c); } }).catch(problem => { if (alive) errorRef.current(problem); }); return () => { alive = false; }; }, [api]);
+  useEffect(() => {
+    let alive = true;
+    const refreshContacts = () => { if (!document.hidden) void api.contacts().then(value => { if (alive) setContacts(value); }).catch(() => {}); };
+    const timer = setInterval(refreshContacts, 15000);
+    window.addEventListener('focus', refreshContacts);
+    return () => { alive = false; clearInterval(timer); window.removeEventListener('focus', refreshContacts); };
+  }, [api]);
   function updateDraft(text: string) {
     if (selected.current) drafts.current.set(selected.current.id, { text, file });
     setDraft(text);

@@ -56,7 +56,7 @@ test('mensagem privada chega ao outro cliente e falha preserva rascunho', async 
   const received: string[] = [];
   other.on('websocket', socket => socket.on('framereceived', frame => received.push(String(frame.payload))));
   try {
-    await login(page, a.email); await login(other, b.email); await page.getByRole('button', { name: `@ ${b.name}`, exact: true }).click(); await other.getByRole('button', { name: `@ ${a.name}`, exact: true }).click();
+    await login(page, a.email); await login(other, b.email); await page.getByRole('button', { name: `${b.name}`, exact: true }).click(); await other.getByRole('button', { name: `${a.name}`, exact: true }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Ao vivo' })).toBeVisible();
     await expect(other.getByRole('status').filter({ hasText: 'Ao vivo' })).toBeVisible();
     const contactResponse = await request.get('/api/calls/contacts', { headers: { Authorization: `Bearer ${a.token}` } });
@@ -97,7 +97,7 @@ test('chamada individual: convite, aceite, mídia WebRTC, microfone e encerramen
   const a = await register(request, 'voz_a'); const b = await register(request, 'voz_b');
   const context = await browser.newContext({ permissions: ['microphone'], extraHTTPHeaders: { 'X-Forwarded-For': clientIp() } }); const other = await context.newPage();
   try {
-    await login(page, a.email); await login(other, b.email); await page.getByRole('button', { name: `@ ${b.name}`, exact: true }).click(); await page.getByRole('button', { name: 'Ligar', exact: true }).click();
+    await login(page, a.email); await login(other, b.email); await page.getByRole('button', { name: `${b.name}`, exact: true }).click(); await page.getByRole('button', { name: 'Ligar', exact: true }).click();
     await expect(other.getByRole('button', { name: 'Aceitar', exact: true })).toBeVisible(); await other.getByRole('button', { name: 'Aceitar', exact: true }).click(); await expect(page.locator('.call-panel strong')).toHaveText('Em chamada', { timeout: 30000 }); await expect(other.locator('.call-panel strong')).toHaveText('Em chamada', { timeout: 30000 });
     await page.getByRole('button', { name: 'Silenciar microfone' }).click(); await expect(page.getByRole('button', { name: 'Ativar microfone' })).toHaveAttribute('aria-pressed', 'true');
     await page.getByRole('button', { name: 'Ativar microfone' }).click();
@@ -175,6 +175,20 @@ test('chamada individual: convite, aceite, mídia WebRTC, microfone e encerramen
     await expect(page.getByLabel('Resolução da transmissão', { exact: true })).toBeDisabled();
     await page.keyboard.press('Escape'); await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect.poll(() => other.locator('video.call-video').evaluate((video: HTMLVideoElement) => video.videoHeight)).toBeGreaterThanOrEqual(750);
+    const remoteVideo = other.locator('video.call-video');
+    await remoteVideo.click();
+    await other.getByRole('button', { name: `Tela cheia da transmissão de ${a.name}`, exact: true }).click();
+    await expect.poll(() => other.evaluate(() => !!document.fullscreenElement)).toBe(true);
+    const framesBefore = await remoteVideo.evaluate((video: HTMLVideoElement) => video.getVideoPlaybackQuality().totalVideoFrames);
+    await expect.poll(() => remoteVideo.evaluate((video: HTMLVideoElement) => video.getVideoPlaybackQuality().totalVideoFrames)).toBeGreaterThan(framesBefore + 3);
+    const color = await remoteVideo.evaluate((video: HTMLVideoElement) => {
+      const canvas = document.createElement('canvas'); canvas.width = canvas.height = 2;
+      const context = canvas.getContext('2d')!; context.drawImage(video, 0, 0, 2, 2);
+      return Array.from(context.getImageData(0, 0, 1, 1).data);
+    });
+    expect(color[2] - color[0]).toBeGreaterThan(60);
+    expect(color[2] - color[1]).toBeGreaterThan(60);
+    await other.evaluate(() => document.exitFullscreen());
     expect(await page.locator('.local-preview video').evaluate((video: HTMLVideoElement) => (video.srcObject as MediaStream).getVideoTracks()[0].getSettings().frameRate)).toBe(30);
     await page.getByRole('button', { name: 'Parar transmissão' }).click(); await expect(page.locator('.local-preview')).not.toBeVisible(); await expect(other.locator('video.call-video')).not.toBeVisible();
     await other.getByRole('button', { name: 'Encerrar chamada' }).click(); await expect(page.locator('.call-panel')).not.toBeVisible();

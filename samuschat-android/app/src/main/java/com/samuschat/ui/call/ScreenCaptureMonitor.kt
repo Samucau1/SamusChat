@@ -13,8 +13,23 @@ data class CaptureDimensions(val width: Int, val height: Int)
 
 fun captureDimensions(width: Int, height: Int): CaptureDimensions {
     require(width > 0 && height > 0)
-    val scale = minOf(1.0, 960.0 / maxOf(width, height))
+    // Preserve a 720p phone's native pixels instead of reducing it to 456p.
+    // Cap larger devices by both axes, without upscaling or stretching.
+    val scale = minOf(1.0, 900.0 / minOf(width, height), 1920.0 / maxOf(width, height))
     return CaptureDimensions(maxOf(2, (width * scale).toInt() / 2 * 2), maxOf(2, (height * scale).toInt() / 2 * 2))
+}
+
+const val SCREEN_CAPTURE_FPS = 30
+fun configureScreenSender(sender: org.webrtc.RtpSender) {
+    val parameters = sender.parameters
+    if (parameters.encodings.isEmpty()) return
+    parameters.encodings.forEach { encoding ->
+        encoding.maxFramerate = SCREEN_CAPTURE_FPS
+        encoding.maxBitrateBps = 4_000_000
+        encoding.scaleResolutionDownBy = 1.0
+    }
+    parameters.degradationPreference = org.webrtc.RtpParameters.DegradationPreference.MAINTAIN_RESOLUTION
+    if (!sender.setParameters(parameters) && com.samuschat.BuildConfig.DEBUG) android.util.Log.w("ScreenCapture", "Encoder kept native parameters")
 }
 
 /** Display changes work while another app is visible, including forced game rotation on Android 10. */

@@ -66,7 +66,7 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
     if (peer.current) return peer.current;
     if (!navigator.mediaDevices?.getUserMedia) throw new Error('Chamadas exigem HTTPS ou localhost e permissão para o microfone.');
     const currentGeneration = generation.current;
-    audio.current ??= new DeviceAudioTransport(setAudioBlocked);
+    audio.current ??= new DeviceAudioTransport(setAudioBlocked, setAudioNotice);
     void audio.current.activate().catch(() => setAudioBlocked(true));
     const stream = await captureMicrophone();
     if (!alive.current || currentGeneration !== generation.current) { stream.getTracks().forEach(track => track.stop()); throw new Error('Chamada encerrada.'); }

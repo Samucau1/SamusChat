@@ -13,6 +13,7 @@ public class DirectMessage {
     @Column(name = "sender_email", nullable = false) private String senderEmail;
     @Column(name = "recipient_email", nullable = false) private String recipientEmail;
     @Column(nullable = false) private String senderUsername;
+    @Transient private String senderAvatarUrl;
     @Column(nullable = false, length = 2000) private String content;
     @Column(nullable = false) private LocalDateTime createdAt = LocalDateTime.now();
 }

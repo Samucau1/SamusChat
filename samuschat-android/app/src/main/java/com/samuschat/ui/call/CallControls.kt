@@ -2,6 +2,7 @@ package com.samuschat.ui.call
 
 import android.os.Build
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -87,16 +88,15 @@ internal fun CallControls(model: CallViewModel, connected: Boolean) {
 }
 
 @Composable
-internal fun CallParticipant(name: String, status: String, sharing: Boolean = false, content: @Composable ColumnScope.() -> Unit = {}) {
-    Surface(color = CallCard, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+internal fun CallParticipant(name: String, status: String, sharing: Boolean = false, avatarUrl: String? = null, speaking: Boolean = false, content: @Composable ColumnScope.() -> Unit = {}) {
+    Surface(color = CallCard, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth(), border = if (speaking) BorderStroke(2.dp, CallGreen) else null) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Surface(color = Blurple, shape = CircleShape, modifier = Modifier.size(48.dp)) {
-                    Box(contentAlignment = Alignment.Center) { Text(name.take(1).uppercase(), color = Color.White, style = MaterialTheme.typography.titleLarge) }
-                }
+                com.samuschat.ui.components.InitialAvatar(name, size = 48.dp, url = avatarUrl)
                 Column(Modifier.weight(1f)) {
                     Text(name, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium)
                     Text(status, color = Color(0xFFB5BAC1), style = MaterialTheme.typography.bodySmall)
+                    if (speaking) Text("Falando", color = CallGreen, style = MaterialTheme.typography.labelSmall)
                 }
                 if (sharing) Text("AO VIVO", color = CallGreen, style = MaterialTheme.typography.labelSmall)
             }

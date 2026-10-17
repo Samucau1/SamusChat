@@ -74,10 +74,12 @@ class ApiContractTest {
     @Test fun callRoomIncludesParticipantsAndPrivatePeerSessions() = runTest {
         val server = MockWebServer()
         try {
-            server.enqueue(MockResponse().setBody("""{"success":true,"data":{"channelId":9,"capacity":6,"participants":[{"email":"a@test","username":"A"},{"email":"b@test","username":"B"}],"sessions":[{"id":"pair","caller":"a@test","callee":"b@test","state":"CONNECTING","channelId":9}]}}"""))
+            server.enqueue(MockResponse().setBody("""{"success":true,"data":{"channelId":9,"capacity":6,"participants":[{"email":"a@test","username":"A","avatarUrl":"/uploads/appearance/avatar.png"},{"email":"b@test","username":"B"}],"sessions":[{"id":"pair","caller":"a@test","callee":"b@test","state":"CONNECTING","channelId":9}]}}"""))
             val api = Retrofit.Builder().baseUrl(server.url("/")).addConverterFactory(GsonConverterFactory.create()).build().create(ApiService::class.java)
             val room = api.joinCallRoom("Bearer jwt", 9).data()
             assertEquals(2, room.participants.size)
+            assertEquals("/uploads/appearance/avatar.png", room.participants.first().avatarUrl)
+            assertNull(room.participants.last().avatarUrl)
             assertEquals(9L, room.sessions.single().channelId)
             val request = server.takeRequest()
             assertEquals("POST", request.method)

@@ -16,6 +16,7 @@ public class MessageResponse {
     private String content;
     private String senderEmail;
     private String senderUsername;
+    private String senderAvatarUrl;
     private Long channelId;
     private String attachmentUrl;
     private String attachmentType;

@@ -16,7 +16,9 @@ export function lowerScreenProfile(profile: ScreenProfile): ScreenProfile | null
 
 export function screenCaptureOptions(profile: ScreenProfile = desktopScreenProfile): DisplayMediaStreamOptions {
   // getDisplayMedia disallows mandatory min/exact constraints in the picker.
-  return { video: { width: { ideal: profile.width }, height: { ideal: profile.height }, frameRate: { ideal: profile.frameRate } }, audio: true, systemAudio: 'include' } as DisplayMediaStreamOptions;
+  return { video: { width: { ideal: profile.width }, height: { ideal: profile.height }, frameRate: { ideal: profile.frameRate } },
+    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, suppressLocalAudioPlayback: false },
+    systemAudio: 'include', windowAudio: 'system', selfBrowserSurface: 'include' } as DisplayMediaStreamOptions;
 }
 
 export async function constrainScreen(track: MediaStreamTrack, profile: ScreenProfile = desktopScreenProfile) {
@@ -58,7 +60,7 @@ export async function constrainSender(sender: RTCRtpSender, profile: ScreenProfi
 
 export function captureScreen(profile: ScreenProfile): Promise<MediaStream> {
   if (!window.isSecureContext || !navigator.mediaDevices?.getDisplayMedia) {
-    throw new Error('Compartilhar tela exige Chrome, Edge ou Firefox atualizado, em HTTPS ou localhost. Abra o PC em http://127.0.0.1:5175.');
+    throw new Error('Compartilhar tela exige navegador compatível em HTTPS ou localhost. Abra o PC em http://127.0.0.1:5173.');
   }
   // Invoke the picker directly within the click gesture, before any await.
   return navigator.mediaDevices.getDisplayMedia(screenCaptureOptions(profile));

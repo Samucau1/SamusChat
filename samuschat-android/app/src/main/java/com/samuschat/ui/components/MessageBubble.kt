@@ -26,7 +26,7 @@ fun MessageBubble(message: Message, isOwnMessage: Boolean) {
     var downloading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        InitialAvatar(message.senderUsername)
+        InitialAvatar(message.senderUsername, url = message.senderAvatarUrl)
         Column(Modifier.weight(1f).padding(start = 12.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(message.senderUsername, Modifier.weight(1f, fill = false), style = MaterialTheme.typography.bodyMedium,

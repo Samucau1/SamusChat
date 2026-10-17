@@ -6,7 +6,12 @@ test('PC solicita 900p, exige captura a 30 fps e mantém bitrate por conexão', 
   let applied: RTCRtpSendParameters | undefined;
   const track = { contentHint: '', applyConstraints: async (value: MediaTrackConstraints) => { constraints = value; }, getSettings: () => ({ width: 1600, height: 900, frameRate: 30 }) } as unknown as MediaStreamTrack;
   const sender = { track, getParameters: () => ({ encodings: [{}], transactionId: 'transaction' }), setParameters: async (value: RTCRtpSendParameters) => { applied = value; } } as unknown as RTCRtpSender;
-  expect(screenCaptureOptions()).toEqual({ video: { width: { ideal: 1600 }, height: { ideal: 900 }, frameRate: { ideal: 30 } }, audio: true, systemAudio: 'include' });
+  const options = screenCaptureOptions() as DisplayMediaStreamOptions & { windowAudio: string; selfBrowserSurface: string };
+  expect(options.video).toEqual({ width: { ideal: 1600 }, height: { ideal: 900 }, frameRate: { ideal: 30 } });
+  expect(options.audio).toMatchObject({ echoCancellation: false, noiseSuppression: false, autoGainControl: false, suppressLocalAudioPlayback: false });
+  expect(options.systemAudio).toBe('include');
+  expect(options.windowAudio).toBe('system');
+  expect(options.selfBrowserSurface).toBe('include');
   await constrainScreen(track); await constrainSender(sender);
   expect(track.contentHint).toBe('motion');
   expect(constraints).toEqual({ height: { exact: 900 }, frameRate: { exact: 30 } });

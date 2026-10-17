@@ -169,7 +169,7 @@ private fun FriendsScreen(email: String, contacts: List<CallContact>, onContact:
         items(contacts.filter { matchesFriend(it.username, query) || matchesFriend(it.email, query) }, key = { it.email }) { contact ->
             Surface(onClick = { onContact(contact) }, color = PanelBackground, shape = MaterialTheme.shapes.large) {
                 Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    InitialAvatar(contact.username)
+                    InitialAvatar(contact.username, url = contact.avatarUrl)
                     Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                         Text(contact.username)
                     }
