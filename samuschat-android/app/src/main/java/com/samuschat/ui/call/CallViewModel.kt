@@ -17,6 +17,7 @@ data class CallUiState(
     val contacts: List<CallContact> = emptyList(), val call: CallSession? = null,
     val busy: Boolean = false, val connected: Boolean = false, val muted: Boolean = false,
     val speaker: Boolean = false, val sharing: Boolean = false, val deviceAudio: Boolean = false,
+    val ownAvatarUrl: String? = null, val speaking: Set<String> = emptySet(),
     val remoteSharing: Boolean = false, val error: String? = null, val notice: String? = null,
     val room: CallRoom? = null, val roomName: String = "", val roomConnected: Set<String> = emptySet(), val roomSharing: Set<String> = emptySet()
 )
@@ -41,8 +42,31 @@ class CallViewModel(private val app: SamusChatApplication, val email: String) : 
 
     init {
         refreshContacts()
-        poll = viewModelScope.launch {
+        viewModelScope.launch {
+            val gates = mutableMapOf<String, SpeakingGate>()
+            fun update(id: String, level: Double, muted: Boolean = false) {
+                val active = gates.getOrPut(id) { SpeakingGate() }.update(level, android.os.SystemClock.elapsedRealtime(), muted)
+                val previous = mutable.value.speaking
+                val next = if (active) previous + id else previous - id
+                if (next != previous) mutable.value = mutable.value.copy(speaking = next)
+            }
             while (isActive) {
+                val direct = rtc
+                direct?.sampleVoice { local, remote -> if (rtc === direct) {
+                    update(email, local, mutable.value.muted); update("remote", remote)
+                } }
+                val room = roomRtc
+                room?.sampleVoice { id, local, remote -> if (roomRtc === room) {
+                    update(email, local, mutable.value.muted); update(id, remote)
+                } }
+                if (direct == null && room == null) { gates.clear(); if (mutable.value.speaking.isNotEmpty()) mutable.value = mutable.value.copy(speaking = emptySet()) }
+                delay(150)
+            }
+        }
+        poll = viewModelScope.launch {
+            var contactsAt = System.currentTimeMillis()
+            while (isActive) {
+                if (foreground && System.currentTimeMillis() - contactsAt >= 15000) { refreshContacts(); contactsAt = System.currentTimeMillis() }
                 if (foreground || mutable.value.call != null || mutable.value.room != null) {
                     try {
                         mutex.withLock {
@@ -72,7 +96,11 @@ class CallViewModel(private val app: SamusChatApplication, val email: String) : 
     }
     fun foreground(value: Boolean) { foreground = value }
     fun refreshContacts() = viewModelScope.launch {
-        try { mutable.value = mutable.value.copy(contacts = app.api.callContacts(app.tokens.authorization()).data(), error = null) }
+        try {
+            val contacts = app.api.callContacts(app.tokens.authorization()).data()
+            val own = app.api.profile(app.tokens.authorization()).data()
+            mutable.value = mutable.value.copy(contacts = contacts, ownAvatarUrl = own.avatarUrl, error = null)
+        }
         catch (cancelled: CancellationException) { throw cancelled }
         catch (e: Exception) { mutable.value = mutable.value.copy(error = e.message) }
     }
@@ -214,7 +242,11 @@ class CallViewModel(private val app: SamusChatApplication, val email: String) : 
             if (mutable.value.sharing) return@execute
             service(screen = true)
             if (roomRtc !== engine) return@execute
-            try { engine.share(permission); mutable.value = mutable.value.copy(sharing = true) }
+            try {
+                engine.share(permission)
+                val audioEnabled = android.os.Build.VERSION.SDK_INT >= 29 && runCatching { engine.deviceSound(true) }.isSuccess
+                mutable.value = mutable.value.copy(sharing = true, deviceAudio = audioEnabled)
+            }
             catch (e: Exception) { engine.stopSharing(); throw e }
             return@execute
         }
@@ -222,13 +254,17 @@ class CallViewModel(private val app: SamusChatApplication, val email: String) : 
         val engine = rtc ?: return@execute
         service(screen = true)
         if (rtc !== engine) return@execute
-        try { engine.share(permission); mutable.value = mutable.value.copy(sharing = true) }
+        try {
+            engine.share(permission)
+            val audioEnabled = android.os.Build.VERSION.SDK_INT >= 29 && runCatching { engine.deviceSound(true) }.isSuccess
+            mutable.value = mutable.value.copy(sharing = true, deviceAudio = audioEnabled)
+        }
         catch (e: Exception) { engine.stopSharing(); throw e }
     }
     fun stopSharing() { rtc?.stopSharing(); roomRtc?.stopSharing(); mutable.value = mutable.value.copy(sharing = false, deviceAudio = false) }
     fun deviceAudio() = execute {
         val value = !mutable.value.deviceAudio
-        rtc?.deviceSound(value); mutable.value = mutable.value.copy(deviceAudio = value)
+        rtc?.deviceSound(value); roomRtc?.deviceSound(value); mutable.value = mutable.value.copy(deviceAudio = value)
     }
     fun permissionDenied() { mutable.value = mutable.value.copy(error = "Permita o microfone para iniciar ou aceitar a chamada.") }
     private fun watchConnection() {

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { ChatController } from '../controllers/useChatController';
 import { attachmentHref } from '../models/apiRepository';
+import { AvatarCropDialog } from './AvatarCropDialog';
 
 export const AppearanceMotion = createContext(false);
 export function appearanceHref(url?: string, animated = false) { return attachmentHref(!animated && url?.endsWith('.gif') ? url.slice(0, -4) + '.png' : url); }
@@ -9,8 +10,13 @@ export function AppearanceImage({ url, alt, className = '' }: { url?: string; al
   const href = appearanceHref(url, animated);
   return href ? <img src={href} alt={alt} className={className} loading="lazy" decoding="async" /> : null;
 }
-export function MediaPicker({ label, url, busy, save }: { label: string; url?: string; busy: boolean; save: (file: File | null) => Promise<boolean> }) {
-  return <div className="appearance-picker"><label>{label}<input aria-label={label} type="file" accept="image/png,image/jpeg,image/gif" disabled={busy} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void save(file); }} /></label>{url && <button type="button" disabled={busy} onClick={() => { void save(null); }}>Remover {label.toLocaleLowerCase('pt-BR')}</button>}</div>;
+export function MediaPicker({ label, url, busy, save, avatar = false }: { label: string; url?: string; busy: boolean; avatar?: boolean; save: (file: File | null) => Promise<boolean> }) {
+  const [pending, setPending] = useState<File | null>(null);
+  const [error, setError] = useState('');
+  return <div className="appearance-picker"><label>{label}<input aria-label={label} type="file" accept="image/png,image/jpeg,image/gif" disabled={busy} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; setError(''); if (file) {
+    if (avatar) { if (!['image/png', 'image/jpeg', 'image/gif'].includes(file.type) || !file.size || file.size > 4 * 1024 * 1024 || file.type === 'image/gif' && file.size > 2 * 1024 * 1024) setError('Use PNG/JPG de até 4 MB ou GIF de até 2 MB.'); else setPending(file); }
+    else void save(file);
+  } }} /></label>{error && <p role="alert">{error}</p>}{url && <button type="button" disabled={busy} onClick={() => { void save(null); }}>Remover {label.toLocaleLowerCase('pt-BR')}</button>}{pending && <AvatarCropDialog file={pending} close={() => setPending(null)} save={save} />}</div>;
 }
 export function ServerAppearanceDialog({ controller: c, close, error }: { controller: ChatController; close: () => void; error: string }) {
   const server = c.servers.find(item => item.id === c.serverId)!;

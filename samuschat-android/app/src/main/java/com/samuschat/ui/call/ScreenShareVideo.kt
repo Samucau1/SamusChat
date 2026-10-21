@@ -17,6 +17,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -37,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 /** TextureView participates in Compose/Dialog composition instead of using a separate surface. */
 @Composable
-fun ScreenShareVideo(track: VideoTrack, egl: EglBase.Context, modifier: Modifier = Modifier, local: Boolean = false) {
+fun ScreenShareVideo(track: VideoTrack, egl: EglBase.Context, modifier: Modifier = Modifier, local: Boolean = false, name: String = "Participante", avatarUrl: String? = null, speaking: Boolean = false) {
     key(track, egl) {
         var fullscreen by rememberSaveable { mutableStateOf(false) }
         var controls by remember { mutableStateOf(false) }
@@ -59,7 +61,13 @@ fun ScreenShareVideo(track: VideoTrack, egl: EglBase.Context, modifier: Modifier
                     onDispose { }
                 }
                 Box(Modifier.fillMaxSize().background(Color.Black)) {
-                    ScreenVideoContent(track, egl, Modifier.fillMaxSize().clickable(onClickLabel = "Mostrar controles da transmissão") { controls = !controls }, local, fill)
+                    ScreenVideoContent(track, egl, Modifier.fillMaxSize(), local, fill) { controls = !controls }
+                    Surface(Modifier.align(Alignment.TopStart).padding(16.dp), color = Color.Black.copy(alpha = 0.7f)) {
+                        Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            com.samuschat.ui.components.InitialAvatar(name, size = 32.dp, url = avatarUrl)
+                            Text(if (speaking) "$name • Falando" else name, color = if (speaking) CallGreen else Color.White)
+                        }
+                    }
                     if (controls) {
                         Surface(Modifier.align(Alignment.TopEnd).padding(16.dp), color = Color.Black.copy(alpha = 0.7f)) {
                             IconButton(onClick = { fullscreen = false; controls = false }) { Icon(exitFullscreenIcon, "Sair da tela cheia", tint = Color.White) }
@@ -71,8 +79,8 @@ fun ScreenShareVideo(track: VideoTrack, egl: EglBase.Context, modifier: Modifier
                 }
             }
         } else {
-            Box(modifier.clickable(onClickLabel = "Mostrar controles da transmissão") { controls = !controls }) {
-                ScreenVideoContent(track, egl, Modifier.matchParentSize(), local, false)
+            Box(modifier) {
+                ScreenVideoContent(track, egl, Modifier.matchParentSize(), local, false) { controls = !controls }
                 if (controls) Surface(Modifier.align(Alignment.Center).size(64.dp), color = Color.Black.copy(alpha = 0.7f), shape = androidx.compose.foundation.shape.CircleShape) {
                     IconButton(onClick = { fullscreen = true; controls = true }) { Icon(enterFullscreenIcon, "Assistir em tela cheia", tint = Color.White) }
                 }
@@ -99,7 +107,7 @@ private val exitFullscreenIcon = ImageVector.Builder("ExitFullscreen", 24.dp, 24
 }.build()
 
 @Composable
-private fun ScreenVideoContent(track: VideoTrack, egl: EglBase.Context, modifier: Modifier, local: Boolean, fill: Boolean) {
+private fun ScreenVideoContent(track: VideoTrack, egl: EglBase.Context, modifier: Modifier, local: Boolean, fill: Boolean, onTap: () -> Unit) {
     key(track, egl) {
         var rendered by remember { mutableStateOf(false) }
         Box(modifier.background(Color.Black), contentAlignment = Alignment.Center) {
@@ -119,6 +127,11 @@ private fun ScreenVideoContent(track: VideoTrack, egl: EglBase.Context, modifier
                     }
                 }
             )
+            // Intercept touches above the native TextureView, which can otherwise
+            // consume the gesture before the Compose parent receives it.
+            Box(Modifier.matchParentSize().semantics {
+                contentDescription = if (local) "Prévia da transmissão" else "Transmissão recebida"
+            }.clickable(onClickLabel = "Mostrar controles da transmissão", onClick = onTap))
             if (!rendered) Text("Aguardando imagem…", color = Color.White)
         }
     }

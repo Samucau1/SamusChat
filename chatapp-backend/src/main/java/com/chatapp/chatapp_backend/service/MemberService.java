@@ -81,7 +81,7 @@ public class MemberService {
 
         // Busca o username do usuário
         userRepository.findByEmail(member.getUserEmail())
-                .ifPresent(u -> response.setUsername(u.getUsername()));
+                .ifPresent(u -> { response.setUsername(u.getUsername()); response.setAvatarUrl(u.getAvatarUrl()); });
 
         return response;
     }

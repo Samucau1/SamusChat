@@ -53,7 +53,8 @@ fun CallPanel(model: CallViewModel) {
         onDispose { owner.lifecycle.removeObserver(observer) }
     }
     state.call?.let { call ->
-        val peerName = state.contacts.firstOrNull { it.email == call.peer(model.email) }?.username ?: "Participante"
+        val peer = state.contacts.firstOrNull { it.email == call.peer(model.email) }
+        val peerName = peer?.username ?: "Participante"
         Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false, usePlatformDefaultWidth = false)) {
             Surface(Modifier.fillMaxSize(), color = CallBackground, contentColor = Color.White) {
                 BoxWithConstraints(Modifier.fillMaxSize().systemBarsPadding()) {
@@ -62,20 +63,21 @@ fun CallPanel(model: CallViewModel) {
                             Text(peerName, style = MaterialTheme.typography.titleLarge)
                             Text(when { state.connected -> "Em chamada"; call.state == "RINGING" -> if (call.callee == model.email) "Chamada recebida" else "Chamando…"; else -> "Conectando…" })
                             state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                            CallParticipant(peerName, if (state.connected) "Em chamada" else "Aguardando conexão", state.remoteSharing)
+                            if (!state.remoteSharing) CallParticipant(peerName, if (state.connected) "Em chamada" else "Aguardando conexão", avatarUrl = peer?.avatarUrl, speaking = "remote" in state.speaking)
+                            CallParticipant("Você", if (state.muted) "Microfone silenciado" else "Microfone ativo", avatarUrl = state.ownAvatarUrl, speaking = model.email in state.speaking && !state.muted)
                             model.rtc?.let { engine ->
                                 if (state.sharing) {
-                                    CallParticipant("Sua tela", "Prévia da transmissão", sharing = true) {
+                                    CallParticipant("Sua tela", "Prévia da transmissão", sharing = true, avatarUrl = state.ownAvatarUrl, speaking = model.email in state.speaking && !state.muted) {
                                         Text("Sua tela • prévia", style = MaterialTheme.typography.labelMedium)
                                         ScreenShareVideo(engine.localVideo, engine.egl.eglBaseContext,
-                                            Modifier.fillMaxWidth().height(240.dp), local = true)
+                                            Modifier.fillMaxWidth().height(240.dp), local = true, name = "Voc?", avatarUrl = state.ownAvatarUrl, speaking = model.email in state.speaking && !state.muted)
                                     }
                                 }
                                 if (state.remoteSharing) video?.let { track ->
-                                    CallParticipant(peerName, "Transmitindo tela", sharing = true) {
+                                    CallParticipant(peerName, "Transmitindo tela", sharing = true, avatarUrl = peer?.avatarUrl, speaking = "remote" in state.speaking) {
                                         Text("Tela de ${peerName}", style = MaterialTheme.typography.labelMedium)
                                         ScreenShareVideo(track, engine.egl.eglBaseContext,
-                                            Modifier.fillMaxWidth().height(240.dp))
+                                            Modifier.fillMaxWidth().height(240.dp), name = peerName, avatarUrl = peer?.avatarUrl, speaking = "remote" in state.speaking)
                                     }
                                 }
                             }

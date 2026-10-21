@@ -43,6 +43,8 @@ class RoomRtc(
     private var generation = 0
     private var sharing = false
     private var closed = false
+    private val deviceAudio = DeviceAudio(context)
+    private val audioChannels = java.util.concurrent.CopyOnWriteArrayList<DataChannel>()
 
     init {
         PeerConnectionFactory.initialize(PeerConnectionFactory.InitializationOptions.builder(context).createInitializationOptions())
@@ -75,12 +77,14 @@ class RoomRtc(
         val candidates = java.util.concurrent.CopyOnWriteArrayList<GatheredCandidate>()
         @Volatile var candidateAt = 0L
         var control: DataChannel? = null
+        var deviceChannel: DataChannel? = null
         var sent = false
         var answerSet = false
         var localSdp: String? = null
         var disposed = false
         var connected = false
         val peer: PeerConnection
+        val screenSender: RtpSender
         init {
             val config = PeerConnection.RTCConfiguration(ice.map { PeerConnection.IceServer.builder(it.urls).setUsername(it.username).setPassword(it.credential).createIceServer() })
             config.sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
@@ -92,6 +96,7 @@ class RoomRtc(
                 }
                 override fun onConnectionChange(state: PeerConnection.PeerConnectionState) { main.post { if (!closed && !disposed) {
                     connected = state == PeerConnection.PeerConnectionState.CONNECTED
+                    if (connected) applyScreenProfile()
                     onConnection(id, connected)
                     if (state == PeerConnection.PeerConnectionState.DISCONNECTED) main.postDelayed({ if (!closed && !disposed && !connected) onFailure("Conexão do canal perdida. Entre novamente.") }, 35000)
                 } } }
@@ -107,11 +112,28 @@ class RoomRtc(
                     (receiver.track() as? VideoTrack)?.let { track -> main.post { if (!closed && !disposed) onVideo(id, track) } }
                 }
             }))
-            peer.addTrack(microphone, listOf("room")); peer.addTrack(screenTrack, listOf("room"))
-            if (caller) attach(peer.createDataChannel("call-control", DataChannel.Init()))
+            peer.addTrack(microphone, listOf("room")); screenSender = checkNotNull(peer.addTrack(screenTrack, listOf("room")))
+            if (caller) {
+                attach(peer.createDataChannel("call-control", DataChannel.Init()))
+                attach(peer.createDataChannel("device-audio", DataChannel.Init().apply { ordered = false; maxRetransmits = 0 }))
+            }
             main.postDelayed({ if (!closed && !disposed && !connected) onFailure("A conexão de mídia do canal expirou. Confira a rede e o TURN.") }, 60000)
         }
+        private fun applyScreenProfile() { screenSizing?.profile?.let { configureScreenSender(screenSender, it) } }
         private fun attach(channel: DataChannel) {
+            if (channel.label() == "device-audio" && deviceChannel == null) {
+                deviceChannel = channel
+                audioChannels.add(channel)
+                channel.registerObserver(object : DataChannel.Observer {
+                    override fun onBufferedAmountChange(previousAmount: Long) {}
+                    override fun onStateChange() { if (!closed && !disposed) deviceAudio.advertise(channel) }
+                    override fun onMessage(buffer: DataChannel.Buffer) {
+                        if (!closed && !disposed) deviceAudio.receive(channel, buffer)
+                    }
+                })
+                deviceAudio.advertise(channel)
+                return
+            }
             if (channel.label() != "call-control" || control != null) { channel.close(); channel.dispose(); return }
             control = channel
             channel.registerObserver(object : DataChannel.Observer {
@@ -153,12 +175,20 @@ class RoomRtc(
             return completeSdp(peer.localDescription.description, candidates.toList()).also { check(it.contains("a=candidate:")); localSdp = it }
         }
         suspend fun answer(sdp: String) { set(SessionDescription(SessionDescription.Type.ANSWER, sdp), false); answerSet = true }
-        fun close() { disposed = true; control?.unregisterObserver(); control?.close(); peer.close(); peer.dispose(); control?.dispose(); control = null }
+        fun close() { disposed = true; deviceChannel?.let { audioChannels.remove(it); deviceAudio.detach(it); it.unregisterObserver(); it.close(); it.dispose() }; deviceChannel = null; control?.unregisterObserver(); control?.close(); peer.close(); peer.dispose(); control?.dispose(); control = null }
     }
     fun link(id: String, caller: Boolean): Link = peers.getOrPut(id) { Link(id, caller) }
     fun retain(ids: Set<String>) { peers.keys.filter { it !in ids }.forEach { peers.remove(it)?.close() } }
     fun mute(value: Boolean) { if (!closed) module.setMicrophoneMute(value) }
     fun speaker(value: Boolean) { audio.isSpeakerphoneOn = value }
+    fun deviceSound(enabled: Boolean) {
+        if (!enabled) { deviceAudio.stopCapture(); return }
+        if (android.os.Build.VERSION.SDK_INT < 29) throw IllegalStateException("Áudio do dispositivo requer Android 10 ou superior")
+        val projection = checkNotNull(screen?.mediaProjection) { "Compartilhe a tela primeiro" }
+        deviceAudio.start(projection, { audioChannels.toList() }) {
+            main.post { if (!closed) onFailure("Falha na captura do áudio do dispositivo") }
+        }
+    }
     fun share(permission: Intent) {
         check(!closed && screen == null)
         val current = ++generation
@@ -173,25 +203,38 @@ class RoomRtc(
         capturer.initialize(texture, context, videoSource.capturerObserver)
         val sizing = ScreenCaptureMonitor(context) { size ->
             if (!closed && current == generation && screen === capturer) {
-                capturer.changeCaptureFormat(size.width, size.height, 15)
+                val profile = screenSizing?.profile ?: return@ScreenCaptureMonitor
+                videoSource.adaptOutputFormat(size.width, size.height, profile.fps)
+                capturer.changeCaptureFormat(size.width, size.height, profile.fps)
                 if (BuildConfig.DEBUG) android.util.Log.i("ScreenCapture", "resized=${size.width}x${size.height}")
             }
         }
         screenSizing = sizing
-        capturer.startCapture(sizing.dimensions.width, sizing.dimensions.height, 15)
+        peers.values.forEach { configureScreenSender(it.screenSender, sizing.profile) }
+        videoSource.adaptOutputFormat(sizing.dimensions.width, sizing.dimensions.height, sizing.profile.fps)
+        capturer.startCapture(sizing.dimensions.width, sizing.dimensions.height, sizing.profile.fps)
+        if (BuildConfig.DEBUG) android.util.Log.i("ScreenCapture", "room profile=${sizing.profile} size=${sizing.dimensions}")
         sizing.start()
         sharing = true; peers.values.forEach { it.advertise() }
     }
     fun stopSharing() {
+        deviceAudio.stopCapture()
         screenSizing?.stop(); screenSizing = null
         generation++
         val capture = screen; screen = null
         capture?.stopCapture(); capture?.dispose(); texture?.dispose(); texture = null
         sharing = false; peers.values.forEach { it.advertise() }
     }
+    fun sampleVoice(callback: (String, Double, Double) -> Unit) {
+        if (closed) return
+        peers.values.forEach { link -> link.peer.getStats { report ->
+            val (local, remote) = audioLevels(report)
+            main.post { if (!closed && !link.disposed) callback(link.id, local, remote) }
+        } }
+    }
     fun close() {
         if (closed) return
-        closed = true; stopSharing(); peers.values.forEach { it.close() }; peers.clear()
+        closed = true; stopSharing(); peers.values.forEach { it.close() }; peers.clear(); deviceAudio.close()
         microphone.dispose(); screenTrack.dispose(); audioSource.dispose(); videoSource.dispose(); factory.dispose(); module.release(); egl.release()
         audio.isSpeakerphoneOn = oldSpeaker; audio.mode = oldMode
     }

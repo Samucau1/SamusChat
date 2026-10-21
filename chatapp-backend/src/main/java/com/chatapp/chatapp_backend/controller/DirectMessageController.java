@@ -29,7 +29,13 @@ public class DirectMessageController {
         contact = identities.resolve(contact);
         validateContact(auth.getName(), contact);
         if (page < 0) throw new IllegalArgumentException("Página inválida");
-        return ApiResponse.success(messages.conversation(auth.getName(), contact, PageRequest.of(page, 50)));
+        var history = messages.conversation(auth.getName(), contact, PageRequest.of(page, 50));
+        var avatars = new java.util.HashMap<String, String>();
+        for (var message : history) {
+            String avatar = avatars.computeIfAbsent(message.getSenderEmail(), email -> users.findByEmail(email).map(com.chatapp.chatapp_backend.entity.User::getAvatarUrl).orElse(""));
+            message.setSenderAvatarUrl(avatar.isEmpty() ? null : avatar);
+        }
+        return ApiResponse.success(history);
     }
 
     @PostMapping
@@ -47,6 +53,7 @@ public class DirectMessageController {
         message.setRecipientEmail(contact);
         message.setContent(text.trim());
         var saved = messages.save(message);
+        saved.setSenderAvatarUrl(sender.getAvatarUrl());
         events.publishEvent(new com.chatapp.chatapp_backend.websocket.DirectMessageCreatedEvent(saved));
         return ApiResponse.success(saved);
     }

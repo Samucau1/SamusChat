@@ -82,7 +82,8 @@ fun HomeScreen(
     var demoChat by rememberSaveable { mutableStateOf(false) }
     var demoMessages by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
     val scope = rememberCoroutineScope()
-    fun navigate(page: Int) { scope.launch { pager.animateScrollToPage(page) } }
+    // Buttons switch directly; HorizontalPager still handles the swipe gesture.
+    fun navigate(page: Int) { scope.launch { pager.scrollToPage(page) } }
     BackHandler(pager.currentPage != 1 || demoChat || contactEmail != null) {
         demoChat = false; contactEmail = null
         navigate(1)
@@ -169,7 +170,7 @@ private fun FriendsScreen(email: String, contacts: List<CallContact>, onContact:
         items(contacts.filter { matchesFriend(it.username, query) || matchesFriend(it.email, query) }, key = { it.email }) { contact ->
             Surface(onClick = { onContact(contact) }, color = PanelBackground, shape = MaterialTheme.shapes.large) {
                 Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    InitialAvatar(contact.username)
+                    InitialAvatar(contact.username, url = contact.avatarUrl)
                     Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                         Text(contact.username)
                     }

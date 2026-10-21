@@ -30,7 +30,7 @@ test('rascunhos isolados, anexos e envio concluído após trocar de conversa', a
   await expect(page.locator('.file-selected')).toHaveCount(0);
   await input.fill('Outra ideia');
   await page.getByRole('button', { name: 'Amigos', exact: true }).click();
-  await page.getByRole('button', { name: '@ Amigo', exact: true }).click();
+  await page.getByRole('button', { name: 'Amigo', exact: true }).click();
   await input.fill('Rascunho privado');
   await page.getByRole('button', { name: 'Projeto', exact: true }).click();
   await expect(input).toHaveValue('Mensagem original');
@@ -47,7 +47,7 @@ test('rascunhos isolados, anexos e envio concluído após trocar de conversa', a
   await expect(input).toHaveValue('');
   await expect(page.locator('.file-selected')).toHaveCount(0);
   await page.getByRole('button', { name: 'Amigos', exact: true }).click();
-  await page.getByRole('button', { name: '@ Amigo', exact: true }).click();
+  await page.getByRole('button', { name: 'Amigo', exact: true }).click();
   await expect(input).toHaveValue('Rascunho privado');
   await page.route('**/api/direct-messages?*', async route => {
     if (route.request().method() === 'POST') await route.fulfill({ status: 503, json: { success: false, error: 'Falha simulada' } });
@@ -57,9 +57,9 @@ test('rascunhos isolados, anexos e envio concluído após trocar de conversa', a
   await expect(page.getByRole('alert')).toContainText('Falha simulada');
   await page.getByRole('button', { name: 'Projeto', exact: true }).click();
   await page.getByRole('button', { name: 'Amigos', exact: true }).click();
-  await page.getByRole('button', { name: '@ Amigo', exact: true }).click();
+  await page.getByRole('button', { name: 'Amigo', exact: true }).click();
   await expect(input).toHaveValue('Rascunho privado');
   await page.reload();
-  await page.getByRole('button', { name: '@ Amigo', exact: true }).click();
+  await page.getByRole('button', { name: 'Amigo', exact: true }).click();
   await expect(input).toHaveValue('');
 });

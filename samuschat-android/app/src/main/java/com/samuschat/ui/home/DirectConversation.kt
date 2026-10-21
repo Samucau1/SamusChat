@@ -80,6 +80,7 @@ fun DirectConversation(app: SamusChatApplication, email: String, contact: CallCo
         LazyColumn(Modifier.weight(1f), reverseLayout = true, contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(messages, key = { it.id }) { message ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = if (message.senderEmail == email) Arrangement.End else Arrangement.Start) {
+                    com.samuschat.ui.components.InitialAvatar(message.senderUsername, url = message.senderAvatarUrl)
                     Surface(color = if (message.senderEmail == email) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.medium) {
                         Column(Modifier.widthIn(max = 280.dp).padding(12.dp)) {
                             Text(message.content)

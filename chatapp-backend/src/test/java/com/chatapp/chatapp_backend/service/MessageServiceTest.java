@@ -41,7 +41,7 @@ class MessageServiceTest {
     @BeforeEach
     void setup() {
         service = new MessageService(messages, channels, users, permissions, members,
-                new MessageFactory(), new MessageMapper(), notifications, events);
+                new MessageFactory(), new MessageMapper(users), notifications, events);
         var server = new Server(); server.setId(10L);
         channel = new Channel(); channel.setId(1L); channel.setServer(server);
     }

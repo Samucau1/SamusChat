@@ -37,6 +37,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 
 data class ProfileState(
     val username: String? = null,
@@ -74,6 +76,13 @@ class ProfileViewModel(private val app: SamusChatApplication, private val email:
         mutableState.value = mutableState.value.copy(photo = user.avatarUrl, banner = user.bannerUrl, background = user.backgroundUrl, notice = "Imagem atualizada na sua conta.")
         if (slot == "avatar") preferences.edit().remove(email).apply()
     }
+    fun saveCroppedAvatar(bytes: ByteArray) = perform {
+        val body = bytes.toRequestBody("image/png".toMediaType())
+        val part = okhttp3.MultipartBody.Part.createFormData("file", "avatar.png", body)
+        val user = app.api.uploadProfileMedia(app.tokens.authorization(), "avatar", part).data()
+        mutableState.value = mutableState.value.copy(photo = user.avatarUrl, notice = "Enquadramento salvo na sua conta.")
+        preferences.edit().remove(email).apply()
+    }
     fun removeMedia(slot: String) = perform {
         val user = app.api.deleteProfileMedia(app.tokens.authorization(), slot).data()
         if (slot == "avatar") preferences.edit().remove(email).apply()
@@ -110,9 +119,11 @@ fun ProfileScreen(app: SamusChatApplication, email: String, onLogout: () -> Unit
     var bio by rememberSaveable(state.bio) { mutableStateOf(state.bio) }
     var color by rememberSaveable(state.accentColor) { mutableStateOf(state.accentColor) }
     var mediaSlot by rememberSaveable { mutableStateOf("avatar") }
+    var cropUri by remember { mutableStateOf<Uri?>(null) }
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let { model.saveMedia(mediaSlot, it) }
+        uri?.let { if (mediaSlot == "avatar") cropUri = it else model.saveMedia(mediaSlot, it) }
     }
+    cropUri?.let { uri -> AvatarCropDialog(uri, close = { cropUri = null }, save = { bytes -> model.saveCroppedAvatar(bytes); cropUri = null }, original = { model.saveMedia("avatar", uri); cropUri = null }) }
     Box(Modifier.fillMaxSize()) {
     AppearanceImage(state.background, null, Modifier.matchParentSize())
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)).imePadding().verticalScroll(rememberScrollState()).padding(24.dp),

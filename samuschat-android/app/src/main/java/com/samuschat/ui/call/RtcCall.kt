@@ -45,7 +45,8 @@ class RtcCall(
     private var control: DataChannel? = null
     private var sharingState = false
     private var sharingGeneration = 0
-    private val deviceAudio = DeviceAudio()
+    private val deviceAudio = DeviceAudio(context)
+    private val screenSender: RtpSender
     private val candidates = java.util.concurrent.CopyOnWriteArrayList<GatheredCandidate>()
     @Volatile private var lastCandidateAt = 0L
 
@@ -87,7 +88,7 @@ class RtcCall(
         audioTrack = factory.createAudioTrack("microphone", audioSource)
         videoSource = factory.createVideoSource(true)
         videoTrack = factory.createVideoTrack("screen", videoSource)
-        peer.addTrack(audioTrack, listOf("call")); peer.addTrack(videoTrack, listOf("call"))
+        peer.addTrack(audioTrack, listOf("call")); screenSender = checkNotNull(peer.addTrack(videoTrack, listOf("call")))
         if (caller) {
             attachChannel(peer.createDataChannel("device-audio", DataChannel.Init().apply { ordered = false; maxRetransmits = 0 }))
             attachChannel(peer.createDataChannel("call-control", DataChannel.Init()))
@@ -97,12 +98,19 @@ class RtcCall(
                 if (closed) return
                 peer.getStats { report ->
                     val inbound = report.statsMap.values.filter { it.type == "inbound-rtp" }.map {
-                        mapOf("kind" to it.members["kind"], "packets" to it.members["packetsReceived"], "frames" to it.members["framesDecoded"])
+                        mapOf("kind" to it.members["kind"], "packets" to it.members["packetsReceived"], "frames" to it.members["framesDecoded"],
+                            "dropped" to it.members["framesDropped"], "decoder" to it.members["decoderImplementation"],
+                            "codec" to report.statsMap[it.members["codecId"] as? String]?.members?.get("mimeType"))
+                    }
+                    val outbound = report.statsMap.values.filter { it.type == "outbound-rtp" && it.members["kind"] == "video" }.map {
+                        mapOf("frames" to it.members["framesEncoded"], "fps" to it.members["framesPerSecond"],
+                            "encoder" to it.members["encoderImplementation"], "encodeSeconds" to it.members["totalEncodeTime"],
+                            "limitation" to it.members["qualityLimitationReason"])
                     }
                     val transport = report.statsMap.values.firstOrNull { it.type == "transport" && it.members["selectedCandidatePairId"] != null }
                     val pair = report.statsMap[transport?.members?.get("selectedCandidatePairId") as? String]
                     val candidate = report.statsMap[pair?.members?.get("localCandidateId") as? String]
-                    android.util.Log.i("CallStats", "inbound=$inbound localCandidate=${candidate?.members?.get("candidateType")}")
+                    android.util.Log.i("CallStats", "inbound=$inbound outbound=$outbound localCandidate=${candidate?.members?.get("candidateType")}")
                 }
                 main.postDelayed(this, 5000)
             }
@@ -128,13 +136,12 @@ class RtcCall(
         channel = value
         value.registerObserver(object : DataChannel.Observer {
             override fun onBufferedAmountChange(previousAmount: Long) {}
-            override fun onStateChange() {}
+            override fun onStateChange() { if (!closed) deviceAudio.advertise(value) }
             override fun onMessage(buffer: DataChannel.Buffer) {
-                if (closed || buffer.data.remaining() > 640) return
-                val bytes = ByteArray(buffer.data.remaining()); buffer.data.get(bytes)
-                if (buffer.binary) deviceAudio.receive(bytes)
+                if (!closed) deviceAudio.receive(value, buffer)
             }
         })
+        deviceAudio.advertise(value)
     }
 
     private suspend fun create(offer: Boolean): SessionDescription = suspendCancellableCoroutine { continuation ->
@@ -193,12 +200,18 @@ class RtcCall(
         capturer.initialize(texture, context, videoSource.capturerObserver)
         val sizing = ScreenCaptureMonitor(context) { size ->
             if (!closed && generation == sharingGeneration && screen === capturer) {
-                capturer.changeCaptureFormat(size.width, size.height, 15)
+                val profile = screenSizing?.profile ?: return@ScreenCaptureMonitor
+                videoSource.adaptOutputFormat(size.width, size.height, profile.fps)
+                capturer.changeCaptureFormat(size.width, size.height, profile.fps)
                 if (BuildConfig.DEBUG) android.util.Log.i("ScreenCapture", "resized=${size.width}x${size.height}")
             }
         }
         screenSizing = sizing
-        capturer.startCapture(sizing.dimensions.width, sizing.dimensions.height, 15)
+        configureScreenSender(screenSender, sizing.profile)
+        // ScreenCapturerAndroid ignores its fps argument: throttle before encoding.
+        videoSource.adaptOutputFormat(sizing.dimensions.width, sizing.dimensions.height, sizing.profile.fps)
+        capturer.startCapture(sizing.dimensions.width, sizing.dimensions.height, sizing.profile.fps)
+        if (BuildConfig.DEBUG) android.util.Log.i("ScreenCapture", "profile=${sizing.profile} size=${sizing.dimensions}")
         sizing.start()
         sharingState = true; sendSharingState()
     }
@@ -208,7 +221,7 @@ class RtcCall(
         val projection = checkNotNull(screen?.mediaProjection) { "Compartilhe a tela primeiro" }
         val data = checkNotNull(channel) { "Aguarde a conexão da chamada" }
         check(data.state() == DataChannel.State.OPEN) { "Aguarde a conexão da chamada" }
-        deviceAudio.start(projection, data) { main.post { if (!closed) onFailure("Falha na captura do áudio do dispositivo") } }
+        deviceAudio.start(projection, { listOf(data) }) { main.post { if (!closed) onFailure("Falha na captura do áudio do dispositivo") } }
     }
     fun stopSharing() {
         screenSizing?.stop(); screenSizing = null
@@ -220,6 +233,13 @@ class RtcCall(
     }
     private fun sendSharingState() {
         control?.takeIf { it.state() == DataChannel.State.OPEN }?.send(DataChannel.Buffer(ByteBuffer.wrap((if (sharingState) "screen:on" else "screen:off").toByteArray()), false))
+    }
+    fun sampleVoice(callback: (Double, Double) -> Unit) {
+        if (closed) return
+        peer.getStats { report ->
+            val (local, remote) = audioLevels(report)
+            main.post { if (!closed) callback(local, remote) }
+        }
     }
     fun close() {
         if (closed) return

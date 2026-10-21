@@ -16,7 +16,9 @@ export function lowerScreenProfile(profile: ScreenProfile): ScreenProfile | null
 
 export function screenCaptureOptions(profile: ScreenProfile = desktopScreenProfile): DisplayMediaStreamOptions {
   // getDisplayMedia disallows mandatory min/exact constraints in the picker.
-  return { video: { width: { ideal: profile.width }, height: { ideal: profile.height }, frameRate: { ideal: profile.frameRate } }, audio: true, systemAudio: 'include' } as DisplayMediaStreamOptions;
+  return { video: { width: { ideal: profile.width }, height: { ideal: profile.height }, frameRate: { ideal: profile.frameRate } },
+    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, suppressLocalAudioPlayback: false },
+    systemAudio: 'include', windowAudio: 'system', selfBrowserSurface: 'include' } as DisplayMediaStreamOptions;
 }
 
 export async function constrainScreen(track: MediaStreamTrack, profile: ScreenProfile = desktopScreenProfile) {
@@ -58,7 +60,7 @@ export async function constrainSender(sender: RTCRtpSender, profile: ScreenProfi
 
 export function captureScreen(profile: ScreenProfile): Promise<MediaStream> {
   if (!window.isSecureContext || !navigator.mediaDevices?.getDisplayMedia) {
-    throw new Error('Compartilhar tela exige Chrome, Edge ou Firefox atualizado, em HTTPS ou localhost. Abra o PC em http://127.0.0.1:5175.');
+    throw new Error('Compartilhar tela exige navegador compatível em HTTPS ou localhost. Abra o PC em http://127.0.0.1:5173.');
   }
   // Invoke the picker directly within the click gesture, before any await.
   return navigator.mediaDevices.getDisplayMedia(screenCaptureOptions(profile));
@@ -123,10 +125,12 @@ export async function probeScreenHardware(): Promise<ScreenHardware> {
   return { cores, memory, efficientCodec, probed, recommendation: screenProfile(small ? 750 : efficientCodec && (cores ?? 0) >= 8 ? 1080 : 900, 30) };
 }
 export function preferEfficientEncoder(connection: RTCPeerConnection, sender: RTCRtpSender, hardware: ScreenHardware | null) {
-  if (!hardware?.efficientCodec) return;
+  // With inconclusive hardware probes prefer interoperable H264, widely
+  // available on mobile hardware. Preserve every alternate codec and RTX.
+  const chosenCodec = hardware?.efficientCodec ?? 'video/H264';
   const transceiver = connection.getTransceivers().find(item => item.sender === sender);
   const codecs = RTCRtpSender.getCapabilities?.('video')?.codecs ?? [];
-  const preferred = codecs.filter(item => item.mimeType.toLowerCase() === hardware.efficientCodec!.toLowerCase());
+  const preferred = codecs.filter(item => item.mimeType.toLowerCase() === chosenCodec.toLowerCase());
   if (!transceiver?.setCodecPreferences || !preferred.length) return;
   try { transceiver.setCodecPreferences([...preferred, ...codecs.filter(item => !preferred.includes(item))]); }
   catch { /* Keep the browser's interoperable codec order if unavailable. */ }

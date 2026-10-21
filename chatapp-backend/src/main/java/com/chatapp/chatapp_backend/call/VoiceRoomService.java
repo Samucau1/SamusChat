@@ -71,7 +71,7 @@ public class VoiceRoomService {
         own.setSeenAt(Instant.now());
         var sessions=calls.active(email).stream().filter(c->id.equals(c.getChannelId())).toList();
         for(var call:sessions) {if(call.getCaller().equals(email))call.setCallerSeen(Instant.now());else call.setCalleeSeen(Instant.now());}
-        var contacts=participants.stream().map(p->users.findByEmail(p.getEmail()).orElseThrow()).map(u->new CallService.Contact(u.getEmail(),u.getUsername())).toList();
+        var contacts=participants.stream().map(p->users.findByEmail(p.getEmail()).orElseThrow()).map(u->new CallService.Contact(u.getEmail(),u.getUsername(),u.getAvatarUrl())).toList();
         return new Room(id,contacts,sessions.stream().map(CallService::view).toList(),6);
     }
     @Transactional

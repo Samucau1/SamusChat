@@ -15,11 +15,28 @@ async function login(page: Page, email: string) {
 }
 const gif = { name: 'avatar.gif', mimeType: 'image/gif', buffer: Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64') };
 
+test('foto de outro usuário aparece na lista e na chamada e some após remoção', async ({ page, request }) => {
+  const a = await account(request, 'photo_a'), b = await account(request, 'photo_b');
+  const uploaded = await request.post('/api/users/me/media/avatar', { headers: { Authorization: `Bearer ${a.token}` }, multipart: { file: gif } });
+  expect(uploaded.ok()).toBeTruthy();
+  await login(page, b.email);
+  const contact = page.getByRole('button', { name: a.username, exact: true });
+  await expect(contact.locator('img')).toHaveAttribute('src', /\.png$/);
+  await expect.poll(() => contact.locator('img').evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+  await contact.click(); await page.getByRole('button', { name: 'Ligar', exact: true }).click();
+  await expect(page.locator('[data-participant-id=remote] .call-avatar img')).toHaveAttribute('src', /\.png$/);
+  await page.getByRole('button', { name: 'Encerrar chamada', exact: true }).click();
+  expect((await request.delete('/api/users/me/media/avatar', { headers: { Authorization: `Bearer ${a.token}` } })).ok()).toBeTruthy();
+  await page.getByRole('button', { name: 'Atualizar lista', exact: true }).click();
+  await expect(contact.locator('img')).toHaveCount(0);
+});
+
 test('perfil GIF e servidor personalizado persistem; membros, cargos e exclusão funcionam', async ({ page, request }) => {
   const a = await account(request, 'custom_a'), b = await account(request, 'custom_b');
   await login(page, a.email);
   await page.locator('.profile-button').click();
   await page.getByLabel('Foto ou GIF do perfil', { exact: true }).setInputFiles(gif);
+  await page.getByRole('button', { name: 'Usar GIF original', exact: true }).click();
   await expect(page.getByRole('dialog').locator('img.avatar')).toHaveAttribute('src', /\.png$/);
   await page.getByLabel('Fundo do perfil', { exact: true }).setInputFiles(gif);
   await expect(page.locator('main.chat')).toHaveCSS('background-image', /appearance.*\.png/);
@@ -67,7 +84,7 @@ test('canal de chamada: dois clientes, áudio, tela a 30 fps e saída', async ({
     await page.getByRole('button', { name: 'Sala desktop', exact: true }).click(); await other.getByRole('button', { name: 'Sala desktop', exact: true }).click();
     await page.getByRole('button', { name: '☎ reunião', exact: true }).click(); await other.getByRole('button', { name: '☎ reunião', exact: true }).click();
     await expect(page.locator('.voice-room')).toContainText('2/6 participantes');
-    await expect.poll(() => page.locator('.voice-room video').evaluateAll(videos => videos.filter(video => (video as HTMLVideoElement).srcObject).length)).toBe(1);
+    await expect.poll(() => page.locator('.voice-room audio').evaluateAll(elements => elements.filter(element => (element as HTMLAudioElement).srcObject).length)).toBe(1);
     await page.getByRole('button', { name: 'Silenciar microfone do canal' }).click();
     await expect(page.getByRole('button', { name: 'Ativar microfone do canal' })).toHaveAttribute('aria-pressed', 'true');
     await page.getByRole('button', { name: 'Configurações da transmissão', exact: true }).click();

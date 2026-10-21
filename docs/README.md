@@ -1,5 +1,7 @@
 # Documentação do SamusChat
 
+- [Investigação de voz, áudio de transmissão e tela cheia — 16/10/2026](CORRECOES_MIDIA_2026-10-16.md)
+
 - [Launcher PC: iniciar serviços e abrir o navegador](LAUNCHER_PC.md)
 
 - [Privacidade e limpeza das contas locais — 16/10/2026](PRIVACIDADE_CONTAS_2026-10-16.md)
@@ -61,5 +63,10 @@
 - [Etapa 14: interface e portfólio](ETAPA_14.md)
 - [Visão original do projeto](VISAO_ORIGINAL.md)
 - [Documento histórico v2.1 (Word)](SamusChat_Documentacao_v2_1.docx)
+
+- [Fotos compartilhadas e atividade de voz](AVATARES_E_ATIVIDADE_DE_VOZ_2026-10-16.md)
+- [Enquadramento de foto e áudio Opus da transmissão](RECORTE_E_AUDIO_OPUS_2026-10-16.md)
+- [Desempenho e orçamento da captura Android](DESEMPENHO_ANDROID_2026-10-20.md)
+- [Investigação dos cortes de áudio, vídeo e negociação SDP](ESTABILIDADE_MIDIA_2026-10-20.md)
 
 Os comandos dos guias usam a raiz do repositório como referência, exceto quando indicam uma pasta específica. Capturas ficam em `images/`; logs e relatórios gerados permanecem nas pastas de build, fora do Git.

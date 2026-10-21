@@ -1,6 +1,6 @@
 package com.samuschat.ui.call
 
-data class CallContact(val email: String, val username: String)
+data class CallContact(val email: String, val username: String, val avatarUrl: String? = null)
 data class IceServerConfig(val urls: List<String>, val username: String, val credential: String)
 data class CallInvite(val callee: String, val requestId: String)
 data class CallAction(val action: String, val sdp: String? = null)

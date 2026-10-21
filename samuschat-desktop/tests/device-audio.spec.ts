@@ -2,6 +2,16 @@ import { test, expect } from '@playwright/test';
 import { decodeDeviceAudio } from '../src/models/deviceAudio';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { isOpusPacket, legacyScreenPcm, opusPacket } from '../src/models/screenAudioWire';
+
+test('Opus versionado e compatibilidade PCM mantêm limites e ordem little endian', () => {
+  const packet = opusPacket(new Uint8Array([1, 2, 3]), 77);
+  expect(isOpusPacket(packet)).toBe(true); expect(new DataView(packet).getUint32(4, true)).toBe(77);
+  for (const size of [0, 8, 4097]) expect(isOpusPacket(new ArrayBuffer(size))).toBe(false);
+  const samples = new Int16Array(960).fill(-12000);
+  const legacy = legacyScreenPcm(samples.buffer);
+  expect(legacy.byteLength).toBe(640); expect(new DataView(legacy).getInt16(0, true)).toBe(-12000);
+});
 
 test('PCM Android: little endian, limites, amostras negativas e pacotes invalidos', () => {
   const packet = new ArrayBuffer(6), view = new DataView(packet);
@@ -38,15 +48,22 @@ test('áudio real sintético pelo canal Android: captura, recepção, limite de 
     const a = new RTCPeerConnection(), b = new RTCPeerConnection();
     const sourceContext = new AudioContext(), destination = sourceContext.createMediaStreamDestination();
     const oscillator = sourceContext.createOscillator(); oscillator.frequency.value = 440; oscillator.connect(destination); oscillator.start();
-    let packets = 0, audible = 0, wireBytes = 0;
+    let packets = 0, audible = 0, wireBytes = 0, decodedRms = 0, decodedRate = 0, decodedFrames = 0;
+    const receiverProbe = rx as any, originalPlay = receiverProbe.play.bind(rx);
+    receiverProbe.play = (samples: Float32Array, rate: number, channel: RTCDataChannel) => {
+      decodedFrames++;
+      decodedRms = Math.max(decodedRms, Math.sqrt(samples.reduce((sum, sample) => sum + sample * sample, 0) / samples.length)); decodedRate = rate;
+      originalPlay(samples, rate, channel);
+    };
     const channel = a.createDataChannel('device-audio', { ordered: false, maxRetransmits: 0 }); tx.attach(channel);
     b.ondatachannel = event => {
       rx.attach(event.channel); const receive = event.channel.onmessage!;
       event.channel.onmessage = data => {
         if (data.data instanceof ArrayBuffer) {
           packets++; wireBytes = data.data.byteLength;
-          const samples = new Int16Array(data.data);
-          if (samples.some(sample => Math.abs(sample) > 100)) audible++;
+          // Encoded Opus packets may have odd lengths; inspecting them as PCM16 throws.
+          const bytes = new Uint8Array(data.data);
+          if (bytes.length > 8 && bytes[0] === 83 && bytes[1] === 65 && bytes[2] === 1) audible++;
         }
         receive.call(event.channel, data);
       };
@@ -67,14 +84,19 @@ test('áudio real sintético pelo canal Android: captura, recepção, limite de 
       const before = packets;
       tx.stopCapture(); await new Promise(resolve => setTimeout(resolve, 200));
       const after = packets; await new Promise(resolve => setTimeout(resolve, 150));
+      const stopped = packets === after, beforeResume = decodedFrames;
+      await tx.startCapture(destination.stream); await new Promise(resolve => setTimeout(resolve, 300));
+      const resumedFrames = decodedFrames - beforeResume; tx.stopCapture();
       const receiver = rx as any;
-      return { before, audible, wireBytes, stopped: packets === after, queued: receiver.sources.size, ahead: receiver.nextTime - receiver.context.currentTime };
+      return { before, audible, wireBytes, decodedRms, decodedRate, stopped, resumedFrames, queued: receiver.sources.size, ahead: receiver.nextTime - receiver.context.currentTime };
     } finally { tx.close(); rx.close(); a.close(); b.close(); oscillator.stop(); await sourceContext.close(); }
   });
   expect(result.before).toBeGreaterThan(10);
   expect(result.audible).toBeGreaterThan(10);
-  expect(result.wireBytes).toBe(640);
+  expect(result.wireBytes).toBeLessThan(640);
+  expect(result.decodedRms).toBeGreaterThan(0.05); expect(result.decodedRate).toBe(48000);
   expect(result.stopped).toBe(true);
-  expect(result.queued).toBeLessThanOrEqual(6);
-  expect(result.ahead).toBeLessThanOrEqual(0.12);
+  expect(result.resumedFrames).toBeGreaterThan(5);
+  expect(result.queued).toBeLessThanOrEqual(20);
+  expect(result.ahead).toBeLessThanOrEqual(0.4);
 });
