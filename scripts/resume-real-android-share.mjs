@@ -24,6 +24,8 @@ async function tap(text) {
   }
   throw new Error(`Android control unavailable: ${text}`);
 }
+adb('shell', 'am', 'start', '-n', 'com.samuschat/.MainActivity');
+await delay(500);
 if (!process.argv.includes('--existing-call')) {
 await evaluate(19222, '127.0.0.1:5173', "(()=>{window.reverseAudioProbe={frames:0,rms:0};const button=[...document.querySelectorAll('button')].find(i=>i.textContent==='Ligar');if(!button||button.disabled)throw Error('Call unavailable');button.click();return true;})()");
 await tap('Aceitar');
@@ -32,17 +34,27 @@ for (let attempt = 0; attempt < 60; attempt++) {
   if (attempt === 59) throw new Error('Call did not connect'); await delay(500);
 }
 }
+if (process.env.SAMUSCHAT_MEASURE_PREFIX) {
+  const { measureAndroid } = await import('./measure-android-performance.mjs');
+  await measureAndroid(serial, `${process.env.SAMUSCHAT_MEASURE_PREFIX}-voice`);
+}
 await tap('Compartilhar tela do celular'); await tap('Iniciar');
 adb('shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', 'https://m.youtube.com/watch?v=aqz-KE-bpKQ', '-p', 'com.android.chrome');
 adb('forward', 'tcp:19223', 'localabstract:chrome_devtools_remote');
-await delay(1500);
+// Navigation can replace the CDP target while YouTube is loading.
+for (let attempt=0; attempt<30; attempt++) {
+  try { if (await evaluate(19223, 'youtube.com/watch', "(document.querySelector('video')?.readyState ?? 0) >= 2")) break; } catch {}
+  if (attempt === 29) throw Error('YouTube source did not become ready');
+  await delay(1000);
+}
 console.log(await evaluate(19223, 'youtube.com/watch', `(async()=>{
   const video=document.querySelector('video'); if(!video) throw Error('YouTube video not loaded');
   const player=document.getElementById('movie_player');
   const qualities=player?.getAvailableQualityLevels?.()||[];
   if(qualities.includes('hd720')) { player.setPlaybackQualityRange?.('hd720','hd720'); player.setPlaybackQuality?.('hd720'); }
+  player?.unMute?.(); player?.setVolume?.(50);
   video.muted=false;video.volume=0.5;await video.play();
-  try {await video.requestFullscreen(); await screen.orientation.lock('landscape');} catch {}
+  // Rotation/fullscreen are exercised separately, without pausing YouTube here.
   return JSON.stringify({videoPlaying:!video.paused,sourceWidth:video.videoWidth,sourceHeight:video.videoHeight,availableQualities:qualities});
 })()`));
 await delay(4000);

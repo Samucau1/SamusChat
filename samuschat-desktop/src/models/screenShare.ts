@@ -125,10 +125,12 @@ export async function probeScreenHardware(): Promise<ScreenHardware> {
   return { cores, memory, efficientCodec, probed, recommendation: screenProfile(small ? 750 : efficientCodec && (cores ?? 0) >= 8 ? 1080 : 900, 30) };
 }
 export function preferEfficientEncoder(connection: RTCPeerConnection, sender: RTCRtpSender, hardware: ScreenHardware | null) {
-  if (!hardware?.efficientCodec) return;
+  // With inconclusive hardware probes prefer interoperable H264, widely
+  // available on mobile hardware. Preserve every alternate codec and RTX.
+  const chosenCodec = hardware?.efficientCodec ?? 'video/H264';
   const transceiver = connection.getTransceivers().find(item => item.sender === sender);
   const codecs = RTCRtpSender.getCapabilities?.('video')?.codecs ?? [];
-  const preferred = codecs.filter(item => item.mimeType.toLowerCase() === hardware.efficientCodec!.toLowerCase());
+  const preferred = codecs.filter(item => item.mimeType.toLowerCase() === chosenCodec.toLowerCase());
   if (!transceiver?.setCodecPreferences || !preferred.length) return;
   try { transceiver.setCodecPreferences([...preferred, ...codecs.filter(item => !preferred.includes(item))]); }
   catch { /* Keep the browser's interoperable codec order if unavailable. */ }

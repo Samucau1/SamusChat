@@ -15,6 +15,12 @@ const serial = process.argv[2]; if (!/^[A-Za-z0-9_-]+$/.test(serial || '')) thro
 const adb = path.join(root, '.android-sdk/platform-tools/adb.exe');
 const device = (...args) => execFileSync(adb, ['-s', serial, ...args], { encoding: 'utf8', timeout: 20000 });
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+async function measurePhase(phase) {
+  if (process.env.SAMUSCHAT_MEASURE_PREFIX) {
+    const { measureAndroid } = await import('./measure-android-performance.mjs');
+    await measureAndroid(serial, `${process.env.SAMUSCHAT_MEASURE_PREFIX}-${phase}`);
+  }
+}
 async function leaveVoiceSessions(token) {
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
   const result = await fetch('http://127.0.0.1:8080/api/servers', { headers }); const servers = (await result.json()).data;
@@ -78,6 +84,7 @@ const contacts = (await (await context.request.get('http://127.0.0.1:8080/api/ca
 assert.equal(contacts.length, 1, 'Expected only the other authorized test account');
 const existing = page.getByRole('button', { name: 'Encerrar chamada', exact: true }); if (await existing.count()) await existing.click();
 const source = await context.newPage();
+await measurePhase('idle');
 await source.goto('https://www.youtube.com/watch?v=aqz-KE-bpKQ', { waitUntil: 'domcontentloaded', timeout: 60000 });
 for (const label of ['Reject all', 'Rejeitar tudo', 'Accept all', 'Aceitar tudo']) { const button = source.getByRole('button', { name: label, exact: true }); if (await button.count()) await button.first().click(); }
 await source.locator('video').first().waitFor({ timeout: 30000 });
@@ -103,6 +110,7 @@ catch {
   console.log('REAL_TEST_CONNECTION_PENDING: visible browser retained for diagnosis.');
   await new Promise(resolve => { process.on('SIGINT', resolve); process.on('SIGTERM', resolve); browser.on('disconnected', resolve); }); await browser.close(); process.exit(1);
 }
+await measurePhase('voice');
 await page.getByRole('button', { name: 'Compartilhar tela', exact: true }).click();
 await page.getByRole('button', { name: 'Parar transmissão', exact: true }).waitFor({ timeout: 30000 });
 console.log('REAL_TEST_ACTIVE: YouTube tab is streaming from the PC test account to the cellular test account.');

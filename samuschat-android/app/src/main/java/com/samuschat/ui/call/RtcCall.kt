@@ -102,10 +102,15 @@ class RtcCall(
                             "dropped" to it.members["framesDropped"], "decoder" to it.members["decoderImplementation"],
                             "codec" to report.statsMap[it.members["codecId"] as? String]?.members?.get("mimeType"))
                     }
+                    val outbound = report.statsMap.values.filter { it.type == "outbound-rtp" && it.members["kind"] == "video" }.map {
+                        mapOf("frames" to it.members["framesEncoded"], "fps" to it.members["framesPerSecond"],
+                            "encoder" to it.members["encoderImplementation"], "encodeSeconds" to it.members["totalEncodeTime"],
+                            "limitation" to it.members["qualityLimitationReason"])
+                    }
                     val transport = report.statsMap.values.firstOrNull { it.type == "transport" && it.members["selectedCandidatePairId"] != null }
                     val pair = report.statsMap[transport?.members?.get("selectedCandidatePairId") as? String]
                     val candidate = report.statsMap[pair?.members?.get("localCandidateId") as? String]
-                    android.util.Log.i("CallStats", "inbound=$inbound localCandidate=${candidate?.members?.get("candidateType")}")
+                    android.util.Log.i("CallStats", "inbound=$inbound outbound=$outbound localCandidate=${candidate?.members?.get("candidateType")}")
                 }
                 main.postDelayed(this, 5000)
             }
@@ -195,13 +200,18 @@ class RtcCall(
         capturer.initialize(texture, context, videoSource.capturerObserver)
         val sizing = ScreenCaptureMonitor(context) { size ->
             if (!closed && generation == sharingGeneration && screen === capturer) {
-                capturer.changeCaptureFormat(size.width, size.height, SCREEN_CAPTURE_FPS)
+                val profile = screenSizing?.profile ?: return@ScreenCaptureMonitor
+                videoSource.adaptOutputFormat(size.width, size.height, profile.fps)
+                capturer.changeCaptureFormat(size.width, size.height, profile.fps)
                 if (BuildConfig.DEBUG) android.util.Log.i("ScreenCapture", "resized=${size.width}x${size.height}")
             }
         }
         screenSizing = sizing
-        configureScreenSender(screenSender)
-        capturer.startCapture(sizing.dimensions.width, sizing.dimensions.height, SCREEN_CAPTURE_FPS)
+        configureScreenSender(screenSender, sizing.profile)
+        // ScreenCapturerAndroid ignores its fps argument: throttle before encoding.
+        videoSource.adaptOutputFormat(sizing.dimensions.width, sizing.dimensions.height, sizing.profile.fps)
+        capturer.startCapture(sizing.dimensions.width, sizing.dimensions.height, sizing.profile.fps)
+        if (BuildConfig.DEBUG) android.util.Log.i("ScreenCapture", "profile=${sizing.profile} size=${sizing.dimensions}")
         sizing.start()
         sharingState = true; sendSharingState()
     }

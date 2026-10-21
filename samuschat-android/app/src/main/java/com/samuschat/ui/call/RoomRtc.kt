@@ -96,6 +96,7 @@ class RoomRtc(
                 }
                 override fun onConnectionChange(state: PeerConnection.PeerConnectionState) { main.post { if (!closed && !disposed) {
                     connected = state == PeerConnection.PeerConnectionState.CONNECTED
+                    if (connected) applyScreenProfile()
                     onConnection(id, connected)
                     if (state == PeerConnection.PeerConnectionState.DISCONNECTED) main.postDelayed({ if (!closed && !disposed && !connected) onFailure("Conexão do canal perdida. Entre novamente.") }, 35000)
                 } } }
@@ -118,6 +119,7 @@ class RoomRtc(
             }
             main.postDelayed({ if (!closed && !disposed && !connected) onFailure("A conexão de mídia do canal expirou. Confira a rede e o TURN.") }, 60000)
         }
+        private fun applyScreenProfile() { screenSizing?.profile?.let { configureScreenSender(screenSender, it) } }
         private fun attach(channel: DataChannel) {
             if (channel.label() == "device-audio" && deviceChannel == null) {
                 deviceChannel = channel
@@ -201,13 +203,17 @@ class RoomRtc(
         capturer.initialize(texture, context, videoSource.capturerObserver)
         val sizing = ScreenCaptureMonitor(context) { size ->
             if (!closed && current == generation && screen === capturer) {
-                capturer.changeCaptureFormat(size.width, size.height, SCREEN_CAPTURE_FPS)
+                val profile = screenSizing?.profile ?: return@ScreenCaptureMonitor
+                videoSource.adaptOutputFormat(size.width, size.height, profile.fps)
+                capturer.changeCaptureFormat(size.width, size.height, profile.fps)
                 if (BuildConfig.DEBUG) android.util.Log.i("ScreenCapture", "resized=${size.width}x${size.height}")
             }
         }
         screenSizing = sizing
-        peers.values.forEach { configureScreenSender(it.screenSender) }
-        capturer.startCapture(sizing.dimensions.width, sizing.dimensions.height, SCREEN_CAPTURE_FPS)
+        peers.values.forEach { configureScreenSender(it.screenSender, sizing.profile) }
+        videoSource.adaptOutputFormat(sizing.dimensions.width, sizing.dimensions.height, sizing.profile.fps)
+        capturer.startCapture(sizing.dimensions.width, sizing.dimensions.height, sizing.profile.fps)
+        if (BuildConfig.DEBUG) android.util.Log.i("ScreenCapture", "room profile=${sizing.profile} size=${sizing.dimensions}")
         sizing.start()
         sharing = true; peers.values.forEach { it.advertise() }
     }

@@ -29,6 +29,7 @@ class DeviceAudio(private val context: Context) {
     @Volatile private var playing = true
     private var record: AudioRecord? = null
     private var captureThread: Thread? = null
+    private val opusSequence = java.util.concurrent.atomic.AtomicInteger()
     private val queue = ArrayBlockingQueue<ByteArray>(5)
     private var receivedPackets = 0L
     private var nonzeroSamples = 0L
@@ -80,7 +81,7 @@ class DeviceAudio(private val context: Context) {
         recorder.startRecording(); capturing = true
         captureThread = Thread({
             val pcm = ByteArray(1920)
-            val encoder = runCatching { ScreenOpusEncoder() }.getOrNull()
+            val encoder = runCatching { ScreenOpusEncoder(opusSequence) }.getOrNull()
             try {
                 while (capturing) {
                     val read = recorder.read(pcm, 0, pcm.size, AudioRecord.READ_BLOCKING)

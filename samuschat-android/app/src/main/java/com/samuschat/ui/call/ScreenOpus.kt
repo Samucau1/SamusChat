@@ -23,7 +23,7 @@ internal fun opusHeader(): ByteArray = ByteBuffer.allocate(19).order(ByteOrder.L
     .put("OpusHead".toByteArray()).put(1).put(1).putShort(0).putInt(48000).putShort(0).put(0).array()
 
 /** Uses the OS codec: no bundled encoder or new native dependency. */
-class ScreenOpusEncoder : AutoCloseable {
+class ScreenOpusEncoder(private val packetSequence: java.util.concurrent.atomic.AtomicInteger = java.util.concurrent.atomic.AtomicInteger()) : AutoCloseable {
     private val codec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_AUDIO_OPUS)
     private val info = MediaCodec.BufferInfo()
     private var sequence = 0
@@ -49,7 +49,7 @@ class ScreenOpusEncoder : AutoCloseable {
                 if (info.size > 0 && info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG == 0) {
                     val bytes = ByteArray(info.size)
                     codec.getOutputBuffer(output)!!.apply { position(info.offset); limit(info.offset + info.size); get(bytes) }
-                    if (bytes.size <= 4088) send(ScreenAudioWire.packet(bytes, (info.presentationTimeUs / 20000L).toInt()))
+                    if (bytes.size <= 4088) send(ScreenAudioWire.packet(bytes, packetSequence.getAndIncrement()))
                 }
             } finally { codec.releaseOutputBuffer(output, false) }
         }

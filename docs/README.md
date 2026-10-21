@@ -66,5 +66,7 @@
 
 - [Fotos compartilhadas e atividade de voz](AVATARES_E_ATIVIDADE_DE_VOZ_2026-10-16.md)
 - [Enquadramento de foto e áudio Opus da transmissão](RECORTE_E_AUDIO_OPUS_2026-10-16.md)
+- [Desempenho e orçamento da captura Android](DESEMPENHO_ANDROID_2026-10-20.md)
+- [Investigação dos cortes de áudio, vídeo e negociação SDP](ESTABILIDADE_MIDIA_2026-10-20.md)
 
 Os comandos dos guias usam a raiz do repositório como referência, exceto quando indicam uma pasta específica. Capturas ficam em `images/`; logs e relatórios gerados permanecem nas pastas de build, fora do Git.

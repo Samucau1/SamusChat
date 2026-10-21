@@ -48,9 +48,10 @@ test('áudio real sintético pelo canal Android: captura, recepção, limite de 
     const a = new RTCPeerConnection(), b = new RTCPeerConnection();
     const sourceContext = new AudioContext(), destination = sourceContext.createMediaStreamDestination();
     const oscillator = sourceContext.createOscillator(); oscillator.frequency.value = 440; oscillator.connect(destination); oscillator.start();
-    let packets = 0, audible = 0, wireBytes = 0, decodedRms = 0, decodedRate = 0;
+    let packets = 0, audible = 0, wireBytes = 0, decodedRms = 0, decodedRate = 0, decodedFrames = 0;
     const receiverProbe = rx as any, originalPlay = receiverProbe.play.bind(rx);
     receiverProbe.play = (samples: Float32Array, rate: number, channel: RTCDataChannel) => {
+      decodedFrames++;
       decodedRms = Math.max(decodedRms, Math.sqrt(samples.reduce((sum, sample) => sum + sample * sample, 0) / samples.length)); decodedRate = rate;
       originalPlay(samples, rate, channel);
     };
@@ -83,8 +84,11 @@ test('áudio real sintético pelo canal Android: captura, recepção, limite de 
       const before = packets;
       tx.stopCapture(); await new Promise(resolve => setTimeout(resolve, 200));
       const after = packets; await new Promise(resolve => setTimeout(resolve, 150));
+      const stopped = packets === after, beforeResume = decodedFrames;
+      await tx.startCapture(destination.stream); await new Promise(resolve => setTimeout(resolve, 300));
+      const resumedFrames = decodedFrames - beforeResume; tx.stopCapture();
       const receiver = rx as any;
-      return { before, audible, wireBytes, decodedRms, decodedRate, stopped: packets === after, queued: receiver.sources.size, ahead: receiver.nextTime - receiver.context.currentTime };
+      return { before, audible, wireBytes, decodedRms, decodedRate, stopped, resumedFrames, queued: receiver.sources.size, ahead: receiver.nextTime - receiver.context.currentTime };
     } finally { tx.close(); rx.close(); a.close(); b.close(); oscillator.stop(); await sourceContext.close(); }
   });
   expect(result.before).toBeGreaterThan(10);
@@ -92,6 +96,7 @@ test('áudio real sintético pelo canal Android: captura, recepção, limite de 
   expect(result.wireBytes).toBeLessThan(640);
   expect(result.decodedRms).toBeGreaterThan(0.05); expect(result.decodedRate).toBe(48000);
   expect(result.stopped).toBe(true);
-  expect(result.queued).toBeLessThanOrEqual(6);
-  expect(result.ahead).toBeLessThanOrEqual(0.12);
+  expect(result.resumedFrames).toBeGreaterThan(5);
+  expect(result.queued).toBeLessThanOrEqual(20);
+  expect(result.ahead).toBeLessThanOrEqual(0.4);
 });

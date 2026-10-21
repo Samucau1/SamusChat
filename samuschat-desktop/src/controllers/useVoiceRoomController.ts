@@ -70,7 +70,7 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
       attach(peer, connection.createDataChannel('call-control'));
       attach(peer, connection.createDataChannel('device-audio', { ordered: false, maxRetransmits: 0 }));
     }
-    connection.ontrack = event => { if (active.current && peers.current.get(session.id) === peer) { peer.stream.addTrack(event.track); updateRemote(); } };
+    connection.ontrack = event => { if (active.current && peers.current.get(session.id) === peer) { configureScreenReceiver(event.receiver); peer.stream.addTrack(event.track); updateRemote(); } };
     connection.onconnectionstatechange = () => {
       if (connection.connectionState === 'failed' && active.current) errorRef.current(new Error(`Mídia interrompida com ${peer.email}. Saia e entre no canal novamente.`));
       if (connection.connectionState === 'connected' && screen.current) void constrainSender(peer.sender, screenProfile.current).catch(errorRef.current);
@@ -197,3 +197,4 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
   return { microphoneStream, changeMicrophone, audioBlocked, audioNotice, activateAudio, feedback, screenStarting, room, busy, muted, sharing, remote, preview: previewVisible ? preview : null, previewVisible, setPreviewVisible, join, leave, toggleMute, share };
 }
 export type VoiceRoomController = ReturnType<typeof useVoiceRoomController>;
+import { configureScreenReceiver } from '../models/screenReceiver';

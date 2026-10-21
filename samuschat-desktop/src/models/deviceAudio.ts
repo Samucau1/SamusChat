@@ -1,4 +1,5 @@
 import { isOpusPacket, legacyScreenPcm, opusHeader, opusPacket, opusReady } from './screenAudioWire';
+import { planAudioChunk } from './audioPlayout';
 export function decodeDeviceAudio(packet: ArrayBuffer): Float32Array<ArrayBuffer> | null {
   if (!packet.byteLength || packet.byteLength > 640 || packet.byteLength % 2) return null;
   const view = new DataView(packet), samples = new Float32Array(packet.byteLength / 2);
@@ -19,6 +20,7 @@ export class DeviceAudioTransport {
   private sequences = new Map<RTCDataChannel, number>();
   private encoder: any = null;
   private generation = 0;
+  private captureSequence = 0;
   private closed = false;
   constructor(private blocked: (value: boolean) => void, private notice: (value: string) => void = () => {}) {}
   async activate() {
@@ -51,7 +53,7 @@ export class DeviceAudioTransport {
           decoder.configure({ codec: 'opus', sampleRate: 48000, numberOfChannels: 1, description: opusHeader() }); this.decoders.set(channel, decoder);
         }
         const sequence = new DataView(event.data).getUint32(4, true);
-        if (sequence <= (this.sequences.get(channel) ?? -1) || decoder.decodeQueueSize > 5 || decoder.state !== 'configured') return;
+        if (sequence <= (this.sequences.get(channel) ?? -1) || decoder.decodeQueueSize >= 12 || decoder.state !== 'configured') return;
         this.sequences.set(channel, sequence);
         decoder.decode(new Chunk({ type: 'key', timestamp: sequence * 20000, data: new Uint8Array(event.data, 8) }));
       } else {
@@ -63,12 +65,12 @@ export class DeviceAudioTransport {
   private play(samples: Float32Array<ArrayBuffer>, rate: number, channel: RTCDataChannel) {
     const context = this.context; if (!context || this.closed) return;
     if (context.state !== 'running') { this.blocked(true); return; }
-    let next = this.timelines.get(channel) ?? 0;
-    if (next - context.currentTime > 0.1) next = context.currentTime;
+    const at = planAudioChunk(context.currentTime, this.timelines.get(channel), samples.length / rate);
+    if (at === null) return; // Drop overflow rather than overlap previously queued audio.
     const buffer = context.createBuffer(1, samples.length, rate); buffer.copyToChannel(samples, 0);
     const source = context.createBufferSource(); source.buffer = buffer; source.connect(context.destination);
     this.sources.add(source); source.onended = () => { this.sources.delete(source); source.disconnect(); };
-    const at = Math.max(context.currentTime, next); source.start(at); next = at + buffer.duration;
+    source.start(at); const next = at + buffer.duration;
     this.timelines.set(channel, next); this.nextTime = next;
   }
   async startCapture(stream: MediaStream): Promise<boolean> {
@@ -95,7 +97,7 @@ export class DeviceAudioTransport {
         this.encoder.configure({ codec: 'opus', sampleRate: 48000, numberOfChannels: 1, bitrate: 64000 });
       } catch { this.encoder?.close(); this.encoder = null; }
     }
-    let sequence = 0, lastNotice = 0;
+    let sequence = this.captureSequence, lastNotice = 0;
     worklet.port.onmessage = event => {
       if (this.closed || generation !== this.generation || !(event.data instanceof ArrayBuffer)) return;
       const targets = [...this.channels].filter(channel => channel.readyState === 'open');
@@ -105,6 +107,7 @@ export class DeviceAudioTransport {
         try { this.encoder.encode(frame); } finally { frame.close(); }
       }
       sequence++;
+      this.captureSequence = sequence;
       const legacy = targets.filter(channel => !compressed || !this.modern.has(channel));
       if (legacy.length) {
         const packet = legacyScreenPcm(event.data);

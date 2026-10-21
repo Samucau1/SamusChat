@@ -1,4 +1,6 @@
 import { DeviceAudioTransport } from '../models/deviceAudio';
+import { applyRemoteAnswer } from '../models/remoteAnswer';
+import { configureScreenReceiver } from '../models/screenReceiver';
 import { captureMicrophone, rememberMicrophone } from '../models/microphone';
 import { useScreenFeedback } from './useScreenFeedback';
 import type { ScreenPreferences } from './useScreenPreferences';
@@ -90,6 +92,7 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
     }
     connection.ontrack = event => {
       if (!alive.current || peer.current !== connection) return;
+      configureScreenReceiver(event.receiver);
       setRemote(previous => { const value = previous || new MediaStream(); if (!value.getTracks().some(track => track.id === event.track.id)) value.addTrack(event.track); return new MediaStream(value.getTracks()); });
     };
     connection.onconnectionstatechange = () => {
@@ -118,7 +121,7 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
       const next = await api.callAction(value.id, 'answer', connection.localDescription!.sdp);
       if (generation.current === currentGeneration && alive.current) update(next);
     } else if (value.caller === email && value.answer && peer.current && !peer.current.remoteDescription) {
-      await peer.current.setRemoteDescription({ type: 'answer', sdp: value.answer });
+      await applyRemoteAnswer(peer.current, value.answer);
     }
   }
   useEffect(() => {
@@ -129,7 +132,7 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
         working.current = true;
         const epoch = generation.current;
         try { const value = ref.current ? await api.call(ref.current.id) : (await api.calls()).find(item => item.channelId === null); if (active && generation.current === epoch && value) await progress(value); }
-        catch (problem) { if (active) { errorRef.current(problem); if (ref.current) { const id = ref.current.id; cleanup(); update(null); void api.callAction(id, 'end').catch(() => {}); } } }
+        catch (problem) { if (active && generation.current === epoch) { errorRef.current(problem); if (ref.current) { const id = ref.current.id; cleanup(); update(null); void api.callAction(id, 'end').catch(() => {}); } } }
         finally { working.current = false; }
       }
       if (active) timer = window.setTimeout(tick, 1500);

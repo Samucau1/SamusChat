@@ -82,7 +82,8 @@ fun HomeScreen(
     var demoChat by rememberSaveable { mutableStateOf(false) }
     var demoMessages by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
     val scope = rememberCoroutineScope()
-    fun navigate(page: Int) { scope.launch { pager.animateScrollToPage(page) } }
+    // Buttons switch directly; HorizontalPager still handles the swipe gesture.
+    fun navigate(page: Int) { scope.launch { pager.scrollToPage(page) } }
     BackHandler(pager.currentPage != 1 || demoChat || contactEmail != null) {
         demoChat = false; contactEmail = null
         navigate(1)
