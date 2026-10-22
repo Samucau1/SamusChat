@@ -5,6 +5,8 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiService {
+    @GET("api/direct-messages/unread") suspend fun directUnread(@Header("Authorization") token: String): Response<ApiResponse<List<DirectUnread>>>
+    @POST("api/direct-messages/read") suspend fun readDirect(@Header("Authorization") token: String, @Query("contact") contact: String, @Query("throughId") throughId: Long): Response<ApiResponse<Int>>
     @POST("api/auth/logout") suspend fun logout(@Header("Authorization") token: String): Response<ApiResponse<Unit>>
     @PUT("api/users/me/appearance") suspend fun updateAppearance(@Header("Authorization") token: String, @Body request: ProfileAppearance): Response<ApiResponse<User>>
     @Multipart @POST("api/users/me/media/{slot}") suspend fun uploadProfileMedia(@Header("Authorization") token: String, @Path("slot") slot: String, @Part file: okhttp3.MultipartBody.Part): Response<ApiResponse<User>>

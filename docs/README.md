@@ -70,3 +70,6 @@
 - [Investigação dos cortes de áudio, vídeo e negociação SDP](ESTABILIDADE_MIDIA_2026-10-20.md)
 
 Os comandos dos guias usam a raiz do repositório como referência, exceto quando indicam uma pasta específica. Capturas ficam em `images/`; logs e relatórios gerados permanecem nas pastas de build, fora do Git.
+# Beta local de 20/10/2026
+
+[Mensagens em tempo real, nao lidas, notificacoes e validacao da beta local](BETA_LOCAL_2026-10-20.md).

@@ -22,7 +22,7 @@ import com.samuschat.ui.call.*
 import kotlinx.coroutines.*
 
 @Composable
-fun DirectConversation(app: SamusChatApplication, email: String, contact: CallContact, calls: CallViewModel, onBack: () -> Unit) {
+fun DirectConversation(app: SamusChatApplication, email: String, contact: CallContact, calls: CallViewModel, inbox: DirectInbox, visible: Boolean, onBack: () -> Unit) {
     var messages by remember(contact.email) { mutableStateOf(emptyList<DirectMessage>()) }
     var draft by rememberSaveable(contact.email) { mutableStateOf("") }
     var error by remember(contact.email) { mutableStateOf<String?>(null) }
@@ -40,8 +40,6 @@ fun DirectConversation(app: SamusChatApplication, email: String, contact: CallCo
     LaunchedEffect(contact.email, lifecycle, session?.token) {
         val token = session?.token ?: return@LaunchedEffect
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            val socket = DirectMessageSocket()
-            var connected = false
             suspend fun sync() {
                 try {
                     val latest = app.api.directMessages(app.tokens.authorization(), contact.email, 0).data()
@@ -49,22 +47,26 @@ fun DirectConversation(app: SamusChatApplication, email: String, contact: CallCo
                     if (oldestPage == 0) hasOlder = latest.size == 50
                     error = null
                 } catch (cancelled: CancellationException) { throw cancelled }
-                catch (failure: Exception) { error = failure.message ?: "Não foi possível atualizar a conversa" }
+                catch (failure: Exception) { error = failure.message }
             }
-            try {
-                while (isActive) {
-                    if (!connected) {
-                        sync()
-                        socket.connect(token,
-                            onMessage = { message -> launch {
-                                if (belongsToDirectConversation(message, email, contact.email)) merge(listOf(message))
-                            } },
-                            onOpen = { launch { connected = true; live = true; sync() } },
-                            onClose = { launch { connected = false; live = false } })
-                    }
-                    delay(3000)
-                }
-            } finally { live = false; socket.disconnect() }
+            launch { inbox.events.collect { message ->
+                if (belongsToDirectConversation(message, email, contact.email)) merge(listOf(message))
+            } }
+            launch { snapshotFlow { inbox.live }.collect { connected -> live = connected; if (connected) sync() } }
+            sync()
+            while (isActive) { delay(3000); if (!inbox.live) sync() }
+        }
+    }
+    LaunchedEffect(messages, lifecycle, visible) {
+        if (!visible) return@LaunchedEffect
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            val throughId = messages.filter { it.senderEmail == contact.email && it.recipientEmail == email }.maxOfOrNull { it.id }
+            if (throughId != null) try {
+                app.api.readDirect(app.tokens.authorization(), contact.email, throughId).data()
+                inbox.refresh(app)
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { /* retry on next history/focus */ }
+            awaitCancellation()
         }
     }
     Column(Modifier.fillMaxSize().imePadding()) {

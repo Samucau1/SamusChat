@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 public class DirectMessage {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private LocalDateTime readAt;
     @Column(name = "sender_email", nullable = false) private String senderEmail;
     @Column(name = "recipient_email", nullable = false) private String recipientEmail;
     @Column(nullable = false) private String senderUsername;

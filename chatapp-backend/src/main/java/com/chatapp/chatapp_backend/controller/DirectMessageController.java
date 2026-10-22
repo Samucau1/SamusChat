@@ -18,6 +18,24 @@ public class DirectMessageController {
     private final org.springframework.context.ApplicationEventPublisher events;
     private final com.chatapp.chatapp_backend.security.PublicIdentityService identities;
 
+    public record Unread(String senderEmail, long count, long lastId) {}
+
+    @GetMapping("/unread")
+    public ApiResponse<List<Unread>> unread(Authentication auth) {
+        return ApiResponse.success(messages.unread(auth.getName()).stream()
+            .map(item -> new Unread(item.getSenderEmail(), item.getCount(), item.getLastId())).toList());
+    }
+
+    @PostMapping("/read")
+    @org.springframework.transaction.annotation.Transactional
+    public ApiResponse<Integer> read(Authentication auth, @RequestParam String contact, @RequestParam long throughId) {
+        contact = identities.resolve(contact);
+        validateContact(auth.getName(), contact);
+        if (throughId <= 0 || !messages.existsByIdAndSenderEmailAndRecipientEmail(throughId, contact, auth.getName()))
+            throw new IllegalArgumentException("Mensagem indisponivel nesta conversa");
+        return ApiResponse.success(messages.markRead(auth.getName(), contact, throughId));
+    }
+
     private void validateContact(String me, String contact) {
         if (me.equals(contact)) throw new IllegalArgumentException("Escolha outro contato");
         if (!users.existsByEmail(contact)) throw new IllegalArgumentException("Contato não encontrado");

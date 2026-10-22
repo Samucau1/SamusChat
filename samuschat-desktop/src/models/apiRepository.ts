@@ -9,6 +9,8 @@ export interface ApiMessage { recipientEmail?: string; id: number; content: stri
 export interface CallSession { id: string; caller: string; callee: string; state: string; offer: string | null; answer: string | null; channelId: number | null }
 export class ApiError extends Error { constructor(message: string, public status: number) { super(message); } }
 export class ApiRepository {
+  unreadDirect() { return this.request<import('./directInbox').UnreadSummary[]>('/api/direct-messages/unread'); }
+  readDirect(contact:string, throughId:number) { return this.post<number>(`/api/direct-messages/read?contact=${encodeURIComponent(contact)}&throughId=${throughId}`, {}); }
   constructor(public token = '') {}
   async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const headers = new Headers(init.headers);

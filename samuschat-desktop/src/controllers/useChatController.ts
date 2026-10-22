@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
+import {useDirectInbox} from './useDirectInbox';
 import { ApiRepository, mergeApiMessages, type ApiMessage, type ApiServer, type Contact, type User, type Member, type MemberRole } from '../models/apiRepository';
 
 export interface Conversation { id: string; name: string; description: string; channelId?: number; contact?: string; serverId?: number }
@@ -23,6 +24,8 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
   const selected = useRef(conversation); selected.current = conversation;
   const working = useRef(false);
   const errorRef = useRef(onError); errorRef.current = onError;
+  const syncSelected = useRef<()=>void>(()=>{});
+  const directInbox=useDirectInbox(api,user,selected,setMessages,syncSelected,messages);
   const available: Conversation[] = serverId === null ? contacts.map(item => ({ id: `dm:${item.email}`, name: item.username, description: 'Conversa privada', contact: item.email })) :
     (servers.find(item => item.id === serverId)?.channels ?? []).filter(channel => channel.type === 'TEXT').map(channel => ({ id: `channel:${channel.id}`, name: channel.name, description: 'Conversa do servidor', channelId: channel.id, serverId }));
   const conversations = available.filter(item => [item.name, item.contact ?? ''].some(value => value.toLocaleLowerCase('pt-BR').includes(query.toLocaleLowerCase('pt-BR'))));
@@ -65,8 +68,9 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
       finally { polling = false; if (alive && initial) setLoading(false); }
     };
     setLoading(true); void sync(true);
+    syncSelected.current=()=>{void sync();};
     let client: Client | undefined;
-    if (current.channelId !== undefined || current.contact) {
+    if (current.channelId !== undefined) {
       setConnection('Conectando');
       const url = new URL('/ws/websocket', window.location.href); url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
       client = new Client({ brokerURL: url.href, connectHeaders: { Authorization: `Bearer ${api.token}` }, reconnectDelay: 3000, connectionTimeout: 10000,
@@ -83,7 +87,7 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
     } else setConnection('Atualização periódica');
     const offline = () => { connected = false; if (alive) setConnection('Reconectando'); client?.forceDisconnect(); };
     window.addEventListener('offline', offline);
-    const timer = window.setInterval(() => { if (!connected) void sync(); }, 3000);
+    const timer = window.setInterval(() => { if (!(current.contact ? directInbox.live.current : connected)) void sync(); if(current.contact)setConnection(directInbox.live.current?'Ao vivo':'Reconectando'); }, 3000);
     return () => { alive = false; window.removeEventListener('offline', offline); abort.abort(); clearInterval(timer); void client?.deactivate(); };
   }, [api, conversation?.id]);
   async function loadOlder() {
@@ -125,6 +129,6 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
   async function deleteMessage(id: number) { const current = conversation; if (current?.channelId === undefined) return false; return run(async () => { await api.deleteMessage(current.channelId!, id); if (selected.current?.id === current.id) setMessages(previous => previous.filter(item => item.id !== id)); }); }
   function hasDraft(id: string) { const saved = drafts.current.get(id); return Boolean(saved && (saved.text || saved.file)); }
   async function loadAttachment(url: string) { try { return await api.attachment(url); } catch (problem) { errorRef.current(problem); return null; } }
-  return { contacts, loadAttachment, user, saveAppearance, profileMedia, saveServerAppearance, serverMedia, members, loadMembers, updateRole, removeMember, deleteMessage, hasDraft, servers, serverId, conversations, conversation, messages, draft, setDraft: updateDraft, query, setQuery, profile: { name: user.username, status: user.publicId ?? user.email }, profileOpen, setProfileOpen, selectArea, selectConversation, sendMessage, saveProfile, createServer, joinServer, createChannel, busy, loading, connection, hasOlder, loadOlder, file, chooseFile, refresh: () => run(refresh) };
+  return { ...directInbox, contacts, loadAttachment, user, saveAppearance, profileMedia, saveServerAppearance, serverMedia, members, loadMembers, updateRole, removeMember, deleteMessage, hasDraft, servers, serverId, conversations, conversation, messages, draft, setDraft: updateDraft, query, setQuery, profile: { name: user.username, status: user.publicId ?? user.email }, profileOpen, setProfileOpen, selectArea, selectConversation, sendMessage, saveProfile, createServer, joinServer, createChannel, busy, loading, connection: conversation?.contact ? (directInbox.connected ? 'Ao vivo' : 'Reconectando') : connection, hasOlder, loadOlder, file, chooseFile, refresh: () => run(refresh) };
 }
 export type ChatController = ReturnType<typeof useChatController>;

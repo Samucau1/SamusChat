@@ -11,6 +11,7 @@ data class ServerRequest(val name: String, val description: String?)
 data class ChannelRequest(val name: String, val type: String)
 data class Message(val id: Long, val content: String?, val senderEmail: String, val senderUsername: String, val channelId: Long, val attachmentUrl: String?, val attachmentType: String?, val createdAt: String, val type: String? = null, val senderAvatarUrl: String? = null)
 data class MessageRequest(val content: String)
+data class DirectUnread(val senderEmail: String, val count: Long, val lastId: Long)
 
 data class DirectMessage(val id: Long, val content: String, val senderEmail: String, val senderUsername: String, val recipientEmail: String, val createdAt: String, val senderAvatarUrl: String? = null)
 data class MemberResponse(val id: Long, val userEmail: String, val username: String, val role: String)

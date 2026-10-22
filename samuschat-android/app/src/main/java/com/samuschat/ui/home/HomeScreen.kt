@@ -78,6 +78,7 @@ fun HomeScreen(
     var channelType by rememberSaveable { mutableStateOf("TEXT") }
     var contactEmail by rememberSaveable { mutableStateOf<String?>(null) }
     var contactName by rememberSaveable { mutableStateOf("") }
+    val inbox = rememberDirectInbox(app, identity, if (pager.currentPage == 1) contactEmail else null)
     val callState by calls.state.collectAsStateWithLifecycle()
     var demoChat by rememberSaveable { mutableStateOf(false) }
     var demoMessages by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
@@ -108,6 +109,15 @@ fun HomeScreen(
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).background(ChatBackground)) {
+            inbox.notice?.let { message ->
+                Surface(color = MaterialTheme.colorScheme.primaryContainer) {
+                    Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Nova mensagem de " + message.senderUsername, Modifier.weight(1f))
+                        TextButton(onClick = { contactEmail = message.senderEmail; contactName = message.senderUsername; inbox.notice = null; navigate(1) }) { Text("Abrir") }
+                        TextButton(onClick = { inbox.notice = null }) { Text("Fechar") }
+                    }
+                }
+            }
             CallPanel(calls)
             callState.error?.let { Text(it, Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.error) }
             callState.room?.let { room ->
@@ -124,8 +134,8 @@ fun HomeScreen(
                     channelId = id; channelName = name; channelType = type
                 }
                 demoChat -> DemoConversation(demoMessages, { demoMessages = ArrayList(demoMessages + it) }) { demoChat = false }
-                contactEmail != null -> key(contactEmail) { DirectConversation(app, identity, CallContact(contactEmail!!, contactName), calls) { contactEmail = null } }
-                else -> FriendsScreen(email, callState.contacts, { contactEmail = it.email; contactName = it.username }, { calls.refreshContacts() }) { demoChat = true }
+                contactEmail != null -> key(contactEmail) { DirectConversation(app, identity, CallContact(contactEmail!!, contactName), calls, inbox, pager.currentPage == 1) { contactEmail = null } }
+                else -> FriendsScreen(email, callState.contacts, inbox.unread, { contactEmail = it.email; contactName = it.username }, { calls.refreshContacts() }) { demoChat = true }
             }
             }
         }
@@ -133,7 +143,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun FriendsScreen(email: String, contacts: List<CallContact>, onContact: (CallContact) -> Unit, onRefresh: () -> Unit, onChat: () -> Unit) {
+private fun FriendsScreen(email: String, contacts: List<CallContact>, unread: Map<String, Long>, onContact: (CallContact) -> Unit, onRefresh: () -> Unit, onChat: () -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         item {
@@ -173,6 +183,7 @@ private fun FriendsScreen(email: String, contacts: List<CallContact>, onContact:
                     InitialAvatar(contact.username, url = contact.avatarUrl)
                     Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                         Text(contact.username)
+                        unread[contact.email]?.takeIf { it > 0 }?.let { Text("$it mensagens nao lidas", color = MaterialTheme.colorScheme.primary) }
                     }
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Abrir conversa com ${contact.username}")
                 }
