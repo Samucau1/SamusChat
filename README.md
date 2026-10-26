@@ -87,7 +87,7 @@ Capturas da [validação de mídia e estabilidade de 08/10/2026](docs/REGRESSAO_
 | Salas de chamada com vários participantes | Implementado | Implementado |
 | Áudio interno do dispositivo | Implementado no Android compatível | Próxima etapa |
 | Login Google | Código integrado; configuração OAuth pendente | Interface de login Google pendente |
-| Notificações push | Integração opcional com Firebase | Próxima etapa |
+| Notificações push | Integração opcional com Firebase | Service worker + FCM implementados; configuração Firebase pendente |
 
 A configuração real de Google, SMTP e Firebase é independente do login por email e senha. Chamadas pela internet também exigem infraestrutura de rede adequada; a configuração de STUN/TURN é fornecida pela API.
 

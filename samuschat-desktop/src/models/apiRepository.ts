@@ -64,6 +64,7 @@ export class ApiRepository {
   deleteMessage(channelId: number, messageId: number) { return this.request<void>(`/api/channels/${channelId}/messages/${messageId}`, { method: 'DELETE' }); }
   deleteFile(fileUrl: string) { return this.request<void>(`/api/files?fileUrl=${encodeURIComponent(fileUrl)}`, { method: 'DELETE' }); }
   registerDevice(fcmToken: string) { return this.post<void>('/api/devices/register', { fcmToken }); }
+  webPushStatus() { return this.request<{enabled:boolean}>('/api/devices/web-push/status'); }
   unregisterDevice(fcmToken: string) { return this.request<void>(`/api/devices/unregister?fcmToken=${encodeURIComponent(fcmToken)}`, { method: 'DELETE' }); }
   joinCallRoom(id: number) { return this.post<VoiceRoom>(`/api/channels/${id}/call/join`); }
   callRoom(id: number) { return this.request<VoiceRoom>(`/api/channels/${id}/call`); }

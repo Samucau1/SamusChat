@@ -88,6 +88,26 @@ class DeviceControllerTests {
         assertThat(userDeviceRepository.existsByFcmToken("fcm-token-123")).isFalse();
     }
 
+    @Test
+    void webPushStatusRequiresAuthenticationAndLogoutRemovesPushDevices() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/devices/web-push/status"))
+                .andExpect(status().isUnauthorized());
+        String token = registerAndLogin();
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/devices/web-push/status")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.enabled").value(false));
+        mockMvc.perform(post("/api/devices/register").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"fcmToken\":\"web-push-test-token\"}"))
+                .andExpect(status().isOk());
+        assertThat(userDeviceRepository.findAll()).hasSize(1);
+        mockMvc.perform(post("/api/auth/logout").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+        assertThat(userDeviceRepository.findAll()).isEmpty();
+        mockMvc.perform(post("/api/devices/register").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"fcmToken\":\"revoked-token\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
     private String registerAndLogin() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .header("X-Forwarded-For", "10.0.1.1")

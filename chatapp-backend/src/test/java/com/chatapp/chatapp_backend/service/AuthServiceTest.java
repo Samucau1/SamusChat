@@ -31,7 +31,7 @@ class AuthServiceTest {
 
     @BeforeEach
     void setup() {
-        service = new AuthService(users, passwords, jwt, sanitizer, mock(com.chatapp.chatapp_backend.security.AccountLoginLimiter.class));
+        service = new AuthService(users, passwords, jwt, sanitizer, mock(com.chatapp.chatapp_backend.security.AccountLoginLimiter.class), mock(com.chatapp.chatapp_backend.repository.UserDeviceRepository.class));
     }
 
     @Test

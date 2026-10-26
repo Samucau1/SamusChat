@@ -3,6 +3,7 @@ import {Client} from '@stomp/stompjs';
 import {DirectInbox} from '../models/directInbox';
 import {type ApiRepository,type ApiMessage,type User,mergeApiMessages} from '../models/apiRepository';
 import type {Conversation} from './useChatController';
+import {backgroundPushActive,enableBackgroundPush,disableBackgroundPush} from '../models/browserPush';
 
 export function useDirectInbox(api:ApiRepository,user:User,selected:MutableRefObject<Conversation|null>,setMessages:Dispatch<SetStateAction<ApiMessage[]>>,syncSelected:MutableRefObject<()=>void>,messages:ApiMessage[]){
  const inbox=useRef(new DirectInbox(user.publicId??user.email));
@@ -14,13 +15,35 @@ export function useDirectInbox(api:ApiRepository,user:User,selected:MutableRefOb
  const reads=useRef(new Map<string,number>());
  const pendingReads=useRef(new Set<string>());
  const [notificationStatus,setNotificationStatus]=useState('');
+ const [notificationBusy,setNotificationBusy]=useState(false);
+ const owner=user.publicId??user.email;
+ const [pushEnabled,setPushEnabled]=useState(()=>backgroundPushActive(owner));
  async function enableNotifications(){
+  if(notificationBusy)return;
   if(!('Notification' in window)){setNotificationStatus('Este navegador não oferece notificações.');return;}
+  setNotificationBusy(true);
   try{
    const permission=Notification.permission==='default'?await Notification.requestPermission():Notification.permission;
-   setNotificationStatus(permission==='granted'?'Avisos ativados enquanto o SamusChat estiver aberto.':permission==='denied'?'Notificações bloqueadas. Libere nas configurações deste site no navegador.':'Permissão não concedida. Você pode tentar novamente.');
-  }catch{setNotificationStatus('Não foi possível ativar os avisos neste navegador.');}
+   if(permission==='granted'){
+    const enabled=await enableBackgroundPush(api,owner);setPushEnabled(enabled);
+    setNotificationStatus(enabled?'Avisos ativados mesmo com a aba do SamusChat fechada.':'Avisos ativados enquanto o SamusChat estiver aberto. O push com a aba fechada ainda não foi configurado.');
+   }else setNotificationStatus(permission==='denied'?'Notificações bloqueadas. Libere nas configurações deste site no navegador.':'Permissão não concedida. Você pode tentar novamente.');
+  }catch(problem){setNotificationStatus(problem instanceof Error?problem.message:'Não foi possível ativar os avisos neste navegador.');}
+  finally{setNotificationBusy(false);}
  }
+ async function disableNotifications(){
+  if(notificationBusy)return;setNotificationBusy(true);
+  try{await disableBackgroundPush(api,owner);setPushEnabled(false);setNotificationStatus('Avisos com a aba fechada desativados neste navegador.');}
+  catch{setNotificationStatus('Não foi possível desativar os avisos. Confira sua conexão e tente novamente.');}
+  finally{setNotificationBusy(false);}
+ }
+ useEffect(()=>{
+  if(!backgroundPushActive(owner)||!('Notification' in window)||Notification.permission!=='granted')return;
+  let alive=true;
+  // Refresh the provider token and the authenticated server registration on each login.
+  void enableBackgroundPush(api,owner).then(value=>{if(alive)setPushEnabled(value);}).catch(()=>{if(alive)setNotificationStatus('Não foi possível renovar o push. Ative os avisos para tentar novamente.');});
+  return()=>{alive=false;};
+ },[api,owner]);
  useEffect(()=>{
   let alive=true;let snapshotVersion=0;
   const snapshot=async()=>{const version=++snapshotVersion,cursor=inbox.current.snapshotCursor;try{const items=await api.unreadDirect();if(alive&&version===snapshotVersion){inbox.current.replace(items,cursor);setUnread(inbox.current.counts);}}catch{/* retry on focus/reconnection */}};
@@ -38,7 +61,7 @@ export function useDirectInbox(api:ApiRepository,user:User,selected:MutableRefOb
        setUnread(inbox.current.counts);
        if(document.hidden||active!==item.senderEmail){
         setNotice(item);
-        if(document.hidden&&'Notification' in window&&Notification.permission==='granted'){
+        if(document.hidden&&!backgroundPushActive(owner)&&'Notification' in window&&Notification.permission==='granted'){
          const notification=new Notification('Nova mensagem no SamusChat',{body:`${item.senderUsername} enviou uma mensagem`,tag:`dm:${item.senderEmail}`});
          notification.onclick=()=>{window.focus();notification.close();};
         }
@@ -63,5 +86,5 @@ export function useDirectInbox(api:ApiRepository,user:User,selected:MutableRefOb
   void api.readDirect(contact,throughId).then(()=>{reads.current.set(contact,throughId);inbox.current.read(contact,throughId);setUnread(inbox.current.counts);succeeded=true;})
    .catch(()=>{}).finally(()=>{pendingReads.current.delete(contact);if(succeeded)setVisibility(n=>n+1);});
  },[api,contact,messages,visibility]);
- return {unread,notice,dismissNotice:()=>setNotice(null),enableNotifications,notificationStatus,live,connected};
+ return {unread,notice,dismissNotice:()=>setNotice(null),enableNotifications,disableNotifications,notificationBusy,pushEnabled,notificationStatus,live,connected};
 }

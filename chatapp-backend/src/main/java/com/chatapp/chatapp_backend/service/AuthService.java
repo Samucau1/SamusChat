@@ -19,6 +19,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final InputSanitizer sanitizer;
     private final com.chatapp.chatapp_backend.security.AccountLoginLimiter loginLimiter;
+    private final com.chatapp.chatapp_backend.repository.UserDeviceRepository devices;
 
     public java.util.Map<String, String> sessionTokens(String accessToken) {
         if (!jwtUtil.isTokenValid(accessToken)) throw new SecurityException("Sessao invalida");
@@ -92,5 +93,6 @@ public class AuthService {
     public void logout(String email) {
         var user = userRepository.lockedByEmail(email).orElseThrow(() -> new SecurityException("Conta invalida"));
         user.setAuthVersion(user.getAuthVersion() + 1); userRepository.save(user);
+        devices.deleteByUserEmail(email);
     }
 }

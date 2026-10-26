@@ -17,6 +17,8 @@ Abra `http://127.0.0.1:5173` e entre com a mesma conta do celular. O Vite encami
 
 Testes reais de navegador: inicie `./scripts/start-desktop-test-api.ps1` na raiz e execute `npm run test:e2e` nesta pasta. Os testes usam somente o Microsoft Edge já instalado no computador, sem baixar Chrome/Chromium de testes. O ambiente de testes usa H2 descartável na porta 18082.
 
+Notificações com a aba fechada: implementação integrada ao Firebase Cloud Messaging e a um service worker. É necessário configurar o aplicativo Web, a chave pública VAPID e a credencial do backend antes de ativar a entrega real. Veja [configuração, funcionamento e testes do push Web](../docs/PUSH_WEB.md).
+
 Veja o [plano, tecnologias, entradas e arquitetura](../docs/DESKTOP_MVC.md).
 Veja também a [seleção de microfone e áudio de transmissão entre PC e celular](../docs/REGRESSAO_AUDIO_PC_CELULAR_2026-10-14.md).
 Veja [tela cheia e rotação da transmissão](../docs/TELA_CHEIA_ROTACAO_PC_ANDROID.md): controles sobre a imagem, espectador nativo em tela cheia e adaptação entre retrato e paisagem.

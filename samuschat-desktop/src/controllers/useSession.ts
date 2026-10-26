@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ApiError, ApiRepository, type User } from '../models/apiRepository';
+import {clearPushAfterLogout} from '../models/browserPush';
 const key = 'samuschat.desktop.session';
 export function useSession() {
   const [api] = useState(() => new ApiRepository(sessionStorage.getItem(key) || ''));
@@ -10,7 +11,12 @@ export function useSession() {
   function clearSession() { api.token = ''; sessionStorage.removeItem(key); setUser(null); setError(''); }
   async function logout() {
     if (busy) return; setBusy(true);
-    try { await api.logout(); clearSession(); }
+    try {
+      await api.logout();
+      const owner=user?.publicId??user?.email;
+      if(owner)await clearPushAfterLogout(owner).catch(()=>{});
+      clearSession();
+    }
     catch (problem) { handleError(problem); }
     finally { setBusy(false); }
   }

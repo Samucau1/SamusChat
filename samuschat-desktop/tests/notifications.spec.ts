@@ -66,6 +66,7 @@ test('granted notification permission explains that the app must remain open',as
  await login(page,user.email);
  await page.getByRole('button',{name:'Ativar avisos de mensagens'}).click();
  await expect(page.getByRole('status').filter({hasText:'Avisos ativados enquanto o SamusChat estiver aberto.'})).toBeVisible();
+ await expect(page.getByRole('status').filter({hasText:'O push com a aba fechada ainda não foi configurado.'})).toBeVisible();
 });
 
 test('blocked notifications explain how to enable them',async({page,context,request})=>{

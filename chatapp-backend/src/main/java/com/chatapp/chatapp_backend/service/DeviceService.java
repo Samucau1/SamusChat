@@ -14,8 +14,16 @@ import java.time.LocalDateTime;
 public class DeviceService {
 
     private final UserDeviceRepository userDeviceRepository;
+    private final com.chatapp.chatapp_backend.repository.UserRepository users;
+    private final com.chatapp.chatapp_backend.security.JwtUtil jwt;
 
-    public void registerDevice(String userEmail, DeviceTokenRequest request) {
+    @Transactional
+    public void registerDevice(String userEmail, DeviceTokenRequest request, String accessToken) {
+        // Serialize with logout; an in-flight request must not restore a revoked device.
+        users.lockedByEmail(userEmail).orElseThrow(() -> new SecurityException("Conta invalida"));
+        if (!jwt.isTokenValid(accessToken) || !userEmail.equals(jwt.extractEmail(accessToken))) {
+            throw new SecurityException("Sessao expirada ou revogada");
+        }
         if (request.getFcmToken() == null || request.getFcmToken().isBlank()) {
             throw new RuntimeException("Token FCM invalido");
         }

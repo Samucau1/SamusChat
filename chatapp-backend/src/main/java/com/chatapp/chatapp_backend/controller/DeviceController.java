@@ -20,11 +20,21 @@ public class DeviceController {
 
     private final DeviceService deviceService;
 
+    @org.springframework.beans.factory.annotation.Value("${app.notifications.strategy:push}")
+    private String notificationStrategy;
+
+    @org.springframework.web.bind.annotation.GetMapping("/web-push/status")
+    public ApiResponse<java.util.Map<String, Boolean>> webPushStatus() {
+        return ApiResponse.success(java.util.Map.of("enabled",
+                "push".equals(notificationStrategy) && !com.google.firebase.FirebaseApp.getApps().isEmpty()));
+    }
+
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<Void>> registerDevice(
             Authentication auth,
+            @org.springframework.web.bind.annotation.RequestHeader("Authorization") String authorization,
             @RequestBody DeviceTokenRequest request) {
-        deviceService.registerDevice(auth.getName(), request);
+        deviceService.registerDevice(auth.getName(), request, authorization.substring(7));
         return ResponseEntity.ok(ApiResponse.success(null, "Dispositivo registrado com sucesso"));
     }
 
