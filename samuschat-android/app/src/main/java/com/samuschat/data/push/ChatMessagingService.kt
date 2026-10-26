@@ -28,13 +28,15 @@ class ChatMessagingService : FirebaseMessagingService() {
         val manager = getSystemService(NotificationManager::class.java)
         if (!manager.areNotificationsEnabled()) return
         manager.createNotificationChannel(NotificationChannel("samuschat_messages", "Mensagens", NotificationManager.IMPORTANCE_DEFAULT))
-        val pending = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val notificationId = message.messageId?.hashCode() ?: message.data["channelId"]?.hashCode() ?: 1
+        val pending = PendingIntent.getActivity(this, notificationId, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val notification = NotificationCompat.Builder(this, "samuschat_messages")
             .setSmallIcon(android.R.drawable.ic_dialog_email)
             .setContentTitle(message.notification?.title ?: message.data["title"] ?: "SamusChat")
             .setContentText(message.notification?.body ?: message.data["body"] ?: "Nova mensagem")
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message.notification?.body ?: message.data["body"] ?: "Nova mensagem"))
             .setContentIntent(pending).setAutoCancel(true).build()
-        manager.notify(message.messageId?.hashCode() ?: 1, notification)
+        manager.notify(notificationId, notification)
     }
     override fun onDestroy() { scope.cancel(); super.onDestroy() }
     companion object {

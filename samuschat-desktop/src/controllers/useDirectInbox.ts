@@ -13,7 +13,14 @@ export function useDirectInbox(api:ApiRepository,user:User,selected:MutableRefOb
  const [visibility,setVisibility]=useState(0);
  const reads=useRef(new Map<string,number>());
  const pendingReads=useRef(new Set<string>());
- async function enableNotifications(){if('Notification' in window&&Notification.permission==='default')await Notification.requestPermission();}
+ const [notificationStatus,setNotificationStatus]=useState('');
+ async function enableNotifications(){
+  if(!('Notification' in window)){setNotificationStatus('Este navegador não oferece notificações.');return;}
+  try{
+   const permission=Notification.permission==='default'?await Notification.requestPermission():Notification.permission;
+   setNotificationStatus(permission==='granted'?'Avisos ativados enquanto o SamusChat estiver aberto.':permission==='denied'?'Notificações bloqueadas. Libere nas configurações deste site no navegador.':'Permissão não concedida. Você pode tentar novamente.');
+  }catch{setNotificationStatus('Não foi possível ativar os avisos neste navegador.');}
+ }
  useEffect(()=>{
   let alive=true;let snapshotVersion=0;
   const snapshot=async()=>{const version=++snapshotVersion,cursor=inbox.current.snapshotCursor;try{const items=await api.unreadDirect();if(alive&&version===snapshotVersion){inbox.current.replace(items,cursor);setUnread(inbox.current.counts);}}catch{/* retry on focus/reconnection */}};
@@ -56,5 +63,5 @@ export function useDirectInbox(api:ApiRepository,user:User,selected:MutableRefOb
   void api.readDirect(contact,throughId).then(()=>{reads.current.set(contact,throughId);inbox.current.read(contact,throughId);setUnread(inbox.current.counts);succeeded=true;})
    .catch(()=>{}).finally(()=>{pendingReads.current.delete(contact);if(succeeded)setVisibility(n=>n+1);});
  },[api,contact,messages,visibility]);
- return {unread,notice,dismissNotice:()=>setNotice(null),enableNotifications,live,connected};
+ return {unread,notice,dismissNotice:()=>setNotice(null),enableNotifications,notificationStatus,live,connected};
 }

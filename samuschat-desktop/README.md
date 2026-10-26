@@ -15,7 +15,7 @@ Abra `http://127.0.0.1:5173` e entre com a mesma conta do celular. O Vite encami
 
 `npm run build` verifica os tipos e gera `dist/`. `npm run preview` serve o build localmente e reutiliza o proxy configurado no Vite. Em produção, o servidor de hospedagem deve oferecer HTTPS/WSS e proxy na mesma origem.
 
-Testes reais de navegador: inicie `./scripts/start-desktop-test-api.ps1` na raiz, execute `npx playwright install chromium` nesta pasta e depois `npm run test:e2e`. O ambiente de testes usa H2 descartável na porta 18082.
+Testes reais de navegador: inicie `./scripts/start-desktop-test-api.ps1` na raiz e execute `npm run test:e2e` nesta pasta. Os testes usam somente o Microsoft Edge já instalado no computador, sem baixar Chrome/Chromium de testes. O ambiente de testes usa H2 descartável na porta 18082.
 
 Veja o [plano, tecnologias, entradas e arquitetura](../docs/DESKTOP_MVC.md).
 Veja também a [seleção de microfone e áudio de transmissão entre PC e celular](../docs/REGRESSAO_AUDIO_PC_CELULAR_2026-10-14.md).

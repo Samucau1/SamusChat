@@ -84,7 +84,7 @@ try {
   tapField(true); device('shell', 'input', 'text', password); device('shell', 'input', 'keyevent', '4');
   await tap('Entrar');
   await tap('Amigos');
-  browser = await chromium.launch({ channel: process.env.SAMUSCHAT_PROBE_BROWSER || undefined, ignoreDefaultArgs: youtube ? ['--mute-audio'] : [], args: youtube ? ['--auto-select-tab-capture-source-by-title=SamusChat YouTube validation', '--autoplay-policy=no-user-gesture-required'] : ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--autoplay-policy=no-user-gesture-required'] });
+  browser = await chromium.launch({ channel: 'msedge', ignoreDefaultArgs: youtube ? ['--mute-audio'] : [], args: youtube ? ['--auto-select-tab-capture-source-by-title=SamusChat YouTube validation', '--autoplay-policy=no-user-gesture-required'] : ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--autoplay-policy=no-user-gesture-required'] });
   const context = await browser.newContext({ permissions: ['microphone'], viewport: { width: 1440, height: 900 } });
   await context.addInitScript(({ codec, youtube }) => {
     if (youtube) Object.defineProperty(navigator.mediaDevices, 'getUserMedia', { configurable: true, value: async () => {

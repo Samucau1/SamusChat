@@ -186,7 +186,7 @@ try {
 
 const require = createRequire(path.join(root, 'samuschat-desktop/package.json'));
 const { chromium } = require('@playwright/test');
-const browser = await chromium.launch();
+const browser = await chromium.launch({channel: 'msedge'});
 try {
   const fixture = fixtures[0], context = await browser.newContext({ extraHTTPHeaders: { 'X-Forwarded-For': ip() } });
   const page = await context.newPage();

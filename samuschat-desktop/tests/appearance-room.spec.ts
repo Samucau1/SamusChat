@@ -22,6 +22,7 @@ test('foto de outro usuário aparece na lista e na chamada e some após remoçã
   await login(page, b.email);
   const contact = page.getByRole('button', { name: a.username, exact: true });
   await expect(contact.locator('img')).toHaveAttribute('src', /\.png$/);
+  await contact.scrollIntoViewIfNeeded();
   await expect.poll(() => contact.locator('img').evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
   await contact.click(); await page.getByRole('button', { name: 'Ligar', exact: true }).click();
   await expect(page.locator('[data-participant-id=remote] .call-avatar img')).toHaveAttribute('src', /\.png$/);
