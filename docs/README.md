@@ -1,5 +1,7 @@
 # Documentação do SamusChat
 
+- [Relatório de estabilidade, alta demanda e estratégia de evolução — 31/10/2026](RELATORIO_ESTABILIDADE_ESCALABILIDADE_2026-10-31.md)
+
 - [Investigação de voz, áudio de transmissão e tela cheia — 16/10/2026](CORRECOES_MIDIA_2026-10-16.md)
 
 - [Launcher PC: iniciar serviços e abrir o navegador](LAUNCHER_PC.md)

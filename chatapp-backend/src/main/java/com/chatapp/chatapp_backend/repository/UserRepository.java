@@ -11,6 +11,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     java.util.List<User> findTop100ByEmailNotOrderByUsernameAsc(String email);
     Optional<User> findByEmail(String email);
+    java.util.List<User> findByEmailIn(java.util.Collection<String> emails);
     Optional<User> findByGoogleSubject(String subject);
     boolean existsByEmail(String email);
     boolean existsByUsername(String username);

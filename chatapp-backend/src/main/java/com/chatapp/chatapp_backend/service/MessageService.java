@@ -113,9 +113,7 @@ public class MessageService {
 
         Collections.reverse(messages);
 
-        return messages.stream()
-                .map(messageMapper::toResponse)
-                .collect(Collectors.toList());
+        return messageMapper.toResponses(messages);
     }
 
     @Transactional
