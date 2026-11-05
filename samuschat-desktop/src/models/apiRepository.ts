@@ -9,7 +9,7 @@ export interface ApiMessage { recipientEmail?: string; id: number; content: stri
 export interface CallSession { id: string; caller: string; callee: string; state: string; offer: string | null; answer: string | null; channelId: number | null }
 export class ApiError extends Error { constructor(message: string, public status: number) { super(message); } }
 export class ApiRepository {
-  unreadDirect() { return this.request<import('./directInbox').UnreadSummary[]>('/api/direct-messages/unread'); }
+  unreadDirect(signal?: AbortSignal) { return this.request<import('./directInbox').UnreadSummary[]>('/api/direct-messages/unread', {signal}); }
   readDirect(contact:string, throughId:number) { return this.post<number>(`/api/direct-messages/read?contact=${encodeURIComponent(contact)}&throughId=${throughId}`, {}); }
   constructor(public token = '') {}
   async request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -17,7 +17,7 @@ export class ApiRepository {
     if (this.token) headers.set('Authorization', `Bearer ${this.token}`);
     if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json');
     let response: Response;
-    try { response = await fetch(path, { ...init, headers, signal: init.signal ?? AbortSignal.timeout(30000) }); }
+    try { response = await fetch(path, { ...init, headers, signal: init.signal ? AbortSignal.any([init.signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000) }); }
     catch { throw new ApiError('Não foi possível acessar o servidor. Confira sua conexão e tente novamente.', 0); }
     const envelope = await response.json().catch(() => null);
     if (!response.ok || !envelope?.success) throw new ApiError(envelope?.error || envelope?.message || 'Não foi possível concluir a solicitação.', response.status);

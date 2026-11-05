@@ -10,6 +10,8 @@
 - SHA-256 do APK: `9D790018854027A29B54D92671D32CB52F8A3DD943F25B77E7FA28BFF1EAA5A2`.
 - O aparelho conectado foi identificado como `unauthorized`; instalação e teste manual no celular não foram realizados.
 
+Atualização posterior: o aparelho foi autorizado, o APK instalado e os resultados registrados em [Teste no celular — 04/11/2026](TESTE_CELULAR_2026-11-04.md).
+
 Geração e validação:
 
 ```powershell

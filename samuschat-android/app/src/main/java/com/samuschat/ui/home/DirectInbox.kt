@@ -10,13 +10,16 @@ import com.samuschat.data.model.DirectMessage
 import com.samuschat.data.repository.data
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableSharedFlow
+import com.samuschat.util.CoalescingRecovery
+import com.samuschat.util.maintainConnection
 
 class DirectInbox {
     var unread by mutableStateOf<Map<String, Long>>(emptyMap())
     var notice by mutableStateOf<DirectMessage?>(null)
     var live by mutableStateOf(false)
     val events = MutableSharedFlow<DirectMessage>(extraBufferCapacity = 64)
-    suspend fun refresh(app: SamusChatApplication) {
+    private val recovery = CoalescingRecovery()
+    suspend fun refresh(app: SamusChatApplication) = recovery.run {
         try { unread = app.api.directUnread(app.tokens.authorization()).data().associate { it.senderEmail to it.count } }
         catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { /* retry at reconnect/focus */ }
@@ -37,8 +40,8 @@ fun rememberDirectInbox(app: SamusChatApplication, identity: String, activeConta
             var refresh: Job? = null
             try {
                 inbox.refresh(app)
-                while (isActive) {
-                    if (!inbox.live) socket.connect(token,
+                maintainConnection(connect = { opened, closed ->
+                    socket.connect(token,
                         onMessage = { message -> launch {
                             inbox.events.emit(message)
                             if (seen.accept(message)) {
@@ -47,10 +50,9 @@ fun rememberDirectInbox(app: SamusChatApplication, identity: String, activeConta
                             refresh?.cancel()
                             refresh = launch { delay(150); inbox.refresh(app) }
                         } },
-                        onOpen = { launch { inbox.live = true; inbox.refresh(app) } },
-                        onClose = { launch { inbox.live = false } })
-                    delay(3000)
-                }
+                        onOpen = { opened(); launch { inbox.live = true; inbox.refresh(app) } },
+                        onClose = { closed(); launch { inbox.live = false } })
+                }, disconnect = { socket.disconnect() })
             } finally { inbox.live = false; refresh?.cancel(); socket.disconnect() }
         }
     }

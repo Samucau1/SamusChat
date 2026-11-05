@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
+import {reconnectingClient, recoveryTask} from '../models/recovery';
 import {useDirectInbox} from './useDirectInbox';
 import { ApiRepository, mergeApiMessages, type ApiMessage, type ApiServer, type Contact, type User, type Member, type MemberRole } from '../models/apiRepository';
 
@@ -36,10 +37,11 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
   useEffect(() => { let alive = true; Promise.all([api.servers(), api.contacts()]).then(([s, c]) => { if (alive) { setServers(s); setContacts(c); } }).catch(problem => { if (alive) errorRef.current(problem); }); return () => { alive = false; }; }, [api]);
   useEffect(() => {
     let alive = true;
-    const refreshContacts = () => { if (!document.hidden) void api.contacts().then(value => { if (alive) setContacts(value); }).catch(() => {}); };
-    const timer = setInterval(refreshContacts, 15000);
+    const recovery = recoveryTask(async () => { try { const value = await api.contacts(); if (alive) setContacts(value); recovery.reset(); } catch { /* Back off until the next refresh. */ } }, () => true, () => !document.hidden && navigator.onLine, 30000, 60000);
+    const refreshContacts = () => { void recovery.request(); };
+    recovery.schedule();
     window.addEventListener('focus', refreshContacts);
-    return () => { alive = false; clearInterval(timer); window.removeEventListener('focus', refreshContacts); };
+    return () => { alive = false; recovery.stop(); window.removeEventListener('focus', refreshContacts); };
   }, [api]);
   function updateDraft(text: string) {
     if (selected.current) drafts.current.set(selected.current.id, { text, file });
@@ -60,35 +62,37 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
     setMessages([]); setPage(0); setHasOlder(false);
     if (!conversation) { setLoading(false); setConnection('Disponível'); return; }
     const current = conversation; const abort = new AbortController();
-    let alive = true; let polling = false; let connected = false;
+    let alive = true; let connected = false; let initial = true;
     const sync = async (initial = false) => {
-      if (polling) return; polling = true;
       try { const items = await api.history(current, 0, abort.signal); if (alive) { setMessages(previous => mergeApiMessages(previous, items)); if (initial) setHasOlder(items.length === 50); } }
       catch (problem) { if (alive) { setConnection('Sem conexão'); errorRef.current(problem); } }
-      finally { polling = false; if (alive && initial) setLoading(false); }
+      finally { if (alive && initial) setLoading(false); }
     };
-    setLoading(true); void sync(true);
-    syncSelected.current=()=>{void sync();};
+    const recovery = recoveryTask(async () => { const first = initial; initial = false; await sync(first); }, () => !(current.contact ? directInbox.live.current : connected));
+    setLoading(true); void recovery.request();
+    syncSelected.current=()=>{recovery.reset();void recovery.request();};
     let client: Client | undefined;
+    let stopClient: (() => void) | undefined;
     if (current.channelId !== undefined) {
       setConnection('Conectando');
       const url = new URL('/ws/websocket', window.location.href); url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-      client = new Client({ brokerURL: url.href, connectHeaders: { Authorization: `Bearer ${api.token}` }, reconnectDelay: 3000, connectionTimeout: 10000,
+      const session = reconnectingClient({ brokerURL: url.href, connectHeaders: { Authorization: `Bearer ${api.token}` }, connectionTimeout: 10000,
         onConnect: () => {
           if (!alive) return; connected = true; setConnection('Ao vivo');
           client!.subscribe(current.channelId !== undefined ? `/topic/channel/${current.channelId}` : '/user/queue/direct-messages', event => {
             try { const item = JSON.parse(event.body) as ApiMessage; if (alive && item.id !== undefined && (current.channelId !== undefined || (item.senderEmail === (user.publicId ?? user.email) && item.recipientEmail === current.contact) || (item.senderEmail === current.contact && item.recipientEmail === (user.publicId ?? user.email)))) setMessages(previous => item.type === 'DELETE' ? previous.filter(existing => existing.id !== item.id) : mergeApiMessages(previous, [item])); }
-            catch { if (alive) void sync(); }
-          }); void sync();
+            catch { if (alive) void recovery.request(); }
+          }); recovery.reset(); void recovery.request();
         },
-        onWebSocketClose: () => { connected = false; if (alive) setConnection('Reconectando'); },
-        onStompError: () => { connected = false; if (alive) setConnection('Atualização periódica'); },
-      }); client.activate();
+        onWebSocketClose: () => { connected = false; if (alive) { setConnection('Reconectando'); recovery.schedule(); } },
+        onStompError: () => { connected = false; if (alive) setConnection('Atualização periódica'); client?.forceDisconnect(); },
+      }); client = session.client; stopClient = session.stop; client.activate();
     } else setConnection('Atualização periódica');
     const offline = () => { connected = false; if (alive) setConnection('Reconectando'); client?.forceDisconnect(); };
     window.addEventListener('offline', offline);
-    const timer = window.setInterval(() => { if (!(current.contact ? directInbox.live.current : connected)) void sync(); if(current.contact)setConnection(directInbox.live.current?'Ao vivo':'Reconectando'); }, 3000);
-    return () => { alive = false; window.removeEventListener('offline', offline); abort.abort(); clearInterval(timer); void client?.deactivate(); };
+    const online = () => { recovery.reset(); recovery.schedule(); };
+    window.addEventListener('online', online);
+    return () => { alive = false; syncSelected.current=()=>{}; recovery.stop(); window.removeEventListener('offline', offline); window.removeEventListener('online', online); abort.abort(); stopClient?.(); };
   }, [api, conversation?.id]);
   async function loadOlder() {
     if (!conversation || loading || !hasOlder) return;

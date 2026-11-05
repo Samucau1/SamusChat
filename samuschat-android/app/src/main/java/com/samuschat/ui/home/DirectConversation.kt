@@ -20,6 +20,8 @@ import com.samuschat.data.model.*
 import com.samuschat.data.repository.data
 import com.samuschat.ui.call.*
 import kotlinx.coroutines.*
+import com.samuschat.util.CoalescingRecovery
+import com.samuschat.util.RecoveryBackoff
 
 @Composable
 fun DirectConversation(app: SamusChatApplication, email: String, contact: CallContact, calls: CallViewModel, inbox: DirectInbox, visible: Boolean, onBack: () -> Unit) {
@@ -40,7 +42,9 @@ fun DirectConversation(app: SamusChatApplication, email: String, contact: CallCo
     LaunchedEffect(contact.email, lifecycle, session?.token) {
         val token = session?.token ?: return@LaunchedEffect
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            suspend fun sync() {
+            val recovery = CoalescingRecovery()
+            val backoff = RecoveryBackoff()
+            suspend fun sync() = recovery.run {
                 try {
                     val latest = app.api.directMessages(app.tokens.authorization(), contact.email, 0).data()
                     merge(latest)
@@ -52,9 +56,9 @@ fun DirectConversation(app: SamusChatApplication, email: String, contact: CallCo
             launch { inbox.events.collect { message ->
                 if (belongsToDirectConversation(message, email, contact.email)) merge(listOf(message))
             } }
-            launch { snapshotFlow { inbox.live }.collect { connected -> live = connected; if (connected) sync() } }
+            launch { snapshotFlow { inbox.live }.collect { connected -> live = connected; if (connected) { backoff.reset(); sync() } } }
             sync()
-            while (isActive) { delay(3000); if (!inbox.live) sync() }
+            while (isActive) { delay(backoff.next()); if (!inbox.live) sync() }
         }
     }
     LaunchedEffect(messages, lifecycle, visible) {

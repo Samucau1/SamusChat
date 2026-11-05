@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState,type MutableRefObject,type Dispatch,type SetStateAction} from 'react';
-import {Client} from '@stomp/stompjs';
+import {reconnectingClient,recoveryTask} from '../models/recovery';
 import {DirectInbox} from '../models/directInbox';
 import {type ApiRepository,type ApiMessage,type User,mergeApiMessages} from '../models/apiRepository';
 import type {Conversation} from './useChatController';
@@ -45,10 +45,11 @@ export function useDirectInbox(api:ApiRepository,user:User,selected:MutableRefOb
   return()=>{alive=false;};
  },[api,owner]);
  useEffect(()=>{
-  let alive=true;let snapshotVersion=0;
-  const snapshot=async()=>{const version=++snapshotVersion,cursor=inbox.current.snapshotCursor;try{const items=await api.unreadDirect();if(alive&&version===snapshotVersion){inbox.current.replace(items,cursor);setUnread(inbox.current.counts);}}catch{/* retry on focus/reconnection */}};
+  let alive=true;let snapshotVersion=0;const abort=new AbortController();
+  const snapshot=async()=>{const version=++snapshotVersion,cursor=inbox.current.snapshotCursor;try{const items=await api.unreadDirect(abort.signal);if(alive&&version===snapshotVersion){inbox.current.replace(items,cursor);setUnread(inbox.current.counts);}}catch{/* retry on focus/reconnection */}};
+  const recovery=recoveryTask(snapshot,()=>!live.current);
   const url=new URL('/ws/websocket',window.location.href);url.protocol=url.protocol==='https:'?'wss:':'ws:';
-  const client=new Client({brokerURL:url.href,connectHeaders:{Authorization:`Bearer ${api.token}`},reconnectDelay:3000,connectionTimeout:10000,
+  const session=reconnectingClient({brokerURL:url.href,connectHeaders:{Authorization:`Bearer ${api.token}`},connectionTimeout:10000,
    onConnect:()=>{
     if(!alive)return;live.current=true;setConnected(true);
     client.subscribe('/user/queue/direct-messages',event=>{
@@ -67,15 +68,18 @@ export function useDirectInbox(api:ApiRepository,user:User,selected:MutableRefOb
         }
        }
       }
-     }catch{void snapshot();syncSelected.current();}
-    });void snapshot();syncSelected.current();
-   },onWebSocketClose:()=>{live.current=false;if(alive)setConnected(false);},onStompError:()=>{live.current=false;if(alive)setConnected(false);client.forceDisconnect();}
+     }catch{void recovery.request();syncSelected.current();}
+    });recovery.reset();void recovery.request();syncSelected.current();
+   },onWebSocketClose:()=>{live.current=false;if(alive){setConnected(false);recovery.schedule();syncSelected.current();}},onStompError:()=>{live.current=false;if(alive)setConnected(false);client.forceDisconnect();}
   });
-  client.activate();void snapshot();
-  const focus=()=>{if(!document.hidden){void snapshot();syncSelected.current();setVisibility(n=>n+1);}};
+  const client=session.client;
+  client.activate();void recovery.request();
+  const focus=()=>{if(!document.hidden){void recovery.request();syncSelected.current();setVisibility(n=>n+1);}};
+  const online=()=>{recovery.reset();recovery.schedule();};
   const offline=()=>{live.current=false;setConnected(false);client.forceDisconnect();};
   window.addEventListener('focus',focus);document.addEventListener('visibilitychange',focus);window.addEventListener('offline',offline);
-  return()=>{alive=false;live.current=false;void client.deactivate();window.removeEventListener('focus',focus);document.removeEventListener('visibilitychange',focus);window.removeEventListener('offline',offline);};
+  window.addEventListener('online',online);
+  return()=>{alive=false;live.current=false;recovery.stop();abort.abort();session.stop();window.removeEventListener('online',online);window.removeEventListener('focus',focus);document.removeEventListener('visibilitychange',focus);window.removeEventListener('offline',offline);};
  },[api]);
  const contact=selected.current?.contact;
  useEffect(()=>{
