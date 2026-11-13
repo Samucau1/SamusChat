@@ -76,6 +76,12 @@ internal fun CallControls(model: CallViewModel, connected: Boolean) {
                 ScreenShareButton(model, compact = true, connected = connected)
                 CallControl("Encerrar", "Encerrar chamada", HangUp, color = CallRed, onClick = { model.end() })
             }
+            if (state.call != null) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                    CameraButton(model)
+                    if (state.cameraEnabled) TextButton(onClick = { model.switchCamera() }, enabled = !state.busy) { Text("Trocar câmera") }
+                }
+            }
             if (state.sharing && Build.VERSION.SDK_INT >= 29) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Áudio do dispositivo", color = Color.White, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)

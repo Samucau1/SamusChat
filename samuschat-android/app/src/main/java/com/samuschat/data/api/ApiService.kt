@@ -5,6 +5,7 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiService {
+    @POST("api/auth/session") suspend fun rememberSession(@Header("Authorization") token: String): Response<ApiResponse<TokenData>>
     @GET("api/direct-messages/unread") suspend fun directUnread(@Header("Authorization") token: String): Response<ApiResponse<List<DirectUnread>>>
     @POST("api/direct-messages/read") suspend fun readDirect(@Header("Authorization") token: String, @Query("contact") contact: String, @Query("throughId") throughId: Long): Response<ApiResponse<Int>>
     @POST("api/auth/logout") suspend fun logout(@Header("Authorization") token: String): Response<ApiResponse<Unit>>

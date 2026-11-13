@@ -45,4 +45,28 @@ class SessionRefreshTests {
         mvc.perform(post("/api/auth/refresh").contentType("application/json").content("{\"refreshToken\":\"invalid\"}"))
             .andExpect(status().isUnauthorized());
     }
+
+    @Test void passwordLoginAndExistingAccessCanRememberSession() throws Exception {
+        String name = "remember_" + UUID.randomUUID().toString().substring(0, 8);
+        String email = name + "@example.test", password = "Orbit!River!Copper!928";
+        mvc.perform(post("/api/auth/register").contentType("application/json")
+            .content(json.writeValueAsString(Map.of("username", name, "email", email, "password", password))))
+            .andExpect(status().isOk());
+        var login = mvc.perform(post("/api/auth/login").contentType("application/json")
+            .content(json.writeValueAsString(Map.of("email", email, "password", password))))
+            .andExpect(status().isOk()).andReturn();
+        var data = json.readTree(login.getResponse().getContentAsString()).path("data");
+        assertThat(data.path("refreshToken").asText()).isNotBlank();
+        String access = data.path("token").asText();
+        var remembered = mvc.perform(post("/api/auth/session").header("Authorization", "Bearer " + access))
+            .andExpect(status().isOk()).andReturn();
+        var session = json.readTree(remembered.getResponse().getContentAsString()).path("data");
+        assertThat(session.path("token").asText()).isEqualTo(access);
+        String refresh = session.path("refreshToken").asText();
+        assertThat(jwt.extractEmail(refresh)).isEqualTo(email);
+        mvc.perform(post("/api/auth/session")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/auth/session").header("Authorization", "Bearer " + refresh)).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/auth/logout").header("Authorization", "Bearer " + access)).andExpect(status().isOk());
+        mvc.perform(post("/api/auth/session").header("Authorization", "Bearer " + access)).andExpect(status().isUnauthorized());
+    }
 }

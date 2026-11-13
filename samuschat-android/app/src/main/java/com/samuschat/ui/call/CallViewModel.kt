@@ -19,6 +19,7 @@ data class CallUiState(
     val speaker: Boolean = false, val sharing: Boolean = false, val deviceAudio: Boolean = false,
     val ownAvatarUrl: String? = null, val speaking: Set<String> = emptySet(),
     val remoteSharing: Boolean = false, val error: String? = null, val notice: String? = null,
+    val cameraEnabled: Boolean = false, val remoteCamera: Boolean = false,
     val room: CallRoom? = null, val roomName: String = "", val roomConnected: Set<String> = emptySet(), val roomSharing: Set<String> = emptySet()
 )
 
@@ -152,11 +153,11 @@ class CallViewModel(private val app: SamusChatApplication, val email: String) : 
             runCatching { app.api.callAction(app.tokens.authorization(), current.id, CallAction(if (decline) "decline" else "end")).data() }
         }
     }
-    private suspend fun service(screen: Boolean = false) {
+    private suspend fun service(screen: Boolean = false, camera: Boolean = false) {
         val ready = CompletableDeferred<Unit>()
         CallMediaService.onReady = { ready.complete(Unit) }
         CallMediaService.onStopRequested = { end() }
-        app.startForegroundService(Intent(app, CallMediaService::class.java).putExtra("screen", screen))
+        app.startForegroundService(Intent(app, CallMediaService::class.java).putExtra("screen", screen).putExtra("camera", camera))
         check(withTimeoutOrNull(5000) { ready.await(); true } == true) { "Não foi possível iniciar o serviço de chamada" }
     }
     private suspend fun handle(call: CallSession) {
@@ -179,7 +180,9 @@ class CallViewModel(private val app: SamusChatApplication, val email: String) : 
                 onFailure = { message -> end(); mutable.value = mutable.value.copy(error = message) },
                 onVideo = { remoteVideo.value = it },
                 onRemoteSharing = { mutable.value = mutable.value.copy(remoteSharing = it) },
-                onSharingStopped = { mutable.value = mutable.value.copy(sharing = false, deviceAudio = false) })
+                onSharingStopped = { mutable.value = mutable.value.copy(sharing = false, deviceAudio = false) },
+                onRemoteCamera = { mutable.value = mutable.value.copy(remoteCamera = it) },
+                onCameraStopped = { message -> mutable.value = mutable.value.copy(cameraEnabled = false, error = message) })
             // Apply controls selected while the private call was still ringing.
             rtc?.mute(mutable.value.muted)
             rtc?.speaker(mutable.value.speaker)
@@ -237,6 +240,24 @@ class CallViewModel(private val app: SamusChatApplication, val email: String) : 
     }
     fun mute() { val value = !mutable.value.muted; rtc?.mute(value); roomRtc?.mute(value); mutable.value = mutable.value.copy(muted = value) }
     fun speaker() { val value = !mutable.value.speaker; rtc?.speaker(value); roomRtc?.speaker(value); mutable.value = mutable.value.copy(speaker = value) }
+    fun camera() = execute {
+        val engine = rtc ?: return@execute
+        if (mutable.value.cameraEnabled) {
+            engine.stopCamera()
+            mutable.value = mutable.value.copy(cameraEnabled = false)
+            return@execute
+        }
+        if (!mutable.value.connected || mutable.value.sharing) return@execute
+        check(foreground) { "Abra a chamada para ligar a câmera" }
+        service(camera = true)
+        if (rtc !== engine) return@execute
+        engine.startCamera()
+        mutable.value = mutable.value.copy(cameraEnabled = true)
+    }
+    fun switchCamera() = execute {
+        check(withTimeoutOrNull(5000) { rtc?.switchCamera(); true } == true) { "Não foi possível trocar a câmera. Tente novamente." }
+    }
+    fun cameraPermissionDenied() { mutable.value = mutable.value.copy(error = "Permita o acesso à câmera para ativar o vídeo.") }
     fun share(permission: Intent) = execute {
         roomRtc?.let { engine ->
             if (mutable.value.sharing) return@execute
@@ -250,7 +271,7 @@ class CallViewModel(private val app: SamusChatApplication, val email: String) : 
             catch (e: Exception) { engine.stopSharing(); throw e }
             return@execute
         }
-        if (!CallPolicy.mayShare(mutable.value.connected, mutable.value.sharing)) return@execute
+        if (!CallPolicy.mayShare(mutable.value.connected, mutable.value.sharing) || mutable.value.cameraEnabled) return@execute
         val engine = rtc ?: return@execute
         service(screen = true)
         if (rtc !== engine) return@execute

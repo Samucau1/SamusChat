@@ -63,19 +63,19 @@ fun CallPanel(model: CallViewModel) {
                             Text(peerName, style = MaterialTheme.typography.titleLarge)
                             Text(when { state.connected -> "Em chamada"; call.state == "RINGING" -> if (call.callee == model.email) "Chamada recebida" else "Chamando…"; else -> "Conectando…" })
                             state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                            if (!state.remoteSharing) CallParticipant(peerName, if (state.connected) "Em chamada" else "Aguardando conexão", avatarUrl = peer?.avatarUrl, speaking = "remote" in state.speaking)
+                            if (!state.remoteSharing && !state.remoteCamera) CallParticipant(peerName, if (state.connected) "Em chamada" else "Aguardando conexão", avatarUrl = peer?.avatarUrl, speaking = "remote" in state.speaking)
                             CallParticipant("Você", if (state.muted) "Microfone silenciado" else "Microfone ativo", avatarUrl = state.ownAvatarUrl, speaking = model.email in state.speaking && !state.muted)
                             model.rtc?.let { engine ->
-                                if (state.sharing) {
-                                    CallParticipant("Sua tela", "Prévia da transmissão", sharing = true, avatarUrl = state.ownAvatarUrl, speaking = model.email in state.speaking && !state.muted) {
-                                        Text("Sua tela • prévia", style = MaterialTheme.typography.labelMedium)
+                                if (state.sharing || state.cameraEnabled) {
+                                    CallParticipant(if (state.cameraEnabled) "Sua câmera" else "Sua tela", "Prévia da transmissão", sharing = true, avatarUrl = state.ownAvatarUrl, speaking = model.email in state.speaking && !state.muted) {
+                                        Text(if (state.cameraEnabled) "Sua câmera • prévia" else "Sua tela • prévia", style = MaterialTheme.typography.labelMedium)
                                         ScreenShareVideo(engine.localVideo, engine.egl.eglBaseContext,
-                                            Modifier.fillMaxWidth().height(240.dp), local = true, name = "Voc?", avatarUrl = state.ownAvatarUrl, speaking = model.email in state.speaking && !state.muted)
+                                            Modifier.fillMaxWidth().height(240.dp), local = true, name = "Você", avatarUrl = state.ownAvatarUrl, speaking = model.email in state.speaking && !state.muted)
                                     }
                                 }
-                                if (state.remoteSharing) video?.let { track ->
-                                    CallParticipant(peerName, "Transmitindo tela", sharing = true, avatarUrl = peer?.avatarUrl, speaking = "remote" in state.speaking) {
-                                        Text("Tela de ${peerName}", style = MaterialTheme.typography.labelMedium)
+                                if (state.remoteSharing || state.remoteCamera) video?.let { track ->
+                                    CallParticipant(peerName, if (state.remoteCamera) "Câmera ligada" else "Transmitindo tela", sharing = true, avatarUrl = peer?.avatarUrl, speaking = "remote" in state.speaking) {
+                                        Text(if (state.remoteCamera) "Câmera de $peerName" else "Tela de $peerName", style = MaterialTheme.typography.labelMedium)
                                         ScreenShareVideo(track, engine.egl.eglBaseContext,
                                             Modifier.fillMaxWidth().height(240.dp), name = peerName, avatarUrl = peer?.avatarUrl, speaking = "remote" in state.speaking)
                                     }
@@ -120,10 +120,32 @@ fun ScreenShareButton(model: CallViewModel, compact: Boolean = false, connected:
         CallControl(if (state.sharing) "Parar tela" else "Transmitir",
         if (state.sharing) "Parar transmissão" else "Compartilhar tela do celular", ScreenPhone,
         color = if (state.sharing) CallGreen else ControlBackground,
-        enabled = !state.busy && (connected || state.sharing), onClick = shareAction)
-    } else FilledTonalButton(onClick = shareAction, enabled = !state.busy && (connected || state.sharing)) {
+        enabled = !state.busy && !state.cameraEnabled && (connected || state.sharing), onClick = shareAction)
+    } else FilledTonalButton(onClick = shareAction, enabled = !state.busy && !state.cameraEnabled && (connected || state.sharing)) {
         Icon(ScreenPhone, null); Spacer(Modifier.width(8.dp))
         Text(if (state.sharing) "Parar compartilhamento" else "Compartilhar tela")
+    }
+}
+
+@Composable
+fun CameraButton(model: CallViewModel) {
+    val state by model.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    var requestedCallId by remember { mutableStateOf<String?>(null) }
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (model.state.value.call?.id == requestedCallId && requestedCallId != null) {
+            if (granted) model.camera() else model.cameraPermissionDenied()
+        }
+        requestedCallId = null
+    }
+    FilledTonalButton(onClick = {
+        if (state.cameraEnabled || context.checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) model.camera()
+        else {
+            requestedCallId = state.call?.id
+            permission.launch(Manifest.permission.CAMERA)
+        }
+    }, enabled = !state.busy && !state.sharing && state.connected) {
+        Text(if (state.cameraEnabled) "Desligar câmera" else "Ligar câmera")
     }
 }
 

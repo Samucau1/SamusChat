@@ -6,9 +6,10 @@ import type { ScreenPreferences } from '../controllers/useScreenPreferences';
 import { AppearanceImage } from './Appearance';
 import { ScreenShareControls, ScreenShareFeedback, type ScreenFeedback } from './ScreenShareControls';
 
-type IconName = 'mic' | 'screen' | 'phone' | 'gear' | 'eye' | 'expand';
+type IconName = 'mic' | 'camera' | 'screen' | 'phone' | 'gear' | 'eye' | 'expand';
 function CallIcon({ name, off = false }: { name: IconName; off?: boolean }) {
   const paths: Record<IconName, ReactNode> = {
+    camera: <><rect x="2" y="5" width="14" height="14" rx="2" /><path d="m16 10 6-4v12l-6-4" /></>,
     mic: <><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8" /></>,
     screen: <><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4M8 10l4-4 4 4M12 6v8" /></>,
     phone: <path d="M3 16v-5c5-4 13-4 18 0v5h-5v-4a13 13 0 0 0-8 0v4Z" />,
@@ -50,14 +51,15 @@ function Media({ stream, muted = false, video = false }: { stream: MediaStream |
     {needsAudio && <button className="primary media-play" onClick={() => { void audio.current?.play().then(() => setNeedsAudio(false)).catch(() => {}); }}>Ativar áudio</button>}
     {needsVideo && <button className="primary media-play" onClick={() => { void ref.current?.play().then(() => setNeedsVideo(false)).catch(() => {}); }}>Assistir à transmissão</button>}</>;
 }
-interface Participant { id: string; name: string; self?: boolean; avatarUrl?: string; stream?: MediaStream | null; sharing?: boolean; voice?: MediaStream | null; muted?: boolean; }
+interface Participant { id: string; name: string; self?: boolean; avatarUrl?: string; stream?: MediaStream | null; sharing?: boolean; camera?: boolean; voice?: MediaStream | null; muted?: boolean; }
 function ParticipantTile({ item, watching, focused, setFocused, controls, setControls, fullscreen, fill, setFill, toggleFullscreen }: { item: Participant; watching: boolean; focused: string | null; setFocused: (value: string | null) => void; controls: string | null; setControls: (value: string | null) => void; fullscreen: string | null; fill: boolean; setFill: (value: boolean) => void; toggleFullscreen: (element: HTMLElement) => Promise<void> }) {
   const speaking = useSpeaking(item.voice ?? item.stream, item.muted);
+  const previewName = item.camera ? 'Sua câmera' : 'Sua transmissão';
   return <article data-participant-id={item.id} className={`call-tile${speaking ? ' speaking' : ''}${item.sharing ? ' streaming' : ''}${item.self && item.sharing ? ' local-preview' : ''}${watching && item.id === focused ? ' focused' : ''}${fullscreen === item.id && fill ? ' fill-video' : ''}`} aria-label={item.self && item.sharing ? 'Sua transmissão' : item.name}
       onClick={event => { if (item.sharing && event.target instanceof HTMLVideoElement) setControls(controls === item.id ? null : item.id); }}>
       <Media stream={item.stream ?? null} muted={item.self} video={item.sharing} />
       {!item.sharing && <div className="call-avatar">{item.avatarUrl ? <AppearanceImage url={item.avatarUrl} alt="" /> : item.name.slice(0, 2).toUpperCase()}</div>}
-      <div className="call-tile-label"><span className="participant-photo">{item.avatarUrl && <AppearanceImage url={item.avatarUrl} alt={`Foto de ${item.name}`} />}</span><span>{item.self && item.sharing ? 'Sua transmissão' : item.name}{item.self && !item.sharing ? ' · Você' : ''}</span>{speaking && <span className="speaking-label">Falando</span>}{item.sharing && <span className="live-badge">AO VIVO</span>}</div>
+      <div className="call-tile-label"><span className="participant-photo">{item.avatarUrl && <AppearanceImage url={item.avatarUrl} alt={`Foto de ${item.name}`} />}</span><span>{item.self && item.sharing ? previewName : item.name}{item.self && !item.sharing ? ' · Você' : ''}</span>{speaking && <span className="speaking-label">Falando</span>}{item.sharing && <span className="live-badge">AO VIVO</span>}</div>
       {item.sharing && <button className="stream-focus" aria-label={watching && item.id === focused ? 'Voltar à grade da ligação' : item.self ? 'Ampliar sua transmissão' : `Assistir à transmissão de ${item.name}`} title="Ampliar transmissão" onClick={() => setFocused(watching && item.id === focused ? null : item.id)}><CallIcon name="expand" /></button>}
       {item.sharing && controls === item.id && <>
         <button className="stream-fullscreen" aria-label={fullscreen === item.id ? 'Sair da tela cheia' : item.self ? 'Sua transmissão em tela cheia' : `Tela cheia da transmissão de ${item.name}`} title={fullscreen === item.id ? 'Sair da tela cheia' : 'Tela cheia'} onClick={event => { void toggleFullscreen(event.currentTarget.closest('article')!); }}><CallIcon name="expand" /></button>
@@ -119,12 +121,13 @@ export function DirectCallPanel({ calls, contacts, preferences, email, name, ava
   const contact = contacts.find(item => item.email === peer);
   const contactName = contact?.username ?? 'Participante';
   return <Stage title="Chamada" status={calls.status} preferences={preferences} locked={calls.sharing || calls.screenStarting} feedback={calls.feedback}
-    participants={[{ id: 'self', name, self: true, avatarUrl, voice: calls.microphoneStream, muted: calls.muted, stream: calls.preview, sharing: !!calls.preview }, { id: 'remote', name: contactName, avatarUrl: contact?.avatarUrl, stream: calls.remote, sharing: calls.remoteSharing }]}>
+    participants={[{ id: 'self', name, self: true, avatarUrl, voice: calls.microphoneStream, muted: calls.muted, stream: calls.cameraPreview ?? calls.preview, sharing: !!(calls.cameraPreview ?? calls.preview), camera: calls.cameraEnabled }, { id: 'remote', name: contactName, avatarUrl: contact?.avatarUrl, stream: calls.remote, sharing: calls.remoteSharing || calls.remoteCamera, camera: calls.remoteCamera }]}>
     {call.state === 'RINGING' && call.callee === email ? <><button className="primary call-accept" disabled={calls.busy} onClick={() => { void calls.accept(); }}>Aceitar</button><Action label="Recusar" icon="phone" danger onClick={() => { void calls.end(true); }} /></> : <>
       {calls.audioNotice && <span className="call-audio-notice" role="status">{calls.audioNotice}</span>}
       {calls.audioBlocked && <button onClick={calls.activateAudio}>Ativar áudio da transmissão</button>}
       <Action label={calls.muted ? 'Ativar microfone' : 'Silenciar microfone'} icon="mic" off={calls.muted} active={calls.muted} disabled={call.state === 'RINGING'} onClick={calls.toggleMute} />
-      <Action label={calls.sharing ? 'Parar transmissão' : 'Compartilhar tela'} icon="screen" active={calls.sharing} disabled={calls.status !== 'Em chamada' || calls.screenStarting} onClick={() => { void calls.share(); }} />
+      <Action label={calls.cameraEnabled ? 'Desligar câmera' : 'Ligar câmera'} icon="camera" off={!calls.cameraEnabled} active={calls.cameraEnabled} disabled={calls.status !== 'Em chamada' || calls.cameraStarting || calls.screenStarting || calls.sharing} onClick={() => { void calls.toggleCamera(); }} />
+      <Action label={calls.sharing ? 'Parar transmissão' : 'Compartilhar tela'} icon="screen" active={calls.sharing} disabled={calls.status !== 'Em chamada' || calls.screenStarting || calls.cameraStarting || calls.cameraEnabled} onClick={() => { void calls.share(); }} />
       {calls.sharing && <Action label={calls.previewVisible ? 'Ocultar prévia' : 'Mostrar prévia'} icon="eye" active={calls.previewVisible} onClick={() => calls.setPreviewVisible(!calls.previewVisible)} />}
       <Action label="Encerrar chamada" icon="phone" danger onClick={() => { void calls.end(); }} />
     </>}

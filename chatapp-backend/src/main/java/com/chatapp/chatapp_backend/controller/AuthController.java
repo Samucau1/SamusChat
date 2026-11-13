@@ -34,6 +34,12 @@ public class AuthController {
         authService.logout(auth.getName()); return ApiResponse.success(null, "Sessoes encerradas");
     }
 
+    @PostMapping("/session")
+    public ApiResponse<Map<String, String>> rememberSession(
+            @org.springframework.web.bind.annotation.RequestHeader("Authorization") String authorization) {
+        return ApiResponse.success(authService.sessionTokens(authorization.substring(7)));
+    }
+
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<Map<String, String>>> register(@RequestBody RegisterRequest request) {
         String token = authService.register(request);
@@ -46,7 +52,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Map<String, String>>> login(@RequestBody LoginRequest request) {
         String token = authService.login(request);
         return ResponseEntity.ok(
-                ApiResponse.success(Map.of("token", token), "Login realizado com sucesso")
+                ApiResponse.success(authService.sessionTokens(token), "Login realizado com sucesso")
         );
     }
 }

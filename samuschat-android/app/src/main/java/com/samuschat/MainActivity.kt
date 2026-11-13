@@ -46,6 +46,11 @@ class MainActivity : ComponentActivity() {
                         val nav = rememberNavController()
                         val scope = rememberCoroutineScope()
                         if (session != null) {
+                            LaunchedEffect(session?.token, session?.refreshToken) {
+                                try { app.auth.rememberSession() }
+                                catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                                catch (_: Exception) { /* Keep the saved session available for the next connection. */ }
+                            }
                             LaunchedEffect(Unit) {
                                 ChatMessagingService.syncToken(app)
                                 if (Build.VERSION.SDK_INT >= 33) notifications.launch(Manifest.permission.POST_NOTIFICATIONS)

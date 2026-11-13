@@ -6,6 +6,7 @@ import com.samuschat.data.model.*
 import com.samuschat.util.TokenManager
 import com.samuschat.util.Constants
 import retrofit2.Response
+import kotlinx.coroutines.flow.first
 
 class ApiFailure(val status: Int, message: String) : Exception(message)
 fun <T> Response<ApiResponse<T>>.checked(): ApiResponse<T> {
@@ -16,6 +17,12 @@ fun <T> Response<ApiResponse<T>>.checked(): ApiResponse<T> {
 }
 fun <T> Response<ApiResponse<T>>.data(): T = checked().data ?: error("Resposta sem dados")
 class AuthRepository(private val api: ApiService, private val tokens: TokenManager) {
+    suspend fun rememberSession() {
+        val current = tokens.session.first() ?: return
+        if (!current.refreshToken.isNullOrBlank()) return
+        val result = api.rememberSession("Bearer ${current.token}").data()
+        tokens.renewSession(current, result.token, result.refreshToken)
+    }
     suspend fun requestRecovery(email: String) = api.requestRecovery(RecoveryEmail(email.trim())).data()
     suspend fun verifyRecovery(email: String, code: String) = api.verifyRecovery(RecoveryCode(email.trim(), code)).data().resetToken
     suspend fun resetPassword(email: String, token: String, password: String) = api.resetPassword(RecoveryReset(email.trim(), token, password)).data()

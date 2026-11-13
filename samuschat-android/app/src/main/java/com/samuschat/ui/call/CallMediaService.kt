@@ -25,6 +25,7 @@ class CallMediaService : Service() {
         if (Build.VERSION.SDK_INT >= 29) {
             var type = if (Build.VERSION.SDK_INT >= 30) ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE else 0
             if (intent?.getBooleanExtra("screen", false) == true) type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+            if (Build.VERSION.SDK_INT >= 30 && intent?.getBooleanExtra("camera", false) == true) type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
             startForeground(42, notification, type)
         } else startForeground(42, notification)
         onReady?.also { onReady = null; it() }

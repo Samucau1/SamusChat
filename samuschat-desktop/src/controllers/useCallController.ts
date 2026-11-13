@@ -24,6 +24,10 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
   const [status, setStatus] = useState('');
   const [muted, setMuted] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [cameraEnabled, setCameraEnabled] = useState(false);
+  const [cameraStarting, setCameraStarting] = useState(false);
+  const [remoteCamera, setRemoteCamera] = useState(false);
+  const [cameraPreview, setCameraPreview] = useState<MediaStream | null>(null);
   const [screenStarting, setScreenStarting] = useState(false);
   const screenProfile = useRef(preferences.profile);
   const preferencesRef = useRef(preferences); preferencesRef.current = preferences;
@@ -37,6 +41,7 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
   const peer = useRef<RTCPeerConnection | null>(null);
   const microphone = useRef<MediaStream | null>(null);
   const screen = useRef<MediaStream | null>(null);
+  const camera = useRef<MediaStream | null>(null);
   const placeholder = useRef<MediaStream | null>(null);
   const videoSender = useRef<RTCRtpSender | null>(null);
   const audio = useRef<DeviceAudioTransport | null>(null);
@@ -53,7 +58,9 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
   function cleanup() {
     audio.current?.close(); audio.current = null;
     generation.current++; peer.current?.close(); peer.current = null;
-    for (const stream of [microphone.current, screen.current, placeholder.current]) stream?.getTracks().forEach(track => track.stop());
+    for (const stream of [microphone.current, screen.current, placeholder.current, camera.current]) stream?.getTracks().forEach(track => track.stop());
+    camera.current = null;
+    if (alive.current) { setCameraEnabled(false); setCameraPreview(null); setRemoteCamera(false); }
     microphone.current = screen.current = placeholder.current = null; videoSender.current = null; control.current = null;
     if (alive.current) { setMicrophoneStream(null); setAudioBlocked(false); setAudioNotice(''); setRemote(null); setPreview(null); setPreviewVisible(false); setSharing(false); setRemoteSharing(false); setMuted(false); setStatus(''); }
   }
@@ -61,8 +68,15 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
     if (audio.current?.attach(channel)) return;
     if (channel.label !== 'call-control') { channel.close(); return; }
     control.current = channel;
-    channel.onmessage = event => { if (alive.current && control.current === channel && ['screen:on', 'screen:off'].includes(event.data)) setRemoteSharing(event.data === 'screen:on'); };
-    channel.onopen = () => channel.send(screen.current ? 'screen:on' : 'screen:off');
+    channel.onmessage = event => {
+      if (!alive.current || control.current !== channel) return;
+      if (['screen:on', 'screen:off'].includes(event.data)) setRemoteSharing(event.data === 'screen:on');
+      if (['camera:on', 'camera:off'].includes(event.data)) setRemoteCamera(event.data === 'camera:on');
+    };
+    channel.onopen = () => {
+      channel.send(screen.current ? 'screen:on' : 'screen:off');
+      channel.send(camera.current ? 'camera:on' : 'camera:off');
+    };
   }
   async function prepare(caller: boolean) {
     if (peer.current) return peer.current;
@@ -156,6 +170,57 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
     if (id) try { await api.callAction(id, decline ? 'decline' : 'end'); } catch (problem) { errorRef.current(problem); }
   }
   function toggleMute() { const track = microphone.current?.getAudioTracks()[0]; if (track) { track.enabled = !track.enabled; setMuted(!track.enabled); } }
+  async function stopCamera() {
+    const stream = camera.current;
+    camera.current = null;
+    stream?.getTracks().forEach(track => track.stop());
+    setCameraEnabled(false); setCameraPreview(null);
+    if (control.current?.readyState === 'open') control.current.send('camera:off');
+    await videoSender.current?.replaceTrack(placeholder.current?.getVideoTracks()[0] ?? null);
+  }
+  async function toggleCamera() {
+    if (sharingWorking.current) return;
+    const sender = videoSender.current;
+    if (!sender || screen.current || peer.current?.connectionState !== 'connected') return;
+    sharingWorking.current = true; setCameraStarting(true);
+    const epoch = generation.current;
+    let captured: MediaStream | undefined;
+    try {
+      if (camera.current) { await stopCamera(); return; }
+      captured = await navigator.mediaDevices.getUserMedia({ audio: false, video: {
+        width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user',
+      } });
+      const track = captured.getVideoTracks()[0];
+      if (!track) throw new Error('A câmera não forneceu vídeo.');
+      if (!alive.current || generation.current !== epoch || videoSender.current !== sender) return;
+      await sender.replaceTrack(track);
+      // Screen sharing may have left a lower frame rate on this sender.
+      const parameters = sender.getParameters();
+      for (const encoding of parameters.encodings ?? []) {
+        encoding.maxFramerate = 30; encoding.maxBitrate = 2_500_000; encoding.scaleResolutionDownBy = 1;
+      }
+      await sender.setParameters(parameters);
+      if (!alive.current || generation.current !== epoch || track.readyState === 'ended') return;
+      camera.current = captured; setCameraPreview(captured); setCameraEnabled(true);
+      track.onended = () => { if (camera.current === captured) void stopCamera().catch(errorRef.current); };
+      if (control.current?.readyState === 'open') control.current.send('camera:on');
+    } catch (problem) {
+      if (alive.current && generation.current === epoch) {
+        await stopCamera().catch(() => {});
+        const name = problem instanceof DOMException ? problem.name : '';
+        const messages: Record<string, string> = {
+          NotAllowedError: 'Permita o acesso à câmera para ativar o vídeo.',
+          NotFoundError: 'Nenhuma câmera foi encontrada neste dispositivo.',
+          NotReadableError: 'Não foi possível abrir a câmera. Verifique se ela está em uso por outro aplicativo.',
+        };
+        errorRef.current(new Error(messages[name] ?? 'Não foi possível ativar a câmera. Tente novamente.'));
+      }
+    } finally {
+      if (camera.current !== captured) captured?.getTracks().forEach(track => track.stop());
+      sharingWorking.current = false;
+      if (alive.current) setCameraStarting(false);
+    }
+  }
   async function stopSharing() {
     const sender = videoSender.current;
     audio.current?.stopCapture(); setAudioNotice('');
@@ -167,7 +232,7 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
     if (control.current?.readyState === 'open') control.current.send('screen:off');
   }
   async function share() {
-    if (sharingWorking.current) return;
+    if (sharingWorking.current || camera.current) return;
     sharingWorking.current = true;
     let captured: MediaStream | undefined;
     try {
@@ -212,6 +277,6 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
     microphone.current = next; setMicrophoneStream(next); rememberMicrophone(id); previous.getTracks().forEach(track => track.stop());
   }
   const activateAudio = () => { void audio.current?.activate().catch(() => setAudioBlocked(true)); };
-  return { microphoneStream, changeMicrophone, audioBlocked, audioNotice, activateAudio, feedback, screenStarting, call, status, muted, sharing, remoteSharing, remote, preview: previewVisible ? preview : null, previewVisible, setPreviewVisible, busy, invite, accept, end, toggleMute, share };
+  return { cameraEnabled, cameraStarting, cameraPreview, remoteCamera, toggleCamera, microphoneStream, changeMicrophone, audioBlocked, audioNotice, activateAudio, feedback, screenStarting, call, status, muted, sharing, remoteSharing, remote, preview: previewVisible ? preview : null, previewVisible, setPreviewVisible, busy, invite, accept, end, toggleMute, share };
 }
 export type CallController = ReturnType<typeof useCallController>;

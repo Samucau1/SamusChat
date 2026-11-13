@@ -11,30 +11,67 @@ export class ApiError extends Error { constructor(message: string, public status
 export class ApiRepository {
   unreadDirect(signal?: AbortSignal) { return this.request<import('./directInbox').UnreadSummary[]>('/api/direct-messages/unread', {signal}); }
   readDirect(contact:string, throughId:number) { return this.post<number>(`/api/direct-messages/read?contact=${encodeURIComponent(contact)}&throughId=${throughId}`, {}); }
-  constructor(public token = '') {}
-  async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  private renewing: Promise<void> | null = null;
+  constructor(public token = '', public refreshToken = '', private onSession?: (session: {token: string; refreshToken: string}) => void) {}
+  remember(token: string, refreshToken = '') {
+    this.token = token; this.refreshToken = refreshToken;
+    this.onSession?.({ token, refreshToken });
+  }
+  async rememberSession() {
+    if (!this.token || this.refreshToken) return;
+    const previous = this.token;
+    const result = await this.post<{ token: string; refreshToken: string }>('/api/auth/session');
+    if (this.token === previous) this.remember(result.token, result.refreshToken);
+  }
+  private renew() {
+    if (this.renewing) return this.renewing;
+    const token = this.token, refreshToken = this.refreshToken;
+    this.renewing = (async () => {
+      let response: Response;
+      try {
+        response = await fetch('/api/auth/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }), signal: AbortSignal.timeout(30000) });
+      } catch { throw new ApiError('Não foi possível renovar a sessão. Confira sua conexão e tente novamente.', 0); }
+      const envelope = await response.json().catch(() => null);
+      if (this.token !== token || this.refreshToken !== refreshToken) return;
+      if (response.status === 401) throw new ApiError('Sua sessão expirou. Entre novamente na conta.', 401);
+      if (!response.ok || !envelope?.success || !envelope.data?.token) throw new ApiError('Não foi possível renovar a sessão. Tente novamente.', response.status || 0);
+      this.remember(envelope.data.token, refreshToken);
+    })().finally(() => { this.renewing = null; });
+    return this.renewing;
+  }
+  private async authenticatedFetch(path: string, init: RequestInit = {}, retry = true): Promise<Response> {
     const headers = new Headers(init.headers);
     if (this.token) headers.set('Authorization', `Bearer ${this.token}`);
     if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json');
     let response: Response;
     try { response = await fetch(path, { ...init, headers, signal: init.signal ? AbortSignal.any([init.signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000) }); }
     catch { throw new ApiError('Não foi possível acessar o servidor. Confira sua conexão e tente novamente.', 0); }
+    if (response.status === 401 && retry && this.token && this.refreshToken &&
+        (!path.startsWith('/api/auth/') || path === '/api/auth/logout' || path === '/api/auth/session')) {
+      if (headers.get('Authorization') === `Bearer ${this.token}`) await this.renew();
+      return this.authenticatedFetch(path, init, false);
+    }
+    return response;
+  }
+  async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+    const response = await this.authenticatedFetch(path, init);
     const envelope = await response.json().catch(() => null);
     if (!response.ok || !envelope?.success) throw new ApiError(envelope?.error || envelope?.message || 'Não foi possível concluir a solicitação.', response.status);
     return envelope.data as T;
   }
   post<T>(path: string, body?: unknown) { return this.request<T>(path, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body) }); }
-  login(email: string, password: string) { return this.post<{ token: string }>('/api/auth/login', { email, password }); }
+  login(email: string, password: string) { return this.post<{ token: string; refreshToken?: string }>('/api/auth/login', { email, password }); }
   logout() { return this.post<void>('/api/auth/logout'); }
   async attachment(value: string) {
     const url = new URL(value, window.location.origin);
     if (!/^\/uploads\/[0-9a-f-]{36}\.[a-z0-9]+$/.test(url.pathname)) throw new ApiError('Anexo inválido.', 0);
-    const response = await fetch(url.pathname, { headers: { Authorization: `Bearer ${this.token}` }, signal: AbortSignal.timeout(30000) });
+    const response = await this.authenticatedFetch(url.pathname);
     if (!response.ok) throw new ApiError('Não foi possível acessar este anexo.', response.status);
     if (Number(response.headers.get('Content-Length') ?? 0) > 10 * 1024 * 1024) throw new ApiError('Anexo maior que 10 MB.', 0);
     return response.blob();
   }
-  register(username: string, email: string, password: string) { return this.post<{ token: string }>('/api/auth/register', { username, email, password }); }
+  register(username: string, email: string, password: string) { return this.post<{ token: string; refreshToken?: string }>('/api/auth/register', { username, email, password }); }
   googleLogin(idToken: string, password?: string) { return this.post<{ token: string }>('/api/auth/google', { idToken, password }); }
   googleGis(credential: string, csrfToken: string, password?: string) { return this.post<{ token: string }>('/api/auth/google/gis', { credential, g_csrf_token: csrfToken, password }); }
   requestRecovery(email: string) { return this.post<string>('/api/auth/password/request', { email }); }

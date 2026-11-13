@@ -21,7 +21,11 @@ public class AuthService {
     private final com.chatapp.chatapp_backend.security.AccountLoginLimiter loginLimiter;
     private final com.chatapp.chatapp_backend.repository.UserDeviceRepository devices;
 
+    @org.springframework.transaction.annotation.Transactional
     public java.util.Map<String, String> sessionTokens(String accessToken) {
+        String email;
+        try { email = jwtUtil.extractEmail(accessToken); } catch (Exception ex) { throw new SecurityException("Sessao invalida"); }
+        userRepository.lockedByEmail(email).orElseThrow(() -> new SecurityException("Conta invalida"));
         if (!jwtUtil.isTokenValid(accessToken)) throw new SecurityException("Sessao invalida");
         return java.util.Map.of("token", accessToken, "refreshToken", jwtUtil.generateRefreshToken(jwtUtil.extractEmail(accessToken)));
     }

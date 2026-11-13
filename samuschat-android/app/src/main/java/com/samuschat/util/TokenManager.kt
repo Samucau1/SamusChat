@@ -55,11 +55,12 @@ class TokenManager(context: Context) {
             if (refreshToken != null) it[refreshKey] = encode(refreshToken) else it.remove(refreshKey)
         }
     }
-    suspend fun renewSession(expected: Session, token: String): Boolean {
+    suspend fun renewSession(expected: Session, token: String, refreshToken: String? = expected.refreshToken): Boolean {
         var saved = false
         store.edit {
             if (it[tokenKey]?.let { value -> decode(value) } == expected.token && it[emailKey] == expected.email) {
                 it[tokenKey] = encode(token)
+                if (refreshToken != null) it[refreshKey] = encode(refreshToken)
                 saved = true
             }
         }

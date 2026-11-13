@@ -21,7 +21,9 @@ class RtcCall(
     private val onFailure: (String) -> Unit,
     private val onVideo: (VideoTrack?) -> Unit,
     private val onRemoteSharing: (Boolean) -> Unit,
-    private val onSharingStopped: () -> Unit
+    private val onSharingStopped: () -> Unit,
+    private val onRemoteCamera: (Boolean) -> Unit,
+    private val onCameraStopped: (String) -> Unit
 ) {
     private val main = Handler(Looper.getMainLooper())
     val egl: EglBase = EglBase.create()
@@ -37,7 +39,12 @@ class RtcCall(
     private val videoSource: VideoSource
     private val videoTrack: VideoTrack
     /** The same captured frames sent to the peer, also available for local preview. */
-    val localVideo: VideoTrack get() = videoTrack
+    val localVideo: VideoTrack get() = cameraVideo ?: videoTrack
+    private var camera: CameraVideoCapturer? = null
+    private var cameraTexture: SurfaceTextureHelper? = null
+    private var cameraSource: VideoSource? = null
+    private var cameraVideo: VideoTrack? = null
+    private var cameraGeneration = 0
     private var screen: ScreenCapturerAndroid? = null
     private var texture: SurfaceTextureHelper? = null
     private var screenSizing: ScreenCaptureMonitor? = null
@@ -128,6 +135,7 @@ class RtcCall(
                     val bytes = ByteArray(buffer.data.remaining()); buffer.data.get(bytes)
                     val message = String(bytes, Charsets.UTF_8)
                     if (message == "screen:on" || message == "screen:off") main.post { if (!closed) onRemoteSharing(message == "screen:on") }
+                    if (message == "camera:on" || message == "camera:off") main.post { if (!closed) onRemoteCamera(message == "camera:on") }
                 }
             })
             return
@@ -186,8 +194,63 @@ class RtcCall(
     // The audio module replaces microphone samples with silence while muted.
     fun mute(muted: Boolean) { if (!closed) audioModule.setMicrophoneMute(muted) }
     fun speaker(enabled: Boolean) { audioManager.isSpeakerphoneOn = enabled }
+    fun startCamera() {
+        check(!closed && screen == null && camera == null) { "Pare a transmissão antes de ligar a câmera" }
+        val generation = ++cameraGeneration
+        fun failed(message: String) {
+            main.post {
+                if (!closed && generation == cameraGeneration) { stopCamera(); onCameraStopped(message) }
+            }
+        }
+        val events = object : CameraVideoCapturer.CameraEventsHandler {
+            override fun onCameraError(error: String) = failed("Não foi possível usar a câmera. $error")
+            override fun onCameraDisconnected() = failed("A câmera foi desconectada")
+            override fun onCameraFreezed(error: String) = failed("A câmera parou de responder. $error")
+            override fun onCameraOpening(name: String) {}
+            override fun onFirstFrameAvailable() {}
+            override fun onCameraClosed() {}
+        }
+        val enumerator: CameraEnumerator = if (Camera2Enumerator.isSupported(context)) Camera2Enumerator(context) else Camera1Enumerator(true)
+        val names = enumerator.deviceNames.sortedBy { !enumerator.isFrontFacing(it) }
+        val capturer = names.firstNotNullOfOrNull { enumerator.createCapturer(it, events) }
+            ?: throw IllegalStateException("Nenhuma câmera disponível neste dispositivo")
+        camera = capturer
+        try {
+            val source = factory.createVideoSource(false); cameraSource = source
+            val track = factory.createVideoTrack("camera", source); cameraVideo = track
+            val helper = SurfaceTextureHelper.create("call-camera", egl.eglBaseContext); cameraTexture = helper
+            capturer.initialize(helper, context, source.capturerObserver)
+            source.adaptOutputFormat(1280, 720, 30)
+            configureScreenSender(screenSender, ScreenCaptureProfile(720, 1280, 30, 2_500_000))
+            check(screenSender.setTrack(track, false)) { "Não foi possível enviar o vídeo da câmera" }
+            capturer.startCapture(1280, 720, 30)
+            sendSharingState()
+        } catch (error: Exception) { stopCamera(); throw error }
+    }
+    suspend fun switchCamera(): Unit = suspendCancellableCoroutine { continuation ->
+        val capturer = camera
+        if (closed || capturer == null) { continuation.resume(Unit); return@suspendCancellableCoroutine }
+        capturer.switchCamera(object : CameraVideoCapturer.CameraSwitchHandler {
+            override fun onCameraSwitchDone(isFrontCamera: Boolean) { if (continuation.isActive) continuation.resume(Unit) }
+            override fun onCameraSwitchError(error: String) {
+                if (continuation.isActive) continuation.resumeWithException(IllegalStateException("Não foi possível trocar a câmera. $error"))
+            }
+        })
+    }
+    fun stopCamera() {
+        cameraGeneration++
+        val capturer = camera; camera = null
+        if (capturer == null) return
+        screenSender.setTrack(videoTrack, false)
+        try { capturer.stopCapture() }
+        finally {
+            capturer.dispose(); cameraTexture?.dispose(); cameraTexture = null
+            cameraVideo?.dispose(); cameraVideo = null; cameraSource?.dispose(); cameraSource = null
+            sendSharingState()
+        }
+    }
     fun share(permission: Intent) {
-        check(screen == null)
+        check(!closed && screen == null && camera == null) { "Desligue a câmera antes de compartilhar a tela" }
         val generation = ++sharingGeneration
         val capturer = ScreenCapturerAndroid(permission, object : MediaProjection.Callback() {
             override fun onStop() { main.post { if (!closed && generation == sharingGeneration && screen != null) { stopSharing(); onSharingStopped() } } }
@@ -232,7 +295,11 @@ class RtcCall(
         sharingState = false; sendSharingState()
     }
     private fun sendSharingState() {
-        control?.takeIf { it.state() == DataChannel.State.OPEN }?.send(DataChannel.Buffer(ByteBuffer.wrap((if (sharingState) "screen:on" else "screen:off").toByteArray()), false))
+        control?.takeIf { it.state() == DataChannel.State.OPEN }?.let { channel ->
+            for (message in listOf(if (sharingState) "screen:on" else "screen:off", if (camera != null) "camera:on" else "camera:off")) {
+                channel.send(DataChannel.Buffer(ByteBuffer.wrap(message.toByteArray()), false))
+            }
+        }
     }
     fun sampleVoice(callback: (Double, Double) -> Unit) {
         if (closed) return
@@ -243,7 +310,7 @@ class RtcCall(
     }
     fun close() {
         if (closed) return
-        closed = true; stopSharing(); channel?.unregisterObserver(); channel?.close(); control?.unregisterObserver(); control?.close(); deviceAudio.close()
+        closed = true; stopCamera(); stopSharing(); channel?.unregisterObserver(); channel?.close(); control?.unregisterObserver(); control?.close(); deviceAudio.close()
         peer.close(); peer.dispose(); channel?.dispose(); channel = null; control?.dispose(); control = null
         audioTrack.dispose(); videoTrack.dispose(); audioSource.dispose(); videoSource.dispose(); factory.dispose(); audioModule.release(); egl.release()
         audioManager.isSpeakerphoneOn = previousSpeaker; audioManager.mode = previousMode

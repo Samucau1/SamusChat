@@ -40,7 +40,7 @@ public class SecurityConfig {
                                 apiErrorWriter.write(response, 403, "Acesso negado"))
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/logout").authenticated()
+                        .requestMatchers("/api/auth/logout", "/api/auth/session").authenticated()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/uploads/appearance/**").permitAll()
