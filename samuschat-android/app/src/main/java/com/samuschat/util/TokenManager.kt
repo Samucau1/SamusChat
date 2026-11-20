@@ -11,14 +11,15 @@ import kotlinx.coroutines.flow.catch
 import java.io.IOException
 
 private val Context.authStore by preferencesDataStore("auth_prefs")
-data class Session(val token: String, val email: String, val refreshToken: String? = null)
+data class Session(val token: String, val email: String, val refreshToken: String? = null, val publicId: String? = null)
 class TokenManager(context: Context) {
     private val store = context.applicationContext.authStore
     private val tokenKey = stringPreferencesKey("jwt_token")
     private val refreshKey = stringPreferencesKey("refresh_token")
     private val emailKey = stringPreferencesKey("user_email")
+    private val identityKey = stringPreferencesKey("public_id")
     val session = store.data.catch { if (it is IOException) emit(emptyPreferences()) else throw it }.map { prefs ->
-        prefs[tokenKey]?.takeIf { it.isNotBlank() }?.let { stored -> decode(stored)?.let { Session(it, prefs[emailKey].orEmpty(), prefs[refreshKey]?.let { value -> decode(value) }) } }
+        prefs[tokenKey]?.takeIf { it.isNotBlank() }?.let { stored -> decode(stored)?.let { Session(it, prefs[emailKey].orEmpty(), prefs[refreshKey]?.let { value -> decode(value) }, prefs[identityKey]) } }
     }
     @Synchronized
     private fun key(): javax.crypto.SecretKey {
@@ -44,16 +45,20 @@ class TokenManager(context: Context) {
     }.getOrNull()
     suspend fun getToken(): String? {
         val value = session.first() ?: return null
-        if (store.data.first()[tokenKey]?.startsWith("v1:") != true) saveSession(value.token, value.email, value.refreshToken)
+        if (store.data.first()[tokenKey]?.startsWith("v1:") != true) saveSession(value.token, value.email, value.refreshToken, value.publicId)
         return value.token
     }
     suspend fun authorization() = "Bearer " + (getToken() ?: error("Entre novamente na sua conta"))
-    suspend fun saveSession(token: String, email: String, refreshToken: String? = null) {
+    suspend fun saveSession(token: String, email: String, refreshToken: String? = null, publicId: String? = null) {
         require(token.isNotBlank())
         store.edit {
             it[tokenKey] = encode(token); it[emailKey] = email
             if (refreshToken != null) it[refreshKey] = encode(refreshToken) else it.remove(refreshKey)
+            if (publicId != null) it[identityKey] = publicId else it.remove(identityKey)
         }
+    }
+    suspend fun rememberIdentity(email: String, publicId: String) {
+        store.edit { if (it[emailKey] == email && it[tokenKey] != null) it[identityKey] = publicId }
     }
     suspend fun renewSession(expected: Session, token: String, refreshToken: String? = expected.refreshToken): Boolean {
         var saved = false

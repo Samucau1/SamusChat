@@ -1,13 +1,11 @@
 package com.samuschat
 
-import android.Manifest
-import android.os.Build
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
 import androidx.compose.material3.*
@@ -18,6 +16,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.*
 import com.samuschat.data.push.ChatMessagingService
+import com.samuschat.data.push.NotificationDestination
 import com.samuschat.ui.auth.*
 import com.samuschat.ui.server.*
 import com.samuschat.ui.chat.*
@@ -27,9 +26,28 @@ import com.samuschat.ui.theme.RailBackground
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    private val notifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    private val notificationTarget = kotlinx.coroutines.flow.MutableStateFlow<NotificationDestination?>(null)
+    private fun readNotification(intent: Intent?) {
+        val data = listOf("type", "recipientId", "contactId", "channelId").mapNotNull { key ->
+            intent?.getStringExtra(key)?.let { key to it }
+        }.toMap()
+        notificationTarget.value = NotificationDestination.fromData(data)
+    }
+    private fun notificationHandled() {
+        notificationTarget.value = null
+        // A later Activity recreation must not reopen an already handled notification.
+        for (key in listOf("type", "recipientId", "contactId", "channelId")) intent?.removeExtra(key)
+    }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        readNotification(intent)
+    }
+    override fun onStart() { super.onStart(); (application as SamusChatApplication).inForeground = true }
+    override fun onStop() { (application as SamusChatApplication).inForeground = false; super.onStop() }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        readNotification(intent)
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.rgb(30, 31, 34)),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.rgb(30, 31, 34))
@@ -40,6 +58,7 @@ class MainActivity : ComponentActivity() {
                 Surface(Modifier.fillMaxSize().background(RailBackground).systemBarsPadding()) {
                     var loaded by remember { mutableStateOf(false) }
                     var session by remember { mutableStateOf<Session?>(null) }
+                    val target by notificationTarget.collectAsState()
                     LaunchedEffect(Unit) { app.tokens.session.collect { session = it; loaded = true } }
                     if (!loaded) CircularProgressIndicator()
                     else key(session?.email) {
@@ -53,12 +72,12 @@ class MainActivity : ComponentActivity() {
                             }
                             LaunchedEffect(Unit) {
                                 ChatMessagingService.syncToken(app)
-                                if (Build.VERSION.SDK_INT >= 33) notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
                             }
                             NavHost(nav, startDestination = "home") {
                                 composable("home") {
                                     val servers: ServerViewModel = viewModel(factory = factory { ServerViewModel(app) })
                                     com.samuschat.ui.home.HomeScreen(app, session!!.email, servers,
+                                        notificationTarget = target, onNotificationHandled = { notificationHandled() },
                                         onLogout = { scope.launch { if (!ChatMessagingService.logout(app)) android.widget.Toast.makeText(this@MainActivity, "Não foi possível encerrar as sessões. Confira sua conexão.", android.widget.Toast.LENGTH_LONG).show() } }) { id, name, identity, back ->
                                         key(id) {
                                             val chat: ChatViewModel = viewModel(key = "chat-$id", factory = factory { ChatViewModel(app, id) })

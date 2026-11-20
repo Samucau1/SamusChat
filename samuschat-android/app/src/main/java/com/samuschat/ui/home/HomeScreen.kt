@@ -43,6 +43,8 @@ fun HomeScreen(
     app: SamusChatApplication,
     email: String,
     servers: ServerViewModel,
+    notificationTarget: com.samuschat.data.push.NotificationDestination? = null,
+    onNotificationHandled: () -> Unit = {},
     onLogout: () -> Unit,
     channelContent: @Composable (Long, String, String, () -> Unit) -> Unit
 ) {
@@ -52,6 +54,7 @@ fun HomeScreen(
     LaunchedEffect(email, retry) {
         try {
             publicId = app.api.profile(app.tokens.authorization()).data().publicId
+            publicId?.let { app.tokens.rememberIdentity(email, it) }
             identityError = publicId == null
         } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (_: Exception) { identityError = true }
@@ -85,6 +88,43 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     // Buttons switch directly; HorizontalPager still handles the swipe gesture.
     fun navigate(page: Int) { scope.launch { pager.scrollToPage(page) } }
+    var pushNotice by remember { mutableStateOf<com.samuschat.data.push.NotificationDestination?>(null) }
+    var notificationError by remember { mutableStateOf<String?>(null) }
+    suspend fun openNotification(target: com.samuschat.data.push.NotificationDestination) {
+        if (target.recipientId != identity) { notificationError = "Este aviso pertence a outra conta."; return }
+        try {
+            val contact = target.contactId?.let { id -> app.api.callContacts(app.tokens.authorization()).data().firstOrNull { it.email == id } }
+            if (contact != null) {
+                contactEmail = contact.email; contactName = contact.username; demoChat = false
+                pager.scrollToPage(1)
+                return
+            }
+            val channel = app.servers.list().flatMap { it.channels }.firstOrNull { it.id == target.channelId && it.type == "TEXT" }
+                ?: error("A conversa deste aviso não está disponível para esta conta.")
+            channelId = channel.id; channelName = channel.name; channelType = channel.type
+            pager.scrollToPage(0)
+        } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+        catch (error: Exception) { notificationError = error.message ?: "Não foi possível abrir a conversa." }
+    }
+    LaunchedEffect(notificationTarget, identity) {
+        notificationTarget?.let { target ->
+            openNotification(target)
+            onNotificationHandled()
+        }
+    }
+    LaunchedEffect(identity) {
+        app.notificationEvents.collect { target ->
+            if (target.contactId == null || !inbox.live) pushNotice = target
+        }
+    }
+    DisposableEffect(tab, contactEmail, channelId) {
+        app.visibleConversation = when {
+            tab == "friends" && contactEmail != null -> "direct:$contactEmail"
+            tab == "servers" && channelId != null -> "channel:$channelId"
+            else -> null
+        }
+        onDispose { app.visibleConversation = null }
+    }
     BackHandler(pager.currentPage != 1 || demoChat || contactEmail != null) {
         demoChat = false; contactEmail = null
         navigate(1)
@@ -109,6 +149,16 @@ fun HomeScreen(
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).background(ChatBackground)) {
+            notificationError?.let { error ->
+                TextButton(onClick = { notificationError = null }) { Text(error, color = MaterialTheme.colorScheme.error) }
+            }
+            pushNotice?.let { target ->
+                Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Você tem uma nova mensagem.", Modifier.weight(1f))
+                    TextButton(onClick = { pushNotice = null; scope.launch { openNotification(target) } }) { Text("Abrir") }
+                    TextButton(onClick = { pushNotice = null }) { Text("Fechar") }
+                }
+            }
             inbox.notice?.let { message ->
                 Surface(color = MaterialTheme.colorScheme.primaryContainer) {
                     Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
