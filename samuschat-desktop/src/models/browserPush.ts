@@ -30,7 +30,8 @@ async function exclusive<T>(operation:()=>Promise<T>):Promise<T> {
 }
 export async function enableBackgroundPush(api:ApiRepository,owner:string):Promise<boolean> {
  if(!browserPushConfigured())return false;
- const session=new ApiRepository(api.token);
+ const refreshToken=api.refreshToken;
+ const session=new ApiRepository(api.token,refreshToken,value=>{if(api.token&&api.refreshToken===refreshToken)api.remember(value.token,value.refreshToken);});
  return exclusive(async()=>{
   if(!window.isSecureContext||!('serviceWorker' in navigator)||!('PushManager' in window))throw new Error('Este navegador não oferece push neste endereço.');
   if(!(await session.webPushStatus()).enabled)throw new Error('O servidor ainda não está configurado para push. Os avisos com o site aberto continuam disponíveis.');
@@ -50,7 +51,8 @@ export async function enableBackgroundPush(api:ApiRepository,owner:string):Promi
  });
 }
 export async function disableBackgroundPush(api:ApiRepository,owner:string) {
- const session=new ApiRepository(api.token);
+ const refreshToken=api.refreshToken;
+ const session=new ApiRepository(api.token,refreshToken,value=>{if(api.token&&api.refreshToken===refreshToken)api.remember(value.token,value.refreshToken);});
  return exclusive(async()=>{
   const current=saved();if(current?.owner!==owner)return;
   await session.unregisterDevice(current.token);

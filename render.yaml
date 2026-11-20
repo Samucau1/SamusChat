@@ -1,0 +1,43 @@
+# Temporary free beta: Postgres expires after 30 days; local uploads are ephemeral.
+services:
+  - type: web
+    name: samuschat-beta
+    runtime: docker
+    plan: free
+    region: virginia
+    dockerfilePath: ./deploy/render/Dockerfile
+    dockerContext: .
+    autoDeployTrigger: off
+    healthCheckPath: /actuator/health/readiness
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DB_HOST
+        fromDatabase:
+          name: samuschat-beta-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: samuschat-beta-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: samuschat-beta-db
+          property: database
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: samuschat-beta-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: samuschat-beta-db
+          property: password
+
+databases:
+  - name: samuschat-beta-db
+    plan: free
+    region: virginia
+    databaseName: samuschat
+    user: samuschat
+    postgresMajorVersion: "16"
+    ipAllowList: []

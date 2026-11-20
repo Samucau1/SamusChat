@@ -53,6 +53,28 @@ test('notification click handler focuses an existing app or opens only the same 
  click();await completion;expect(focused).toBe(true);expect(opened).toBe('');
 });
 
+test('notification click preserves direct and channel destinations in open and closed app windows',async()=>{
+ const handlers:Record<string,(event:any)=>void>={};
+ const posted:any[]=[];
+ let opened='',focused=0;
+ let windows:any[]=[];
+ const scope={addEventListener:(name:string,handler:any)=>handlers[name]=handler,
+  location:{origin:'https://samuschat.test'},
+  clients:{matchAll:async()=>windows,openWindow:async(url:string)=>{opened=url;}},
+ };
+ runInNewContext(readFileSync('public/push-sw.js','utf8'),{self:scope,URL});
+ const recipient='usr_1_abcdefghijklmnopqrstuv',contact='usr_2_abcdefghijklmnopqrstuv';
+ for(const url of [`/?notification=direct&recipient=${recipient}&contact=${contact}`,`/?notification=channel&recipient=${recipient}&channel=42`]){
+  let completion=Promise.resolve();
+  const click=()=>handlers.notificationclick({notification:{data:{url},close:()=>{}},waitUntil:(task:Promise<void>)=>{completion=task;}});
+  windows=[];click();await completion;expect(opened).toBe(url);
+  windows=[{url:'https://samuschat.test/',postMessage:(value:any)=>posted.push(value),focus:async()=>{focused++;}}];
+  click();await completion;
+  expect(posted.at(-1)).toEqual({type:'SAMUSCHAT_OPEN_NOTIFICATION',url});
+ }
+ expect(focused).toBe(2);
+});
+
 test('service worker ignores malformed or unrelated pushes and suppresses a visible app',async({page,context})=>{
  await context.grantPermissions(['notifications']);await page.goto('/');
  await page.evaluate(async()=>{await navigator.serviceWorker.register('/push-sw.js');await navigator.serviceWorker.ready;});
@@ -104,4 +126,24 @@ test('deactivation preserves registration on server failure and cannot cancel an
  });
  expect(await page.evaluate(()=>localStorage.getItem('samuschat.webPush'))).toBeNull();
  expect(requests).toBe(2);
+});
+
+test('logout clears native notices and only the subscription owned by the departing account',async({page,context})=>{
+ await context.grantPermissions(['notifications']);
+ await page.goto('/');
+ await page.evaluate(async()=>{
+  const worker=await navigator.serviceWorker.register('/push-sw.js');await navigator.serviceWorker.ready;
+  await worker.showNotification('SamusChat',{body:'Você tem uma nova mensagem.',tag:'samuschat-messages'});
+  localStorage.setItem('samuschat.webPush',JSON.stringify({owner:'account-b',token:'token-b'}));
+  const {clearPushAfterLogout}=await import('/src/models/browserPush.ts');
+  await clearPushAfterLogout('account-a');
+ });
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('samuschat.webPush')!).owner)).toBe('account-b');
+ expect(await page.evaluate(async()=>(await (await navigator.serviceWorker.ready).getNotifications()).length)).toBe(1);
+ await page.evaluate(async()=>{
+  const {clearPushAfterLogout}=await import('/src/models/browserPush.ts');
+  await clearPushAfterLogout('account-b');
+ });
+ expect(await page.evaluate(()=>localStorage.getItem('samuschat.webPush'))).toBeNull();
+ await expect.poll(()=>page.evaluate(async()=>(await (await navigator.serviceWorker.ready).getNotifications()).length)).toBe(0);
 });

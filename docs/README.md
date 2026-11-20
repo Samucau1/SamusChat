@@ -1,5 +1,7 @@
 # Documentação do SamusChat
 
+- [Beta gratuita no Render: configuração e limites](DEPLOY_RENDER.md)
+
 - [Reconexão progressiva e recuperação sem consultas sobrepostas — 04/11/2026](RECONEXAO_PROGRESSIVA_2026-11-04.md)
 
 - [Relatório de estabilidade, alta demanda e estratégia de evolução — 31/10/2026](RELATORIO_ESTABILIDADE_ESCALABILIDADE_2026-10-31.md)

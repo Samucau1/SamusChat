@@ -3,12 +3,10 @@ package com.chatapp.chatapp_backend.service;
 import com.chatapp.chatapp_backend.repository.UserDeviceRepository;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.messaging.AndroidConfig;
-import com.google.firebase.messaging.AndroidNotification;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.MessagingErrorCode;
-import com.google.firebase.messaging.Notification;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +22,13 @@ public class NotificationService {
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
 
     private final UserDeviceRepository userDeviceRepository;
+    private final com.chatapp.chatapp_backend.security.PublicIdentityService identities;
 
     public void sendToUser(String userEmail, String title, String body, String channelId) {
+        sendToUser(userEmail, title, body, channelId, null);
+    }
+
+    private void sendToUser(String userEmail, String title, String body, String channelId, String senderEmail) {
         List<String> tokens = userDeviceRepository
                 .findByUserEmail(userEmail)
                 .stream()
@@ -38,7 +41,7 @@ public class NotificationService {
         }
 
         for (String token : tokens) {
-            sendNotification(token, title, body, channelId);
+            sendNotification(token, channelId, identities.publicId(userEmail), identities.publicId(senderEmail));
         }
     }
 
@@ -46,55 +49,45 @@ public class NotificationService {
                             String body, String channelId, String senderEmail) {
         emails.stream()
                 .filter(email -> !email.equals(senderEmail))
-                .forEach(email -> sendToUser(email, title, body, channelId));
+                .distinct()
+                .forEach(email -> sendToUser(email, title, body, channelId, senderEmail));
     }
 
-    private void sendNotification(String token, String title, String body, String channelId) {
+    private void sendNotification(String token, String channelId, String recipientId, String contactId) {
         if (FirebaseApp.getApps().isEmpty()) {
             log.debug("Firebase is not initialized. Skipping push notification.");
             return;
         }
 
         try {
-            Message message = Message.builder()
-                    .setToken(token)
-                    .setNotification(Notification.builder()
-                            .setTitle(title)
-                            .setBody(body)
-                            .build()
-                    )
-                    .putData("channelId", channelId)
-                    .putData("type", "NEW_MESSAGE")
-                    .setWebpushConfig(com.google.firebase.messaging.WebpushConfig.builder()
-                            .putHeader("TTL", "300")
-                            .setNotification(com.google.firebase.messaging.WebpushNotification.builder()
-                                    .setTitle("SamusChat")
-                                    .setBody("Voce tem uma nova mensagem.")
-                                    .setTag("samuschat-messages")
-                                    .build())
-                            .build())
-                    .setAndroidConfig(AndroidConfig.builder()
-                            .setPriority(AndroidConfig.Priority.HIGH)
-                            .setNotification(AndroidNotification.builder()
-                                    .setChannelId("samuschat_messages")
-                                    .setSound("default")
-                                    .build()
-                            )
-                            .build()
-                    )
-                    .build();
+            Message message = notificationMessage(token, channelId, recipientId, contactId);
 
             String response = FirebaseMessaging.getInstance().send(message);
             log.debug("Notificacao enviada: {}", response);
         } catch (FirebaseMessagingException e) {
-            if (e.getMessagingErrorCode() == MessagingErrorCode.UNREGISTERED
-                    || e.getMessagingErrorCode() == MessagingErrorCode.INVALID_ARGUMENT) {
-                log.warn("Token FCM invalido, removendo: {}", token);
+            if (e.getMessagingErrorCode() == MessagingErrorCode.UNREGISTERED) {
+                log.warn("Removendo registro de notificacoes expirado");
                 userDeviceRepository.deleteByFcmToken(token);
                 return;
             }
 
             log.error("Erro ao enviar notificacao FCM: {}", e.getMessage());
         }
+    }
+
+    static Message notificationMessage(String token, String channelId, String recipientId, String contactId) {
+        var message = Message.builder().setToken(token)
+                .putData("type", "NEW_MESSAGE")
+                .putData("title", "SamusChat")
+                .putData("body", "Você tem uma nova mensagem.")
+                .putData("channelId", channelId)
+                .putData("recipientId", recipientId)
+                .setWebpushConfig(com.google.firebase.messaging.WebpushConfig.builder().putHeader("TTL", "300").build())
+                .setAndroidConfig(AndroidConfig.builder().setPriority(AndroidConfig.Priority.HIGH)
+                        .setTtl(java.time.Duration.ofMinutes(5).toMillis()).build());
+        if ("direct".equals(channelId) && contactId != null && contactId.startsWith("usr_")) {
+            message.putData("contactId", contactId);
+        }
+        return message.build();
     }
 }

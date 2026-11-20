@@ -64,7 +64,10 @@ export function useDirectInbox(api:ApiRepository,user:User,selected:MutableRefOb
         setNotice(item);
         if(document.hidden&&!backgroundPushActive(owner)&&'Notification' in window&&Notification.permission==='granted'){
          const notification=new Notification('Nova mensagem no SamusChat',{body:`${item.senderUsername} enviou uma mensagem`,tag:`dm:${item.senderEmail}`});
-         notification.onclick=()=>{window.focus();notification.close();};
+         notification.onclick=()=>{
+          window.focus();notification.close();
+          window.dispatchEvent(new CustomEvent('samuschat:open-notification',{detail:{recipientId:owner,contactId:item.senderEmail}}));
+         };
         }
        }
       }

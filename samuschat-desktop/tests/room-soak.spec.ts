@@ -43,8 +43,13 @@ test('three participants sustain room voice and screen audio, then release captu
    await page.getByRole('button',{name:server.name,exact:true}).click();await page.getByRole('button',{name:/soak-voice/}).click();
   }
   for(const page of pages)await expect(page.locator('.voice-room')).toContainText('3/6 participantes',{timeout:30000});
+  // Membership arrives before SDP/ICE finishes; start the media soak after all links connect.
+  for(const page of pages)await expect.poll(()=>page.evaluate(()=>{
+   const peers=(window as unknown as {soakState:{peers:RTCPeerConnection[]}}).soakState.peers;
+   return peers.length===2&&peers.every(peer=>peer.connectionState==='connected');
+  }),{timeout:30000}).toBe(true);
   await pages[0].getByRole('button',{name:'Compartilhar tela no canal',exact:true}).click();
-  for(const page of pages.slice(1))await expect.poll(()=>page.locator('.voice-room video.call-video').evaluateAll(v=>v.some(e=>(e as HTMLVideoElement).videoWidth>0))).toBe(true);
+  for(const page of pages.slice(1))await expect.poll(()=>page.locator('.voice-room video.call-video').evaluateAll(v=>v.some(e=>(e as HTMLVideoElement).videoWidth>0)),{timeout:30000}).toBe(true);
   const sample=async()=>Promise.all(pages.map(page=>page.evaluate(async()=>{
    const state=(window as unknown as {soakState:{peers:RTCPeerConnection[];rms:number;audioChunks:number}}).soakState;
    const reports=await Promise.all(state.peers.filter(p=>p.connectionState==='connected').map(p=>p.getStats()));
