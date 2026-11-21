@@ -13,7 +13,7 @@ async function setup(page: Page, clientId = 'test.apps.googleusercontent.com') {
 test('Google fica oculto sem configuração; login por senha continua disponível', async ({ page }) => {
   await setup(page, ''); await page.goto('/');
   await expect(page.getByRole('button', { name: 'Entrar', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Entrar com Google', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Continuar com Google', exact: true })).toHaveCount(0);
 });
 test('Google inicia sessão com CSRF e preserva a renovação sem guardar o token Google', async ({ page, context }) => {
   await setup(page);
@@ -27,6 +27,8 @@ test('Google inicia sessão com CSRF e preserva a renovação sem guardar o toke
   await page.route('**/api/users/me', route => route.fulfill({ json: { success: true, data: { id: 42, username: 'GoogleUser', email: 'user@example.test' } } }));
   await page.goto('/');
   await page.getByLabel('Senha', { exact: true }).fill('existing-password');
+  await page.getByRole('button', { name: 'Continuar com Google', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByRole('button', { name: 'Entrar com Google', exact: true }).click();
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('samuschat.desktop.session') || '{}').refreshToken)).toBe('refresh');
   expect(submitted.credential).toBe('test-google-id-token');
@@ -37,10 +39,23 @@ test('Google inicia sessão com CSRF e preserva a renovação sem guardar o toke
 test('token rejeitado mostra erro e mantém formulário de login', async ({ page, context }) => {
   await setup(page);
   await page.route('**/api/auth/google/gis', route => route.fulfill({ status: 401, json: { success: false, error: 'Token Google invalido ou expirado' } }));
-  await page.goto('/'); await page.getByRole('button', { name: 'Entrar com Google', exact: true }).click();
+  await page.goto('/'); await page.getByRole('button', { name: 'Continuar com Google', exact: true }).click();
+  await page.getByRole('button', { name: 'Entrar com Google', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Token Google invalido');
   await expect(page.getByRole('button', { name: 'Entrar', exact: true })).toBeEnabled();
   expect((await context.cookies()).find(cookie => cookie.name === 'g_csrf_token')).toBeUndefined();
+});
+test('fechar a etapa Google devolve o foco e não inicia sessão; celular sem corte lateral', async ({ page }) => {
+  await setup(page); await page.setViewportSize({ width: 390, height: 844 });
+  let logins = 0;
+  await page.route('**/api/auth/google/gis', route => { logins++; return route.abort(); });
+  await page.goto('/');
+  const trigger = page.getByRole('button', { name: 'Continuar com Google', exact: true });
+  await trigger.click(); await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByRole('button', { name: 'Fechar login Google', exact: true }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible(); await expect(trigger).toBeFocused();
+  expect(logins).toBe(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 test('falha ao carregar Google permite continuar com email e senha', async ({ page }) => {
   await setup(page);
