@@ -73,7 +73,8 @@ export class ApiRepository {
   }
   register(username: string, email: string, password: string) { return this.post<{ token: string; refreshToken?: string }>('/api/auth/register', { username, email, password }); }
   googleLogin(idToken: string, password?: string) { return this.post<{ token: string }>('/api/auth/google', { idToken, password }); }
-  googleGis(credential: string, csrfToken: string, password?: string) { return this.post<{ token: string }>('/api/auth/google/gis', { credential, g_csrf_token: csrfToken, password }); }
+  googleConfig() { return this.request<{ clientId: string }>('/api/auth/google/config'); }
+  googleGis(credential: string, csrfToken: string, password?: string) { return this.post<{ token: string; refreshToken?: string }>('/api/auth/google/gis', { credential, g_csrf_token: csrfToken, password }); }
   requestRecovery(email: string) { return this.post<string>('/api/auth/password/request', { email }); }
   verifyRecovery(email: string, code: string) { return this.post<{ resetToken: string }>('/api/auth/password/verify', { email, code }); }
   resetPassword(email: string, resetToken: string, password: string) { return this.post<string>('/api/auth/password/reset', { email, resetToken, password }); }
