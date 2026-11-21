@@ -2,6 +2,7 @@ export interface User { publicId?: string; id: number; username: string; email: 
 export interface Channel { id: number; name: string; type: string }
 export interface ApiServer { id: number; name: string; description?: string; ownerEmail?: string; channels: Channel[]; iconUrl?: string; bannerUrl?: string; backgroundUrl?: string; accentColor?: string }
 export interface Contact { email: string; username: string; avatarUrl?: string }
+export interface PublicProfile { publicId: string; username: string; avatarUrl?: string; bannerUrl?: string; backgroundUrl?: string; accentColor?: string; bio?: string; relationship: 'SELF' | 'NONE' | 'FRIEND' | 'INCOMING' | 'OUTGOING' }
 export type MemberRole = 'ADMIN' | 'MOD' | 'USER';
 export interface Member { id: number; userEmail: string; username: string; avatarUrl?: string; role: MemberRole; joinedAt: string }
 export interface VoiceRoom { channelId: number; participants: Contact[]; sessions: CallSession[]; capacity: number }
@@ -96,6 +97,13 @@ export class ApiRepository {
   updateRole(id: number, userEmail: string, role: MemberRole) { return this.request<Member>(`/api/servers/${id}/members/role`, { method: 'PUT', body: JSON.stringify({ userEmail, role }) }); }
   removeMember(id: number, email: string) { return this.request<void>(`/api/servers/${id}/members/${encodeURIComponent(email)}`, { method: 'DELETE' }); }
   contacts() { return this.request<Contact[]>('/api/calls/contacts'); }
+  directContacts() { return this.request<Contact[]>('/api/direct-messages/contacts'); }
+  friends(signal?: AbortSignal) { return this.request<PublicProfile[]>('/api/friends', { signal }); }
+  searchFriends(q: string, signal?: AbortSignal) { return this.request<PublicProfile[]>(`/api/friends/search?q=${encodeURIComponent(q)}`, { signal }); }
+  publicProfile(id: string, signal?: AbortSignal) { return this.request<PublicProfile>(`/api/friends/profiles/${encodeURIComponent(id)}`, { signal }); }
+  friendAction(id: string, action: 'request' | 'accept' | 'remove') {
+    return action === 'remove' ? this.request<PublicProfile>(`/api/friends/${encodeURIComponent(id)}`, { method: 'DELETE' }) : this.post<PublicProfile>(`/api/friends/${encodeURIComponent(id)}/${action}`, {});
+  }
   createServer(name: string, description: string) { return this.post<ApiServer>('/api/servers', { name, description }); }
   joinServer(id: number) { return this.post<string>(`/api/servers/${id}/join`); }
   createChannel(id: number, name: string, type: 'TEXT' | 'VOICE' = 'TEXT') { return this.post<Channel>(`/api/servers/${id}/channels`, { name, type }); }

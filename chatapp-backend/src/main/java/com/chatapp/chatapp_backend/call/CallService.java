@@ -14,12 +14,15 @@ public class CallService {
     private final VoicePresenceRepository presences;
     private final com.chatapp.chatapp_backend.repository.ChannelRepository channels;
     private final com.chatapp.chatapp_backend.service.PermissionService permissions;
+    private final com.chatapp.chatapp_backend.repository.FriendshipRepository friendships;
     public record Contact(String email,String username,String avatarUrl) {}
     public record View(String id,String caller,String callee,String state,String offer,String answer,Long channelId) {}
     public static View view(CallSession c) { return new View(c.getId(),c.getCaller(),c.getCallee(),c.getState(),c.getOffer(),c.getAnswer(),c.getChannelId()); }
     @Transactional(readOnly=true)
     public List<Contact> contacts(String email) {
-        return users.findTop100ByEmailNotOrderByUsernameAsc(email).stream().map(u->new Contact(u.getEmail(),u.getUsername(),u.getAvatarUrl())).toList();
+        var me=users.findByEmail(email).orElseThrow();
+        var ids=friendships.forUser(me.getId()).stream().filter(com.chatapp.chatapp_backend.entity.Friendship::isAccepted).map(f->f.getLowUserId().equals(me.getId())?f.getHighUserId():f.getLowUserId()).toList();
+        return users.findAllById(ids).stream().sorted(java.util.Comparator.comparing(com.chatapp.chatapp_backend.entity.User::getUsername)).map(u->new Contact(u.getEmail(),u.getUsername(),u.getAvatarUrl())).toList();
     }
     private void expire(CallSession c) {
         if(CallRules.expired(c,Instant.now())) { c.setState("EXPIRED");c.setOffer(null);c.setAnswer(null); }

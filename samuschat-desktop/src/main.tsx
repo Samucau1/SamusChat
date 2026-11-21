@@ -25,7 +25,7 @@ if ('serviceWorker' in navigator) {
 
 function ConnectedApp({ session: s }: { session: ReturnType<typeof useSession> }) {
   const screenPreferences = useScreenPreferences();
-  const controller = useChatController(s.api, s.user!, s.setUser, s.handleError);
+  const controller = useChatController(s.api, s.user!, s.setUser, s.handleError, () => s.setError(''));
   const calls = useCallController(s.api, s.user!.publicId ?? s.user!.email, s.handleError, screenPreferences);
   const rooms = useVoiceRoomController(s.api, s.user!.publicId ?? s.user!.email, s.handleError, screenPreferences);
   return <ChatApp controller={controller} calls={calls} rooms={rooms} screenPreferences={screenPreferences} error={s.error} clearError={() => s.setError('')} logout={s.logout} />;

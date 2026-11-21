@@ -5,7 +5,8 @@ Esta configuração publica React, API Spring Boot e WebSocket no mesmo endereç
 ## Limites da entrega gratuita
 
 - O PostgreSQL Free expira 30 dias após a criação. Exportar os dados antes do prazo ou migrar o banco. Ele não oferece backups gerenciados.
-- Os arquivos enviados, fotos e capas ficam no disco temporário do container e desaparecem em reinícios, novos deploys ou suspensão. Não usar esta configuração para guardar arquivos importantes. Armazenamento externo ou disco persistente pago exige uma adaptação posterior.
+- Fotos, capas, fundos e suas prévias estáticas são salvos no PostgreSQL desde a migração V9 e sobrevivem a reinícios, novos deploys e suspensão da aplicação. Consomem a capacidade do banco gratuito (1 GB), que continua sujeito à expiração. Arquivos já apagados pelo disco temporário antes desta versão precisam ser enviados novamente.
+- Anexos das mensagens continuam no disco temporário do container; a persistência V9 cobre apenas imagens de aparência. Armazenamento durável de anexos exige uma adaptação separada.
 - O serviço Free pode suspender após 15 minutos sem tráfego e levar cerca de um minuto para iniciar novamente. A memória é limitada; validar o consumo antes de convidar mais pessoas.
 - Chamadas usam WebRTC entre os participantes. Esta configuração não hospeda TURN. Sem configurar um provedor TURN externo, algumas redes não conseguirão estabelecer mídia.
 - Firebase, Google e envio de email não são configurados automaticamente. Render Free bloqueia as portas SMTP 25, 465 e 587; recuperação de senha exige um provedor por HTTPS ou outra solução compatível.

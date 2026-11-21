@@ -7,6 +7,8 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface DirectMessageRepository extends JpaRepository<DirectMessage, Long> {
+    @Query("select distinct case when m.senderEmail=:me then m.recipientEmail else m.senderEmail end from DirectMessage m where m.senderEmail=:me or m.recipientEmail=:me")
+    List<String> partners(@Param("me") String me);
     interface UnreadSummary { String getSenderEmail(); long getCount(); long getLastId(); }
     @Query("select m.senderEmail as senderEmail, count(m) as count, max(m.id) as lastId from DirectMessage m where m.recipientEmail=:me and m.readAt is null group by m.senderEmail")
     List<UnreadSummary> unread(@Param("me") String me);

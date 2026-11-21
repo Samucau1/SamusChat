@@ -14,12 +14,13 @@ class AttachmentMigrationPostgresTests {
     @Test
     void v7AndLatestPreserveExistingMessagesAndBackfillAttachmentIdentityOnPostgres() throws Exception {
         String url = "jdbc:postgresql://127.0.0.1:15435/samus_audit";
+        String password = System.getenv().getOrDefault("PG_MIGRATION_PASSWORD", "audit_test_only");
         String schema = "audit_mig_" + UUID.randomUUID().toString().replace("-", "");
         String filename = UUID.randomUUID() + ".txt";
-        try (var connection = DriverManager.getConnection(url, "audit", "audit_test_only");
+        try (var connection = DriverManager.getConnection(url, "audit", password);
              var sql = connection.createStatement()) {
             try {
-                var v6 = Flyway.configure().dataSource(url, "audit", "audit_test_only")
+                var v6 = Flyway.configure().dataSource(url, "audit", password)
                         .schemas(schema).defaultSchema(schema).target("6").load();
                 v6.migrate();
                 sql.execute("SET search_path TO " + schema);
@@ -32,13 +33,13 @@ class AttachmentMigrationPostgresTests {
                         + "VALUES ('owner@example.test','friend@example.test','owner','preserved direct',"
                         + "TIMESTAMP '2026-01-01 12:00:00')");
 
-                var v7 = Flyway.configure().dataSource(url, "audit", "audit_test_only")
+                var v7 = Flyway.configure().dataSource(url, "audit", password)
                         .schemas(schema).defaultSchema(schema).target("7").load();
                 v7.migrate();
                 assertThat(v7.info().current().getVersion().toString()).isEqualTo("7");
                 assertLegacyAttachment(connection, filename);
 
-                var latest = Flyway.configure().dataSource(url, "audit", "audit_test_only")
+                var latest = Flyway.configure().dataSource(url, "audit", password)
                         .schemas(schema).defaultSchema(schema).load();
                 latest.migrate();
                 latest.validate();

@@ -38,6 +38,8 @@ class AppearanceApiTests {
         String ownerId = json.readTree(profile.getResponse().getContentAsString()).path("data").path("publicId").asText();
         profile = mvc.perform(get("/api/users/me").header("Authorization", viewer)).andReturn();
         String viewerId = json.readTree(profile.getResponse().getContentAsString()).path("data").path("publicId").asText();
+        mvc.perform(post("/api/friends/"+viewerId+"/request").header("Authorization",owner)).andExpect(status().isOk());
+        mvc.perform(post("/api/friends/"+ownerId+"/accept").header("Authorization",viewer)).andExpect(status().isOk());
         var uploaded = mvc.perform(multipart("/api/users/me/media/avatar").file(image("png", 40, 40)).header("Authorization", owner)).andExpect(status().isOk()).andReturn();
         String avatar = json.readTree(uploaded.getResponse().getContentAsString()).path("data").path("avatarUrl").asText();
         mvc.perform(get("/api/calls/contacts").header("Authorization", viewer))

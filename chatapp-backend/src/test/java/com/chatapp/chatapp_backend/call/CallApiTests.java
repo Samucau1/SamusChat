@@ -49,8 +49,8 @@ class CallApiTests {
         invite();api.perform(get("/api/calls/"+id).with(user("outsider@call.test"))).andExpect(status().isUnauthorized());
         action("outsider","end",null).andExpect(status().isUnauthorized());action("a","accept",null).andExpect(status().isUnauthorized());
     }
-    @Test void anyRegisteredAccountCanCallWithoutSharedServer()throws Exception{
-        api.perform(get("/api/calls/contacts").with(user("a@call.test"))).andExpect(jsonPath("$.data.length()").value(2));
+    @Test void contactsOnlyListFriendsWhileExistingCallApiRemainsCompatible()throws Exception{
+        api.perform(get("/api/calls/contacts").with(user("a@call.test"))).andExpect(jsonPath("$.data.length()").value(0));
         api.perform(post("/api/calls").with(user("outsider@call.test")).contentType("application/json")
             .content(json.writeValueAsString(Map.of("callee","b@call.test","requestId",id)))).andExpect(status().isOk());
     }
