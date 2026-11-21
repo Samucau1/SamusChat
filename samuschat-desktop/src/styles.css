@@ -51,3 +51,4 @@ select{font:inherit;color:inherit;background:var(--rail);border:1px solid #4e505
 .google-auth-help summary:focus-visible{outline:2px solid #a5adff;outline-offset:3px;border-radius:4px}
 .google-auth-help p{margin:8px 0 0;padding:10px 12px;background:var(--rail);border:1px solid #44464e;border-radius:8px;color:var(--muted)}
 .google-auth-button{color-scheme:normal}
+.auth-intro,.auth-card{min-width:0}.google-auth-button>div{min-width:0;max-width:100%}@media(max-width:800px){.auth-shell{grid-template-columns:minmax(0,1fr)}}
