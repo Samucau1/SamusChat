@@ -32,6 +32,7 @@ export function GoogleSignIn({ api, busy, onCredential, onError }: {
   const [enabled, setEnabled] = useState(false);
   useEffect(() => {
     let alive = true;
+    let resize: ResizeObserver | undefined;
     const callback = (credential: string) => { if (alive && !latest.current.busy) latest.current.onCredential(credential); };
     void api.googleConfig().then(async ({ clientId }) => {
       if (!alive || !clientId) return;
@@ -43,12 +44,26 @@ export function GoogleSignIn({ api, busy, onCredential, onError }: {
         sdk.initialize({ client_id: clientId, auto_select: false, callback: response => receive?.(response.credential) });
         initialized = clientId;
       }
-      sdk.renderButton(host.current, { type: 'standard', theme: 'outline', size: 'large', text: 'signin_with', locale: 'pt-BR', width: 280 });
+      const element = host.current;
+      let previousWidth = 0;
+      const render = () => {
+        const width = Math.min(400, Math.floor(element.getBoundingClientRect().width));
+        if (!alive || width < 1 || width === previousWidth) return;
+        previousWidth = width;
+        element.replaceChildren();
+        sdk.renderButton(element, { type: 'standard', theme: 'filled_black', size: 'large', shape: 'rectangular', text: 'continue_with', locale: 'pt-BR', width });
+      };
+      render();
+      resize = new ResizeObserver(render);
+      resize.observe(element);
     }).catch(problem => { if (alive) latest.current.onError(problem); });
-    return () => { alive = false; if (receive === callback) receive = undefined; };
+    return () => { alive = false; resize?.disconnect(); if (receive === callback) receive = undefined; };
   }, [api]);
-  return <div hidden={!enabled} aria-busy={busy} style={{ pointerEvents: busy ? 'none' : undefined }}>
-    <p className="muted">Ou entre com sua conta Google</p><div ref={host} />
-    <p className="muted">Se sua conta existente usa email externo ao Google, preencha a senha atual antes de continuar.</p>
+  return <div className="google-auth" hidden={!enabled} aria-busy={busy} style={{ pointerEvents: busy ? 'none' : undefined }}>
+    <div className="google-auth-divider"><span>ou continue com</span></div>
+    <div className="google-auth-button" ref={host} />
+    <details className="google-auth-help"><summary>Já tem uma conta com outro email?</summary>
+      <p>Se o email da sua conta Google não é Gmail nem de uma organização Google, preencha a senha atual acima para vincular sua conta.</p>
+    </details>
   </div>;
 }
