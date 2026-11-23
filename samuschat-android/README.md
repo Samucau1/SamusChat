@@ -22,7 +22,7 @@ Compose desenha as telas; ViewModels coordenam estado e ações; repositórios c
 | Chamadas | WebRTC, microfone, transmissão e recepção da tela |
 | Notificações | Firebase Messaging opcional |
 
-As conversas reais utilizam a API. A tela Amigos também possui o contato **Alex**, que é uma demonstração local e não cria uma conta no servidor. A foto de perfil é selecionada e persistida por conta neste dispositivo; a sincronização de avatar com o backend ainda é uma etapa futura.
+As conversas reais utilizam a API. A tela Amigos separa amizades aceitas, solicitações recebidas/enviadas e busca de pessoas por nome ou ID público completo. Membros de servidores não são adicionados automaticamente. Os convites são sincronizados com a versão web; a lista é atualizada enquanto a tela está aberta. As imagens do perfil são sincronizadas com o backend.
 
 ## Abrir e executar
 

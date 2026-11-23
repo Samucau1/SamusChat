@@ -5,6 +5,11 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiService {
+    @GET("api/friends") suspend fun friends(@Header("Authorization") token: String): Response<ApiResponse<List<FriendProfile>>>
+    @GET("api/friends/search") suspend fun searchFriends(@Header("Authorization") token: String, @Query("q") query: String): Response<ApiResponse<List<FriendProfile>>>
+    @POST("api/friends/{id}/request") suspend fun requestFriend(@Header("Authorization") token: String, @Path("id") id: String): Response<ApiResponse<FriendProfile>>
+    @POST("api/friends/{id}/accept") suspend fun acceptFriend(@Header("Authorization") token: String, @Path("id") id: String): Response<ApiResponse<FriendProfile>>
+    @DELETE("api/friends/{id}") suspend fun removeFriend(@Header("Authorization") token: String, @Path("id") id: String): Response<ApiResponse<FriendProfile>>
     @GET("api/devices/web-push/status") suspend fun notificationStatus(@Header("Authorization") token: String): Response<ApiResponse<Map<String, Boolean>>>
     @POST("api/auth/session") suspend fun rememberSession(@Header("Authorization") token: String): Response<ApiResponse<TokenData>>
     @GET("api/direct-messages/unread") suspend fun directUnread(@Header("Authorization") token: String): Response<ApiResponse<List<DirectUnread>>>
