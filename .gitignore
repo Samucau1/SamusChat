@@ -31,6 +31,7 @@ __pycache__/
 **/build/
 local.properties
 *.apk
+!releases/android/SamusChat-1.4.3-beta.apk
 *.aab
 dist/celular/
 
