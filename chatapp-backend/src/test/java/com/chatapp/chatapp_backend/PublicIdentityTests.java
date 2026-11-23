@@ -41,6 +41,8 @@ class PublicIdentityTests {
 
     @Test void contactsExposePublicIdentifiersWhileOwnProfileKeepsOwnEmail() throws Exception {
         var a=account(); var b=account(); String token="Bearer "+jwt.generateToken(a.getEmail());
+        mvc.perform(post("/api/friends/"+identities.publicId(b.getEmail())+"/request").header("Authorization",token)).andExpect(status().isOk());
+        mvc.perform(post("/api/friends/"+identities.publicId(a.getEmail())+"/accept").header("Authorization","Bearer "+jwt.generateToken(b.getEmail()))).andExpect(status().isOk());
         String response=mvc.perform(get("/api/calls/contacts").header("Authorization",token))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertThat(response).contains(identities.publicId(b.getEmail())).doesNotContain(a.getEmail(),b.getEmail());

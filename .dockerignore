@@ -1,0 +1,27 @@
+# Root context is used only by the unified Render image. Keep credentials out.
+**
+!deploy/
+!deploy/render/
+!deploy/render/**
+!chatapp-backend/
+!chatapp-backend/pom.xml
+!chatapp-backend/src/
+!chatapp-backend/src/main/
+!chatapp-backend/src/main/**
+!samuschat-desktop/
+!samuschat-desktop/package.json
+!samuschat-desktop/package-lock.json
+!samuschat-desktop/index.html
+!samuschat-desktop/tsconfig.json
+!samuschat-desktop/vite.config.ts
+!samuschat-desktop/src/
+!samuschat-desktop/src/**
+!samuschat-desktop/public/
+!samuschat-desktop/public/**
+**/firebase-service-account*.json
+**/google-services.json
+**/.env*
+**/*.pem
+**/*.key
+**/*.keystore
+**/*.jks

@@ -22,7 +22,7 @@ As melhorias de PC/Android desta entrega estão no [PR #2](https://github.com/Sa
 
 O SamusChat é um MVP de comunicação para reunir pessoas em servidores e canais, continuar conversas privadas e compartilhar a tela durante chamadas. O projeto reúne **Android nativo, uma versão para computador no navegador e um backend compartilhado**: contas, servidores e histórico pertencem à mesma estrutura, independentemente da interface utilizada.
 
-**Estado em 12/10/2026:** Android e PC compartilham personalização, chat e chamadas. A ligação PC tem qualidade na engrenagem, prévia e feedback de transmissão. Regressões locais de backend, Android, navegador e Postman aprovadas; validação de CI e integração com main acompanham o PR. A próxima etapa é disponibilizar uma beta para um pequeno grupo com acesso pela internet; a hospedagem externa ainda está pendente.
+**Beta online — 23/11/2026:** acesse o [SamusChat no navegador](https://samuschat-beta.onrender.com/) ou [baixe o APK Android 1.4.3 beta](https://github.com/Samucau1/SamusChat/raw/refs/heads/deploy/render-free-beta/releases/android/SamusChat-1.4.3-beta.apk). O aplicativo usa o servidor online por Wi-Fi ou dados móveis, sem USB ou computador ligado. A versão Android inclui busca de amigos por nome ou ID, solicitações de amizade, conversas e chamadas. Consulte as [instruções de instalação e a verificação do APK](releases/android/README.md).
 
 <a id="interfaces"></a>
 

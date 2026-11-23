@@ -62,5 +62,24 @@ export function useSession() {
     catch (problem) { handleError(problem); }
     finally { setBusy(false); }
   }
-  return { api, user, setUser, restoring, busy, error, setError, handleError, authenticate, logout, reconnect };
+  async function authenticateGoogle(credential: string, password?: string) {
+    if (busy) return;
+    setBusy(true); setError('');
+    // Double-submit token for our same-origin JSON callback. Google ID tokens
+    // remain in memory and are verified by the existing backend verifier.
+    const csrf = crypto.randomUUID();
+    const secure = location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = `g_csrf_token=${csrf}; Path=/api/auth/google; SameSite=Strict${secure}`;
+    try {
+      const result = await api.googleGis(credential, csrf, password || undefined);
+      api.remember(result.token, result.refreshToken);
+      setUser(await api.profile());
+      void api.rememberSession().catch(() => {});
+    } catch (problem) { handleError(problem); }
+    finally {
+      document.cookie = `g_csrf_token=; Path=/api/auth/google; Max-Age=0; SameSite=Strict${secure}`;
+      setBusy(false);
+    }
+  }
+  return { api, user, setUser, restoring, busy, error, setError, handleError, authenticate, authenticateGoogle, logout, reconnect };
 }

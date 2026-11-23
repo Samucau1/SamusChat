@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import {reconnectingClient, recoveryTask} from '../models/recovery';
 import {useDirectInbox} from './useDirectInbox';
+import { clearNotificationDestination, notificationDestination, type NotificationDestination } from '../models/notificationDestination';
 import { ApiRepository, mergeApiMessages, type ApiMessage, type ApiServer, type Contact, type User, type Member, type MemberRole } from '../models/apiRepository';
 
 export interface Conversation { id: string; name: string; description: string; channelId?: number; contact?: string; serverId?: number }
-export function useChatController(api: ApiRepository, user: User, setUser: (user: User) => void, onError: (error: unknown) => void) {
+export function useChatController(api: ApiRepository, user: User, setUser: (user: User) => void, onError: (error: unknown) => void, clearError: () => void = () => {}) {
   const [servers, setServers] = useState<ApiServer[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [directoriesLoaded, setDirectoriesLoaded] = useState(false);
+  const [pushNotice, setPushNotice] = useState<NotificationDestination | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [serverId, setServerId] = useState<number | null>(null);
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -30,14 +33,15 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
   const available: Conversation[] = serverId === null ? contacts.map(item => ({ id: `dm:${item.email}`, name: item.username, description: 'Conversa privada', contact: item.email })) :
     (servers.find(item => item.id === serverId)?.channels ?? []).filter(channel => channel.type === 'TEXT').map(channel => ({ id: `channel:${channel.id}`, name: channel.name, description: 'Conversa do servidor', channelId: channel.id, serverId }));
   const conversations = available.filter(item => [item.name, item.contact ?? ''].some(value => value.toLocaleLowerCase('pt-BR').includes(query.toLocaleLowerCase('pt-BR'))));
+  async function directory() { const lists = await Promise.all([api.contacts(), api.directContacts()]); return [...new Map(lists.flat().map(item => [item.email, item])).values()]; }
   async function refresh() {
-    const [nextServers, nextContacts] = await Promise.all([api.servers(), api.contacts()]);
+    const [nextServers, nextContacts] = await Promise.all([api.servers(), directory()]);
     setServers(nextServers); setContacts(nextContacts);
   }
-  useEffect(() => { let alive = true; Promise.all([api.servers(), api.contacts()]).then(([s, c]) => { if (alive) { setServers(s); setContacts(c); } }).catch(problem => { if (alive) errorRef.current(problem); }); return () => { alive = false; }; }, [api]);
+  useEffect(() => { let alive = true; Promise.all([api.servers(), directory()]).then(([s, c]) => { if (alive) { setServers(s); setContacts(c); setDirectoriesLoaded(true); } }).catch(problem => { if (alive) errorRef.current(problem); }); return () => { alive = false; }; }, [api]);
   useEffect(() => {
     let alive = true;
-    const recovery = recoveryTask(async () => { try { const value = await api.contacts(); if (alive) setContacts(value); recovery.reset(); } catch { /* Back off until the next refresh. */ } }, () => true, () => !document.hidden && navigator.onLine, 30000, 60000);
+    const recovery = recoveryTask(async () => { try { const value = await directory(); if (alive) setContacts(value); recovery.reset(); } catch { /* Back off until the next refresh. */ } }, () => true, () => !document.hidden && navigator.onLine, 30000, 60000);
     const refreshContacts = () => { void recovery.request(); };
     recovery.schedule();
     window.addEventListener('focus', refreshContacts);
@@ -53,10 +57,74 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
     setConversation(item); setDraft(saved?.text ?? ''); setFile(saved?.file ?? null);
   }
   function selectConversation(item: Conversation) { switchConversation(item); }
+  function startDirect(person: { publicId: string; username: string; avatarUrl?: string }) {
+    setContacts(previous => [...previous.filter(p=>p.email!==person.publicId),{email:person.publicId,username:person.username,avatarUrl:person.avatarUrl}]);
+    setServerId(null);setQuery('');switchConversation({id:`dm:${person.publicId}`,name:person.username,description:'Conversa privada',contact:person.publicId});
+  }
   function selectArea(id: number | null) {
     setServerId(id); setQuery(''); setMembers([]);
     const channel = servers.find(item => item.id === id)?.channels.find(item => item.type === 'TEXT');
     switchConversation(channel ? { id: `channel:${channel.id}`, name: channel.name, description: 'Conversa do servidor', channelId: channel.id, serverId: id! } : null);
+  }
+  function openNotification(target: NotificationDestination) {
+    if (target.recipientId !== user.publicId) {
+      errorRef.current(new Error('Este aviso pertence a outra conta do SamusChat.'));
+      return;
+    }
+    setPushNotice(null);
+    const contact = contacts.find(item => item.email === target.contactId);
+    if (contact) {
+      setServerId(null); setQuery('');
+      switchConversation({ id: `dm:${contact.email}`, name: contact.username, description: 'Conversa privada', contact: contact.email });
+      return;
+    }
+    const server = servers.find(item => item.channels.some(channel => channel.id === target.channelId && channel.type === 'TEXT'));
+    const channel = server?.channels.find(item => item.id === target.channelId);
+    if (server && channel) {
+      setServerId(server.id); setQuery('');
+      switchConversation({ id: `channel:${channel.id}`, name: channel.name, description: 'Conversa do servidor', channelId: channel.id, serverId: server.id });
+      return;
+    }
+    errorRef.current(new Error('A conversa deste aviso não está disponível para esta conta.'));
+  }
+  useEffect(() => {
+    if (!directoriesLoaded) return;
+    const target = notificationDestination(window.location.search);
+    if (target) {
+      openNotification(target);
+      clearNotificationDestination();
+    }
+  }, [directoriesLoaded, contacts, servers]);
+  useEffect(() => {
+    const requested = (event: Event) => {
+      const target = (event as CustomEvent<NotificationDestination>).detail;
+      // main.tsx keeps the destination in the URL until the account directories are ready.
+      if (!directoriesLoaded) return;
+      if (target?.recipientId) { openNotification(target); clearNotificationDestination(); }
+    };
+    window.addEventListener('samuschat:open-notification', requested);
+    return () => window.removeEventListener('samuschat:open-notification', requested);
+  }, [directoriesLoaded, contacts, servers, user.publicId]);
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const received = (event: MessageEvent) => {
+      if (event.data?.type !== 'SAMUSCHAT_NEW_MESSAGE' || typeof event.data.url !== 'string') return;
+      if (!URL.canParse(event.data.url, window.location.origin)) return;
+      const url = new URL(event.data.url, window.location.origin);
+      if (url.origin !== window.location.origin || url.pathname !== '/') return;
+      const target = notificationDestination(url.search);
+      if (!target || target.recipientId !== user.publicId) return;
+      if (target.contactId && (directInbox.connected || selected.current?.contact === target.contactId)) return;
+      if (target.channelId && selected.current?.channelId === target.channelId) return;
+      setPushNotice(target);
+    };
+    navigator.serviceWorker.addEventListener('message', received);
+    return () => navigator.serviceWorker.removeEventListener('message', received);
+  }, [user.publicId, directInbox.connected]);
+  function openNotice() {
+    if (!directInbox.notice) return;
+    openNotification({ recipientId: user.publicId ?? '', contactId: directInbox.notice.senderEmail });
+    directInbox.dismissNotice();
   }
   useEffect(() => {
     setMessages([]); setPage(0); setHasOlder(false);
@@ -118,12 +186,12 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
     finally { working.current = false; setBusy(false); }
   }
   function chooseFile(value: File | null) { if (value && value.size > 10 * 1024 * 1024) { errorRef.current(new Error('O arquivo deve ter no máximo 10 MB.')); return; } if (selected.current) drafts.current.set(selected.current.id, { text: draft, file: value }); setFile(value); }
-  async function run(operation: () => Promise<void>) { if (working.current) return false; working.current = true; setBusy(true); try { await operation(); return true; } catch (problem) { errorRef.current(problem); return false; } finally { working.current = false; setBusy(false); } }
+  async function run(operation: () => Promise<void>, rethrow = false) { if (working.current) return false; working.current = true; setBusy(true); clearError(); try { await operation(); return true; } catch (problem) { errorRef.current(problem); if (rethrow) throw problem; return false; } finally { working.current = false; setBusy(false); } }
   async function saveProfile(name: string) { await run(async () => { setUser(await api.saveProfile(name.trim())); setProfileOpen(false); }); }
   async function saveAppearance(bio: string, color: string) { return run(async () => { setUser(await api.saveAppearance(bio.trim(), color)); }); }
-  async function profileMedia(slot: 'avatar' | 'banner' | 'background', file: File | null) { return run(async () => { setUser(await api.profileMedia(slot, file)); }); }
+  async function profileMedia(slot: 'avatar' | 'banner' | 'background', file: File | null) { return run(async () => { setUser(await api.profileMedia(slot, file)); }, true); }
   async function saveServerAppearance(color: string) { if (serverId === null) return false; const id = serverId; return run(async () => { const result = await api.saveServerAppearance(id, color); setServers(previous => previous.map(item => item.id === id ? result : item)); }); }
-  async function serverMedia(slot: 'icon' | 'banner' | 'background', file: File | null) { if (serverId === null) return false; const id = serverId; return run(async () => { const result = await api.serverMedia(id, slot, file); setServers(previous => previous.map(item => item.id === id ? result : item)); }); }
+  async function serverMedia(slot: 'icon' | 'banner' | 'background', file: File | null) { if (serverId === null) return false; const id = serverId; return run(async () => { const result = await api.serverMedia(id, slot, file); setServers(previous => previous.map(item => item.id === id ? result : item)); }, true); }
   async function createServer(name: string, description: string) { return await run(async () => { const result = await api.createServer(name.trim(), description.trim()); await refresh(); setServerId(result.id); const channel = result.channels.find(item => item.type === 'TEXT'); switchConversation(channel ? { id: `channel:${channel.id}`, name: channel.name, description: 'Conversa do servidor', channelId: channel.id, serverId: result.id } : null); }); }
   async function joinServer(id: number) { return await run(async () => { await api.joinServer(id); await refresh(); setServerId(id); switchConversation(null); }); }
   async function createChannel(name: string, type: 'TEXT' | 'VOICE' = 'TEXT') { if (serverId === null) return false; const id = serverId; return await run(async () => { const channel = await api.createChannel(id, name.trim(), type); await refresh(); if (type === 'TEXT') selectConversation({ id: `channel:${channel.id}`, name: channel.name, description: 'Conversa do servidor', channelId: channel.id, serverId: id }); }); }
@@ -133,6 +201,6 @@ export function useChatController(api: ApiRepository, user: User, setUser: (user
   async function deleteMessage(id: number) { const current = conversation; if (current?.channelId === undefined) return false; return run(async () => { await api.deleteMessage(current.channelId!, id); if (selected.current?.id === current.id) setMessages(previous => previous.filter(item => item.id !== id)); }); }
   function hasDraft(id: string) { const saved = drafts.current.get(id); return Boolean(saved && (saved.text || saved.file)); }
   async function loadAttachment(url: string) { try { return await api.attachment(url); } catch (problem) { errorRef.current(problem); return null; } }
-  return { ...directInbox, contacts, loadAttachment, user, saveAppearance, profileMedia, saveServerAppearance, serverMedia, members, loadMembers, updateRole, removeMember, deleteMessage, hasDraft, servers, serverId, conversations, conversation, messages, draft, setDraft: updateDraft, query, setQuery, profile: { name: user.username, status: user.publicId ?? user.email }, profileOpen, setProfileOpen, selectArea, selectConversation, sendMessage, saveProfile, createServer, joinServer, createChannel, busy, loading, connection: conversation?.contact ? (directInbox.connected ? 'Ao vivo' : 'Reconectando') : connection, hasOlder, loadOlder, file, chooseFile, refresh: () => run(refresh) };
+  return { api, startDirect, ...directInbox, pushNotice, openNotification, openNotice, dismissPushNotice: () => setPushNotice(null), contacts, loadAttachment, user, saveAppearance, profileMedia, saveServerAppearance, serverMedia, members, loadMembers, updateRole, removeMember, deleteMessage, hasDraft, servers, serverId, conversations, conversation, messages, draft, setDraft: updateDraft, query, setQuery, profile: { name: user.username, status: user.publicId ?? user.email }, profileOpen, setProfileOpen, selectArea, selectConversation, sendMessage, saveProfile, createServer, joinServer, createChannel, busy, loading, connection: conversation?.contact ? (directInbox.connected ? 'Ao vivo' : 'Reconectando') : connection, hasOlder, loadOlder, file, chooseFile, refresh: () => run(refresh) };
 }
 export type ChatController = ReturnType<typeof useChatController>;

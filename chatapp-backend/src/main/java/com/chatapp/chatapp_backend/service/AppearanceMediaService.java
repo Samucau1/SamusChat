@@ -13,10 +13,13 @@ import java.nio.file.*;
 import java.util.UUID;
 
 @Service
+@lombok.RequiredArgsConstructor
 public class AppearanceMediaService {
+    private final com.chatapp.chatapp_backend.repository.AppearanceBlobRepository blobs;
     @Value("${file.upload-dir}") private String uploadDir;
     public static final long MAX_BYTES = 4L * 1024 * 1024;
 
+    @org.springframework.transaction.annotation.Transactional(rollbackFor=Exception.class)
     public String save(MultipartFile file, boolean small) throws IOException {
         if (file.isEmpty() || file.getSize() > MAX_BYTES) throw new IllegalArgumentException("Escolha PNG, JPG ou GIF de até 4 MB.");
         byte[] bytes = file.getBytes();
@@ -67,15 +70,34 @@ public class AppearanceMediaService {
                 try {
                     ImageIO.write(output, jpeg ? "jpeg" : "png", still.toFile());
                     if (gif) Files.write(animated, bytes, StandardOpenOption.CREATE_NEW);
-                } catch (IOException failure) { Files.deleteIfExists(still); Files.deleteIfExists(animated); throw failure; }
+                    store(still.getFileName().toString(), jpeg ? "image/jpeg" : "image/png", Files.readAllBytes(still));
+                    if (gif) store(animated.getFileName().toString(), "image/gif", bytes);
+                } catch (IOException | RuntimeException failure) { Files.deleteIfExists(still); Files.deleteIfExists(animated); throw failure; }
                 return "/uploads/appearance/" + id + (gif ? ".gif" : extension);
             } finally { reader.dispose(); }
         }
     }
+    private void store(String filename,String contentType,byte[] content) {
+        var blob=new com.chatapp.chatapp_backend.entity.AppearanceBlob();blob.setFilename(filename);blob.setContentType(contentType);blob.setContent(content);blobs.save(blob);
+    }
+    @org.springframework.transaction.annotation.Transactional(readOnly=true)
+    public java.util.Optional<com.chatapp.chatapp_backend.entity.AppearanceBlob> load(String filename) throws IOException {
+        if (!filename.matches("[0-9a-f-]{36}\\.(png|gif|jpg)")) return java.util.Optional.empty();
+        var stored=blobs.findById(filename);
+        if(stored.isPresent()) return stored;
+        // Compatibility for files uploaded before persistent storage was introduced.
+        var path=Paths.get(uploadDir).resolve("appearance").resolve(filename);
+        if(!Files.isRegularFile(path) || Files.size(path)>MAX_BYTES) return java.util.Optional.empty();
+        var legacy=new com.chatapp.chatapp_backend.entity.AppearanceBlob();legacy.setFilename(filename);
+        legacy.setContentType(filename.endsWith(".gif")?"image/gif":filename.endsWith(".jpg")?"image/jpeg":"image/png");legacy.setContent(Files.readAllBytes(path));return java.util.Optional.of(legacy);
+    }
+    @org.springframework.transaction.annotation.Transactional(propagation=org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void delete(String url) {
         if (url == null) return;
         String filename = url.substring(url.lastIndexOf('/') + 1);
         if (!filename.matches("[0-9a-f-]{36}\\.(png|gif|jpg)")) return;
+        blobs.deleteById(filename);
+        if(filename.endsWith(".gif")) blobs.deleteById(filename.replace(".gif", ".png"));
         Path directory = Paths.get(uploadDir).resolve("appearance");
         try { Files.deleteIfExists(directory.resolve(filename)); Files.deleteIfExists(directory.resolve(filename.replace(".gif", ".png"))); }
         catch (IOException ignored) { /* Database no longer references the file; orphan cleanup can retry. */ }

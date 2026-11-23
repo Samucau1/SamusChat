@@ -20,6 +20,13 @@ public class DirectMessageController {
 
     public record Unread(String senderEmail, long count, long lastId) {}
 
+    @GetMapping("/contacts")
+    public ApiResponse<List<com.chatapp.chatapp_backend.call.CallService.Contact>> contacts(Authentication auth) {
+        return ApiResponse.success(users.findByEmailIn(messages.partners(auth.getName())).stream()
+            .sorted(java.util.Comparator.comparing(com.chatapp.chatapp_backend.entity.User::getUsername))
+            .map(u->new com.chatapp.chatapp_backend.call.CallService.Contact(u.getEmail(),u.getUsername(),u.getAvatarUrl())).toList());
+    }
+
     @GetMapping("/unread")
     public ApiResponse<List<Unread>> unread(Authentication auth) {
         return ApiResponse.success(messages.unread(auth.getName()).stream()

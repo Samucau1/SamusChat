@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { useSession } from '../controllers/useSession';
+import { GoogleSignIn } from './GoogleSignIn';
 
 export function AuthScreen({ session: s }: { session: ReturnType<typeof useSession> }) {
   const [register, setRegister] = useState(false);
@@ -25,6 +26,7 @@ export function AuthScreen({ session: s }: { session: ReturnType<typeof useSessi
         {recovering && stage === 2 && <label>Confirme a senha<input type="password" autoComplete="new-password" value={confirm} onChange={event => setConfirm(event.target.value)} minLength={15} maxLength={72} required /></label>}
         <button className="primary" disabled={s.busy || busy}>{s.busy || busy ? 'Aguarde…' : recovering ? stage === 0 ? 'Enviar código' : stage === 1 ? 'Validar código' : 'Salvar senha' : register ? 'Criar conta' : 'Entrar'}</button>
       </form>
+      {!recovering && <GoogleSignIn api={s.api} busy={s.busy || busy} onCredential={credential => { void s.authenticateGoogle(credential, password); }} onError={s.handleError} />}
       <button className="text-button" disabled={s.busy || busy} onClick={() => { setRecovering(false); setStage(0); setResetToken(''); setNotice(''); s.setError(''); if (!recovering) setRegister(!register); }}>{recovering ? 'Voltar para o login' : register ? 'Já tenho uma conta' : 'Criar uma conta'}</button>
       {!register && !recovering && <button className="text-button" onClick={() => { setRecovering(true); setStage(0); setNotice(''); s.setError(''); }}>Esqueci minha senha</button>}
     </section></main>;

@@ -6,6 +6,9 @@ import com.samuschat.data.repository.*
 import com.samuschat.util.TokenManager
 
 class SamusChatApplication : Application(), coil.ImageLoaderFactory {
+    @Volatile var inForeground = false
+    @Volatile var visibleConversation: String? = null
+    val notificationEvents = kotlinx.coroutines.flow.MutableSharedFlow<com.samuschat.data.push.NotificationDestination>(extraBufferCapacity = 16)
     override fun newImageLoader(): coil.ImageLoader = coil.ImageLoader.Builder(this).components {
         if (android.os.Build.VERSION.SDK_INT >= 28) add(coil.decode.ImageDecoderDecoder.Factory())
         else add(coil.decode.GifDecoder.Factory())

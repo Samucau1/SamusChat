@@ -29,17 +29,20 @@ class AuthRepository(private val api: ApiService, private val tokens: TokenManag
     suspend fun googleLogin(idToken: String, password: String?) {
         val result = api.googleLogin(GoogleLogin(idToken, password)).data()
         val token = result.token
-        tokens.saveSession(token, api.profile("Bearer $token").data().email, result.refreshToken)
+        val profile = api.profile("Bearer $token").data()
+        tokens.saveSession(token, profile.email, result.refreshToken, profile.publicId)
     }
     suspend fun login(email: String, password: String) {
         val result = api.login(LoginRequest(email.trim(), password)).data()
         val token = result.token
-        tokens.saveSession(token, api.profile("Bearer $token").data().email, result.refreshToken)
+        val profile = api.profile("Bearer $token").data()
+        tokens.saveSession(token, profile.email, result.refreshToken, profile.publicId)
     }
     suspend fun register(username: String, email: String, password: String) {
         val result = api.register(RegisterRequest(username.trim(), email.trim(), password)).data()
         val token = result.token
-        tokens.saveSession(token, api.profile("Bearer $token").data().email, result.refreshToken)
+        val profile = api.profile("Bearer $token").data()
+        tokens.saveSession(token, profile.email, result.refreshToken, profile.publicId)
     }
 }
 class ServerRepository(private val api: ApiService, private val tokens: TokenManager) {

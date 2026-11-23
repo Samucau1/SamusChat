@@ -12,11 +12,29 @@ export function AppearanceImage({ url, alt, className = '' }: { url?: string; al
 }
 export function MediaPicker({ label, url, busy, save, avatar = false }: { label: string; url?: string; busy: boolean; avatar?: boolean; save: (file: File | null) => Promise<boolean> }) {
   const [pending, setPending] = useState<File | null>(null);
-  const [error, setError] = useState('');
-  return <div className="appearance-picker"><label>{label}<input aria-label={label} type="file" accept="image/png,image/jpeg,image/gif" disabled={busy} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; setError(''); if (file) {
-    if (avatar) { if (!['image/png', 'image/jpeg', 'image/gif'].includes(file.type) || !file.size || file.size > 4 * 1024 * 1024 || file.type === 'image/gif' && file.size > 2 * 1024 * 1024) setError('Use PNG/JPG de até 4 MB ou GIF de até 2 MB.'); else setPending(file); }
-    else void save(file);
-  } }} /></label>{error && <p role="alert">{error}</p>}{url && <button type="button" disabled={busy} onClick={() => { void save(null); }}>Remover {label.toLocaleLowerCase('pt-BR')}</button>}{pending && <AvatarCropDialog file={pending} close={() => setPending(null)} save={save} />}</div>;
+  const [feedback,setFeedback]=useState('');const [status,setStatus]=useState<'idle'|'checking'|'ready'|'saving'|'saved'|'error'>('idle');
+  async function persist(file:File|null) {
+    setStatus('saving');setFeedback(file?'Enviando e validando a imagem…':'Removendo imagem…');
+    try {if(!await save(file))throw new Error('Não foi possível salvar. Tente novamente.');setStatus('saved');setFeedback(file?'Imagem aceita e salva na sua conta.':'Imagem removida da sua conta.');return true;}
+    catch(problem){setStatus('error');setFeedback(problem instanceof Error?problem.message:'Imagem recusada. Tente outro arquivo.');throw problem;}
+  }
+  async function choose(file:File) {
+    setStatus('checking');setFeedback('Verificando compatibilidade…');
+    try {
+      if(!['image/png','image/jpeg','image/gif'].includes(file.type)||!file.size)throw new Error('Arquivo recusado: escolha uma imagem PNG, JPG ou GIF válida.');
+      if(file.size>(file.type==='image/gif'?2:4)*1024*1024)throw new Error(file.type==='image/gif'?'GIF recusado: o limite é 2 MB.':'Imagem recusada: o limite é 4 MB.');
+      const source=URL.createObjectURL(file);
+      try {await new Promise<void>((resolve,reject)=>{const image=new Image();image.onload=()=>image.naturalWidth>4096||image.naturalHeight>4096||image.naturalWidth*image.naturalHeight>16_000_000?reject(new Error('Imagem recusada: até 4096 px e 16 megapixels.')):resolve();image.onerror=()=>reject(new Error('Imagem recusada: o arquivo não pode ser aberto.'));image.src=source;});}finally{URL.revokeObjectURL(source);}
+      if(avatar){setStatus('ready');setFeedback('Imagem compatível. Ajuste o enquadramento para salvar.');setPending(file);}else await persist(file);
+    }catch(problem){setStatus('error');setFeedback(problem instanceof Error?problem.message:'Não foi possível validar a imagem.');}
+  }
+  return <div className="appearance-picker" data-state={status}><label>{label}<input aria-label={label} type="file" accept="image/png,image/jpeg,image/gif" disabled={busy||status==='checking'||status==='saving'} onChange={event=>{const file=event.target.files?.[0];event.target.value='';if(file)void choose(file);}} /></label>
+    <small className="media-format-hint">PNG ou JPG até 4 MB · GIF até 2 MB</small>
+    {feedback&&<p className={`media-feedback ${status}`} role={status==='error'?'alert':'status'}>{status==='saved'?'✓ ':status==='error'?'! ':''}{feedback}</p>}
+    {url&&<div className="media-current"><AppearanceImage url={url} alt={`Prévia de ${label.toLowerCase()}`} className="media-preview"/><span>Imagem atual salva</span></div>}
+    {url&&<button type="button" disabled={busy} onClick={()=>{void persist(null).catch(()=>{});}}>Remover {label.toLocaleLowerCase('pt-BR')}</button>}
+    {pending&&<AvatarCropDialog file={pending} close={()=>{setPending(null);setStatus(current=>current==='ready'?'idle':current);setFeedback(current=>current==='Imagem compatível. Ajuste o enquadramento para salvar.'?'Seleção cancelada. Sua imagem anterior foi mantida.':current);}} save={persist}/>}
+  </div>;
 }
 export function ServerAppearanceDialog({ controller: c, close, error }: { controller: ChatController; close: () => void; error: string }) {
   const server = c.servers.find(item => item.id === c.serverId)!;

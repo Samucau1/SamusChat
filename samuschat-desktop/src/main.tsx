@@ -8,10 +8,24 @@ import { useSession } from './controllers/useSession';
 import { ChatApp } from './views/ChatApp';
 import { AuthScreen } from './views/AuthScreen';
 import './styles.css';
+import { notificationDestination } from './models/notificationDestination';
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', event => {
+    if (event.data?.type !== 'SAMUSCHAT_OPEN_NOTIFICATION' || typeof event.data.url !== 'string') return;
+    if (!URL.canParse(event.data.url, window.location.origin)) return;
+    const url = new URL(event.data.url, window.location.origin);
+    if (url.origin !== window.location.origin || url.pathname !== '/') return;
+    const target = notificationDestination(url.search);
+    if (!target) return;
+    window.history.replaceState(window.history.state, '', url);
+    window.dispatchEvent(new CustomEvent('samuschat:open-notification', { detail: target }));
+  });
+}
 
 function ConnectedApp({ session: s }: { session: ReturnType<typeof useSession> }) {
   const screenPreferences = useScreenPreferences();
-  const controller = useChatController(s.api, s.user!, s.setUser, s.handleError);
+  const controller = useChatController(s.api, s.user!, s.setUser, s.handleError, () => s.setError(''));
   const calls = useCallController(s.api, s.user!.publicId ?? s.user!.email, s.handleError, screenPreferences);
   const rooms = useVoiceRoomController(s.api, s.user!.publicId ?? s.user!.email, s.handleError, screenPreferences);
   return <ChatApp controller={controller} calls={calls} rooms={rooms} screenPreferences={screenPreferences} error={s.error} clearError={() => s.setError('')} logout={s.logout} />;

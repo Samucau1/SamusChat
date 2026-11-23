@@ -8,7 +8,12 @@ test('real USB Android and PC exchange messages, notices and read acknowledgemen
  const serial=process.env.SAMUSCHAT_ANDROID_SERIAL!;
  expect(serial).toMatch(/^[A-Za-z0-9_-]+$/);
  const adb=(...args:string[])=>execFileSync(path.resolve('../.android-sdk/platform-tools/adb.exe'),['-s',serial,...args],{encoding:'utf8',timeout:20000});
- const ui=()=>{adb('shell','uiautomator','dump','/sdcard/samus-notifications-test.xml');return adb('shell','cat','/sdcard/samus-notifications-test.xml');};
+ const ui=()=>{
+  try{
+   if(!adb('shell','uiautomator','dump','--compressed','/sdcard/samus-notifications-test.xml').includes('dumped to:'))return '';
+   return adb('shell','cat','/sdcard/samus-notifications-test.xml');
+  }catch{return '';}
+ };
  const nodes=(xml:string)=>[...xml.matchAll(/<node\b([^>]+)>/g)].map(m=>Object.fromEntries([...m[1].matchAll(/([\w-]+)="([^"]*)"/g)].map(a=>[a[1],a[2]])));
  const tapNode=(node:Record<string,string>)=>{const b=node.bounds.match(/\d+/g)!.map(Number);adb('shell','input','tap',String(Math.round((b[0]+b[2])/2)),String(Math.round((b[1]+b[3])/2)));};
  const tap=(text:string)=>{const node=nodes(ui()).find(n=>n.text===text||n['content-desc']===text);expect(node,`Android control: ${text}`).toBeTruthy();tapNode(node!);};
@@ -23,7 +28,9 @@ test('real USB Android and PC exchange messages, notices and read acknowledgemen
  await page.goto('/');await page.getByLabel('Email',{exact:true}).fill(pc.email);await page.getByLabel('Senha',{exact:true}).fill(password);
  await page.getByRole('button',{name:'Entrar',exact:true}).click();
  await expect(page.getByRole('button',{name:phone.username,exact:true})).toBeVisible();
+ adb('shell','pm','clear','com.samuschat.validation');
  adb('shell','am','start','-n','com.samuschat.validation/com.samuschat.MainActivity');
+ await expect.poll(()=>nodes(ui()).filter(n=>n.class==='android.widget.EditText').length,{timeout:30000}).toBe(2);
  let edits=nodes(ui()).filter(n=>n.class==='android.widget.EditText');expect(edits).toHaveLength(2);
  tapNode(edits[0]);
  await expect.poll(()=>nodes(ui()).filter(n=>n.class==='android.widget.EditText')[0]?.focused).toBe('true');

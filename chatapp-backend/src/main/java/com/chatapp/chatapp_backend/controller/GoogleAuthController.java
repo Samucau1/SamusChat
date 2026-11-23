@@ -15,6 +15,14 @@ import java.util.Map;
 public class GoogleAuthController {
     private final GoogleAuthService auth;
     private final com.chatapp.chatapp_backend.service.AuthService sessions;
+    @org.springframework.beans.factory.annotation.Value("${app.auth.google-client-id:}")
+    private String googleClientId;
+
+    // OAuth client IDs are public; never expose the client secret or tokens here.
+    @GetMapping("/google/config")
+    public ApiResponse<Map<String,String>> config() {
+        return ApiResponse.success(Map.of("clientId", googleClientId));
+    }
     public record GoogleRequest(String idToken,String password) {
         @Override public String toString() { return "GoogleRequest[redacted]"; }
     }
