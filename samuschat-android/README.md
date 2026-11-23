@@ -28,7 +28,9 @@ As conversas reais utilizam a API. A tela Amigos também possui o contato **Alex
 
 Pré-requisitos: Android Studio, JDK 17 ou 21, SDK Android 35 e Build Tools 34.0.0. O aplicativo requer **Android 8.0/API 26 ou superior**. Configure `ANDROID_HOME` ou `sdk.dir` no arquivo local `local.properties`.
 
-Na raiz, execute `.\iniciar-samuschat.ps1` com o celular conectado por USB e a depura??o autorizada. A URL padr?o `http://127.0.0.1:8080/` usa `adb reverse tcp:8080 tcp:8080`. No Android Studio, selecione o celular como destino do Run.
+O APK usa por padrão `https://samuschat-beta.onrender.com/`. Depois da instalação, funciona por Wi-Fi ou dados móveis, sem cabo USB e sem o computador ligado. A conta deve existir nesse servidor; contas e históricos de um banco local não são transferidos automaticamente.
+
+Para desenvolvimento com a API local, informe `-PapiBaseUrl=http://127.0.0.1:8080/` e configure `adb reverse tcp:8080 tcp:8080`. Esse modo exige o computador e o cabo USB. No Android Studio, selecione o celular como destino do Run.
 
 Para usar o launcher que inicia o ambiente e abre o aplicativo, consulte [inicialização automática](../docs/INICIALIZACAO_AUTOMATICA.md).
 
@@ -42,7 +44,7 @@ Na pasta `samuschat-android/`:
 
 Saída: `app/build/outputs/apk/debug/app-debug.apk`.
 
-Para um celular físico, defina o IP da máquina que executa a API. O endereço abaixo é um exemplo; substitua pelo IP da sua rede:
+Para desenvolvimento com uma API na rede local, defina o IP da máquina que a executa. O endereço abaixo é um exemplo; substitua pelo IP da sua rede:
 
 ```powershell
 .\gradlew.bat :app:assembleDebug -PapiBaseUrl=http://192.168.1.9:8080/
