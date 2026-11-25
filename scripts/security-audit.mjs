@@ -83,7 +83,7 @@ for (const client of ['PC', 'Android']) {
   const server = await requireData('/api/servers', { client, token: owner.token, method: 'POST', body: { name: `Security ${client} ${run}`, description: 'Disposable audit' } });
   const channel = server.channels[0].id;
   const fixture = { client, owner, outsider, member, server, channel }; fixtures.push(fixture);
-  await requireData(`/api/servers/${server.id}/join`, { client, token: member.token, method: 'POST' });
+  await requireData('/api/servers/join', { client, token: member.token, method: 'POST', body: { code: server.inviteCode } });
   const message = await requireData(`/api/channels/${channel}/messages`, { client, token: owner.token, method: 'POST', body: { content: 'Private audit message' } });
   for (const route of ['/api/users/me', '/api/servers', `/api/channels/${channel}/messages`, '/api/calls', '/actuator/env', '/actuator/metrics']) {
     const result = await call(route, { client }); record(client, `auth_required:${route}`, result.status === 401, { status: result.status });

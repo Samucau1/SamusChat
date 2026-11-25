@@ -18,7 +18,7 @@ test('editor cancela sem upload e salva o enquadramento escolhido como imagem qu
   const name = `crop_${crypto.randomUUID().slice(0, 8)}`, email = `${name}@example.test`, password = 'CropSynthetic123!';
   expect((await request.post('/api/auth/register', { headers: { 'X-Forwarded-For': `crop-${crypto.randomUUID()}` }, data: { username: name, email, password } })).ok()).toBeTruthy();
   await page.goto('/'); await page.getByLabel('Email', { exact: true }).fill(email); await page.getByLabel('Senha', { exact: true }).fill(password); await page.getByRole('button', { name: 'Entrar', exact: true }).click();
-  await page.locator('.profile-button').click();
+  await page.getByRole('button', { name: 'Configurações', exact: true }).click(); await page.getByRole('tab', { name: 'Perfil', exact: true }).click();
   const bytes = Buffer.from(await page.evaluate(() => {
     const canvas = document.createElement('canvas'); canvas.width = 800; canvas.height = 400;
     const context = canvas.getContext('2d')!;
@@ -36,7 +36,7 @@ test('editor cancela sem upload e salva o enquadramento escolhido como imagem qu
   await editor.getByLabel('Posição horizontal', { exact: true }).fill('1');
   await editor.getByRole('button', { name: 'Salvar enquadramento', exact: true }).click();
   await expect(editor).not.toBeVisible(); expect(uploads).toBe(1);
-  const avatar = page.locator('.profile-button img');
+  const avatar = page.locator('.profile-summary > img');
   await expect.poll(() => avatar.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(256);
   const sample = await avatar.evaluate((image: HTMLImageElement) => {
     const canvas = document.createElement('canvas'); canvas.width = canvas.height = 256;

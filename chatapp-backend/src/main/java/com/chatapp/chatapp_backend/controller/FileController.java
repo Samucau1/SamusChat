@@ -6,7 +6,6 @@ import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.core.io.FileSystemResource;
 import java.io.IOException;
 
 @RestController @RequiredArgsConstructor
@@ -18,12 +17,12 @@ public class FileController {
         return ApiResponse.success(attachments.upload(auth.getName(), channelId, file, content), "Arquivo enviado com sucesso");
     }
     @GetMapping("/uploads/{filename}")
-    public ResponseEntity<FileSystemResource> download(Authentication auth, @PathVariable String filename) {
+    public ResponseEntity<byte[]> download(Authentication auth, @PathVariable String filename) throws IOException {
         var file = attachments.download(auth.getName(), filename);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).contentType(MediaType.parseMediaType(storage.contentType(filename)))
             .header("Content-Disposition", ContentDisposition.attachment().filename(filename).build().toString())
             .header("Content-Security-Policy", "sandbox; default-src 'none'")
-            .body(new FileSystemResource(file));
+            .body(file);
     }
     @DeleteMapping("/api/files")
     public ApiResponse<Void> delete(Authentication auth, @RequestParam String fileUrl) {

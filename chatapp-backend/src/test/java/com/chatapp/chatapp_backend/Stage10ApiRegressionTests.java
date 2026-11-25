@@ -44,7 +44,7 @@ class Stage10ApiRegressionTests {
         assertThat(server.path("ownerEmail").asText()).startsWith("usr_").doesNotContain("owner@test.com");
         assertThat(server.path("channels").get(0).path("name").asText()).isEqualTo("geral");
         assertThat(server.path("channels").get(0).path("type").asText()).isEqualTo("TEXT");
-        success(api.perform(post("/api/servers/{id}/join", serverId).header("Authorization", member)));
+        success(api.perform(post("/api/servers/join").contentType("application/json").content("{\"code\":\"" + server.path("inviteCode").asText() + "\"}").header("Authorization", member)));
         // A joined server must stay visible, even when this account is not its owner.
         success(api.perform(get("/api/servers").header("Authorization", member)))
                 .andExpect(jsonPath("$.data[0].id").value(serverId));

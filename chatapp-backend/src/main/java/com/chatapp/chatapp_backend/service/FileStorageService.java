@@ -12,7 +12,9 @@ import java.util.*;
 import java.util.zip.ZipInputStream;
 
 @Service
+@lombok.RequiredArgsConstructor
 public class FileStorageService {
+    private final com.chatapp.chatapp_backend.repository.AttachmentBlobRepository blobs;
     @Value("${file.upload-dir}") private String uploadDir;
     @Value("${file.base-url}") private String baseUrl;
     private static final long MAX_SIZE = 10L * 1024 * 1024;
@@ -42,10 +44,9 @@ public class FileStorageService {
             if (bytes.length > MAX_SIZE) throw new IllegalArgumentException("Imagem recodificada maior que 10 MB.");
         }
         String filename = UUID.randomUUID() + "." + extension;
-        Path directory = directory(); Files.createDirectories(directory);
-        Path target = directory.resolve(filename);
-        try { Files.write(target, bytes, StandardOpenOption.CREATE_NEW); }
-        catch (IOException problem) { Files.deleteIfExists(target); throw problem; }
+        var stored = new com.chatapp.chatapp_backend.entity.AttachmentBlob();
+        stored.setFilename(filename); stored.setContentType(mime); stored.setContent(bytes);
+        blobs.save(stored);
         return baseUrl.replaceAll("/+$", "") + "/uploads/" + filename;
     }
     private void validate(byte[] bytes, String extension) throws IOException {
@@ -110,7 +111,18 @@ public class FileStorageService {
         String filename = value.substring("/uploads/".length()); file(filename); return filename;
     }
     public String contentType(String filename) { return TYPES.get(filename.substring(filename.lastIndexOf('.') + 1)); }
+    public byte[] load(String filename) throws IOException {
+        Path path = file(filename);
+        var stored = blobs.findById(filename);
+        if (stored.isPresent()) return stored.get().getContent();
+        // Read-only compatibility with files uploaded before persistent storage.
+        if (!Files.isRegularFile(path) || Files.size(path) > MAX_SIZE) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND);
+        return Files.readAllBytes(path);
+    }
+    public long size(String filename) throws IOException { return load(filename).length; }
+    @org.springframework.transaction.annotation.Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void deleteFile(String fileUrl) {
+        blobs.deleteById(filename(fileUrl));
         try { Files.deleteIfExists(file(filename(fileUrl))); }
         catch (IOException problem) { throw new IllegalStateException("Nao foi possivel remover o arquivo"); }
     }

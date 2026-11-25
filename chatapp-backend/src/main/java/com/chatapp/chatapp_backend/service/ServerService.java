@@ -29,6 +29,7 @@ public class ServerService {
     private final PermissionService permissionService;
     private final ServerFactory serverFactory;
     private final ServerMapper serverMapper;
+    private final ServerInviteCodes inviteCodes;
 
     @Transactional
     public ServerResponse createServer(String ownerEmail, ServerRequest request) {
@@ -37,6 +38,7 @@ public class ServerService {
         Server server = serverFactory.createServer(
                 ownerEmail, request.getName(), request.getDescription()
         );
+        inviteCodes.ensureCode(server);
         serverRepository.save(server);
 
         Channel defaultChannel = serverFactory.createDefaultChannel(server);
@@ -46,27 +48,22 @@ public class ServerService {
                 serverFactory.createMember(ownerEmail, server, "ADMIN")
         );
 
-        return toResponse(server);
+        return toResponse(server, ownerEmail);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<ServerResponse> getMyServers(String email) {
         return serverMemberRepository.findByUserEmail(email)
                 .stream()
                 .map(ServerMember::getServer)
-                .map(this::toResponse)
+                .map(server -> toResponse(server, email))
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public ServerResponse getServer(Long serverId) {
-        return toResponse(findServer(serverId));
-    }
-
-    @Transactional(readOnly = true)
+    @Transactional
     public ServerResponse getServer(String email, Long serverId) {
         permissionService.requireMember(serverId, email);
-        return getServer(serverId);
+        return toResponse(findServer(serverId), email);
     }
 
     @Transactional
@@ -89,8 +86,20 @@ public class ServerService {
     }
 
     @Transactional
-    public String joinServer(String email, Long serverId) {
-        Server server = findServer(serverId);
+    public String joinServer(String email, String code) {
+        if (!ServerInviteCodes.valid(code)) throw new IllegalArgumentException("Use um codigo de 3 caracteres.");
+        Server server = serverRepository.findByInviteCode(code).orElseThrow(() -> new IllegalArgumentException("Codigo de servidor invalido."));
+        return addMember(email, server);
+    }
+
+    /** Compatibility with the numeric invite endpoint used by installed clients. */
+    @Transactional
+    public String joinServerByLegacyId(String email, Long serverId) {
+        return addMember(email, findServer(serverId));
+    }
+
+    private String addMember(String email, Server server) {
+        Long serverId = server.getId();
 
         if (serverMemberRepository.existsByServerIdAndUserEmail(serverId, email)) {
             throw new RuntimeException("Voce ja e membro deste servidor");
@@ -120,8 +129,15 @@ public class ServerService {
                 .orElseThrow(() -> new RuntimeException("Servidor nao encontrado"));
     }
 
-    private ServerResponse toResponse(Server server) {
+    private ServerResponse toResponse(Server server, String email) {
         List<Channel> channels = channelRepository.findByServerId(server.getId());
-        return serverMapper.toResponse(server, channels);
+        ServerResponse response = serverMapper.toResponse(server, channels);
+        String role = permissionService.getRole(server.getId(), email);
+        response.setMyRole(role);
+        if ("ADMIN".equals(role)) {
+            inviteCodes.ensureCode(server);
+            response.setInviteCode(server.getInviteCode());
+        }
+        return response;
     }
 }

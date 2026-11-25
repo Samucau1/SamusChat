@@ -3,7 +3,7 @@ import { captureMicrophone, rememberMicrophone, selectedMicrophone } from '../mo
 
 export function MicrophoneSettings({ stream, change }: { stream: MediaStream | null; change: (id: string) => Promise<void> }) {
   const [open, setOpen] = useState(false);
-  return <><button type="button" onClick={() => setOpen(true)}>Microfone</button>{open && <MicrophoneDialog stream={stream} change={change} close={() => setOpen(false)} />}</>;
+  return <><button type="button" className="button-secondary microphone-trigger" onClick={() => setOpen(true)}>Microfone</button>{open && <MicrophoneDialog stream={stream} change={change} close={() => setOpen(false)} />}</>;
 }
 function MicrophoneDialog({ stream, change, close }: { stream: MediaStream | null; change: (id: string) => Promise<void>; close: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -76,7 +76,7 @@ function MicrophoneDialog({ stream, change, close }: { stream: MediaStream | nul
     <meter aria-label="Nível do microfone" min={0} max={100} value={level} />
     <p role="status">{current ? current.getAudioTracks()[0]?.enabled === false ? 'Microfone silenciado na chamada' : level > 0 ? 'Voz detectada' : 'Sem sinal agora. Fale ou escolha outra entrada.' : 'Clique em Testar microfone para permitir e listar as entradas.'}</p>
     {error && <p role="alert">{error}</p>}
-    <p>Se não houver sinal, confira o microfone em Sistema → Som → Entrada e a permissão do navegador no Windows.</p>
+    <p>Se não houver sinal, confira a entrada de áudio do dispositivo e as permissões de microfone deste site no navegador.</p>
     <button type="button" onClick={close}>Concluído</button>
   </dialog>;
 }

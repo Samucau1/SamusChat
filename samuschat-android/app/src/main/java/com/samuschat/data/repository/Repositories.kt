@@ -48,7 +48,7 @@ class AuthRepository(private val api: ApiService, private val tokens: TokenManag
 class ServerRepository(private val api: ApiService, private val tokens: TokenManager) {
     suspend fun list() = api.servers(tokens.authorization()).data()
     suspend fun create(name: String) = api.createServer(tokens.authorization(), ServerRequest(name.trim(), null)).data()
-    suspend fun join(id: Long) = api.join(tokens.authorization(), id).checked()
+    suspend fun join(code: String) = api.join(tokens.authorization(), ServerJoinRequest(code)).checked()
     suspend fun createChannel(id: Long, name: String, type: String) = api.createChannel(tokens.authorization(), id, ChannelRequest(name.trim(), type)).data()
 }
 class MessageRepository(private val api: ApiService, private val tokens: TokenManager) {

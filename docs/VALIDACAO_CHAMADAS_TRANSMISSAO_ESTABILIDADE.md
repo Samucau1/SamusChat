@@ -64,6 +64,18 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-calls-emula
 
 O roteiro exige dois clientes distintos e conectados antes de preparar contas ou instalar APKs. `-IsolatedApp` aceita apenas `com.samuschat.validation`; o preparo limpa apenas os dados desse pacote de teste. Instala tambem `com.samuschat.calltest` como fonte de midia. TURN USB em celulares ainda exige configuracao especifica; os comandos acima nao validam operadora.
 
+## Web móvel e acessibilidade — 25/11/2026
+
+A interface web usa a área inteira para a conversa em celulares e tablets estreitos. Conversas, servidores e configurações ficam em um menu lateral com botão de abertura de 44 px, controle de foco, fechamento por Escape e isolamento do conteúdo de fundo. O perfil e os temas continuam acessíveis nesse menu; a escolha de microfone fica nas configurações. No desktop, as colunas de navegação permanecem visíveis.
+
+O layout considera altura dinâmica, áreas seguras e redução da área útil pelo teclado, com fontes de 16 px nos campos e alvos de toque de pelo menos 44 px nos controles principais. O rascunho é mantido ao redimensionar a janela. O compartilhamento recebido pode ser ampliado na página quando não há tela cheia nativa, com saída visível, foco preso nos controles da visualização ampliada, Escape e alternância entre imagem inteira e preenchimento com corte.
+
+O suporte ao envio de tela é detectado pela presença de `getDisplayMedia` e por contexto seguro, sem bloquear a reprodução dos vídeos recebidos por essa mesma condição. Quando a API está ausente, a interface informa a limitação e desabilita o envio. No Android, o aplicativo nativo continua sendo a alternativa para compartilhar a própria tela. Câmera e microfone dependem de HTTPS, APIs disponíveis e permissões do usuário. A visualização mantém `playsInline` e oferece um botão para ativar reprodução quando o navegador exige um gesto. Essas verificações não contornam permissões nem acrescentam captura a navegadores sem suporte. [Captura de tela](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia), [câmera e microfone](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia).
+
+Validação automatizada em Edge/Chromium com emulação de tamanho e toque: larguras de 320, 390 e 768 px, paisagem em 844 × 390, menu por teclado, configurações e perfil, rascunho com altura reduzida, vídeo recebido sem API de envio, liberação de reprodução por gesto, ampliação sem fullscreen nativo e recepção em canal de chamada. A regressão de tela cheia nativa do desktop também é exercitada. Os testes simulam mídia e respostas de API; não demonstram conexão WebRTC entre celulares físicos, desempenho em rede móvel ou comportamento de todos os teclados e versões de Safari/Chrome.
+
+Antes do aceite em produção, conferir em Android e iPhone reais: navegação por toque e leitor de tela, zoom, teclado, rotação, permissões de câmera/microfone, áudio recebido, transmissão recebida em chamada e canal e retorno da visualização ampliada. Usar a URL HTTPS; abrir o endereço HTTP de uma máquina da rede local não equivale a `localhost` do próprio telefone. As alterações estão locais e ainda não foram publicadas no Render.
+
 ## Evidencias locais
 
 - `logs/media-study-postman.json` e `logs/media-study-postman.log`: 34 requisicoes/73 verificacoes.

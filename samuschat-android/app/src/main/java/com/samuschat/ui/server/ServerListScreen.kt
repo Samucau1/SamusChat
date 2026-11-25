@@ -95,7 +95,7 @@ fun ServerListScreen(viewModel: ServerViewModel, email: String, onChannelClick: 
                             Text(current.description?.takeIf { it.isNotBlank() } ?: "Seu espaço para conversar e compartilhar.",
                                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(Modifier.height(12.dp))
-                            Text("ID do servidor: ${current.id}", style = MaterialTheme.typography.labelMedium)
+                            if (current.myRole == "ADMIN" || current.ownerEmail == email) current.inviteCode?.let { Text("Código do servidor: $it", style = MaterialTheme.typography.labelMedium) }
                         }
                     }
                     if (current.ownerEmail == email) TextButton(onClick = { viewModel.error.value = null; appearanceOpen = true }, enabled = !busy) { Text("Personalizar servidor") }
@@ -203,16 +203,16 @@ fun ServerListScreen(viewModel: ServerViewModel, email: String, onChannelClick: 
                     }
                     item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
                     item {
-                        Text("Recebeu um ID?", style = MaterialTheme.typography.titleMedium)
-                        Text("Peça o ID a alguém do servidor para entrar.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Recebeu um código?", style = MaterialTheme.typography.titleMedium)
+                        Text("Peça o código a um administrador para entrar.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     item {
-                        OutlinedTextField(inviteId, { inviteId = it }, Modifier.fillMaxWidth(), singleLine = true,
-                            label = { Text("ID do servidor") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), enabled = !busy)
+                        OutlinedTextField(inviteId, { inviteId = it.take(3) }, Modifier.fillMaxWidth(), singleLine = true,
+                            label = { Text("Código do servidor (3 caracteres)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii), enabled = !busy)
                     }
                     item {
                         Button(onClick = { viewModel.join(inviteId) { selectedId = it; inviteId = ""; sheet = null } },
-                            modifier = Modifier.fillMaxWidth(), enabled = !busy && (inviteId.trim().toLongOrNull() ?: 0) > 0) {
+                            modifier = Modifier.fillMaxWidth(), enabled = !busy && inviteId.trim().length == 3) {
                             Text(if (busy) "Entrando…" else "Entrar no servidor", Modifier.padding(6.dp))
                         }
                     }

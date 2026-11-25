@@ -9,6 +9,9 @@ import java.util.List;
 @Builder
 public class ServerResponse {
     private Long id;
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private String inviteCode;
+    private String myRole;
     private String iconUrl;
     private String bannerUrl;
     private String backgroundUrl;

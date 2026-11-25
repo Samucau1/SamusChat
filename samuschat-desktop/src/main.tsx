@@ -8,6 +8,9 @@ import { useSession } from './controllers/useSession';
 import { ChatApp } from './views/ChatApp';
 import { AuthScreen } from './views/AuthScreen';
 import './styles.css';
+import './ui-theme.css';
+import './mobile.css';
+import { ThemeProvider } from './controllers/useTheme';
 import { notificationDestination } from './models/notificationDestination';
 
 if ('serviceWorker' in navigator) {
@@ -35,4 +38,4 @@ function App() {
   if (session.restoring) return <main className="loading-screen" role="status">Restaurando sua sessão…</main>;
   return session.user ? <ConnectedApp key={session.user.id} session={session} /> : <AuthScreen session={session} />;
 }
-createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);
+createRoot(document.getElementById('root')!).render(<StrictMode><ThemeProvider><App /></ThemeProvider></StrictMode>);

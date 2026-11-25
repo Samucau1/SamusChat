@@ -38,7 +38,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String ip = getClientIp(request);
         String path = request.getRequestURI();
 
-        Bucket bucket = path.startsWith("/api/auth")
+        Bucket bucket = request.getMethod().equals("POST") && path.matches("/api/servers/(?:[^/]+/)?join")
+                ? rateLimitConfig.resolveInviteBucket(ip)
+                : path.startsWith("/api/auth")
                 ? rateLimitConfig.resolveAuthBucket(ip)
                 : path.startsWith("/api/calls") ? rateLimitConfig.resolveCallBucket(ip)
                 : path.matches("/api/channels/[0-9]+/call(?:/.*)?") ? rateLimitConfig.resolveRoomBucket(ip) : rateLimitConfig.resolveBucket(ip);

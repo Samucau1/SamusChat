@@ -24,9 +24,9 @@ test('cadastro, sessão restaurada, perfil salvo e logout', async ({ page }) => 
   await page.goto('/'); await page.getByRole('button', { name: 'Criar uma conta', exact: true }).click();
   await page.getByLabel('Nome de usuário', { exact: true }).fill(name); await page.getByLabel('Email', { exact: true }).fill(`${name}@example.com`); await page.getByLabel('Senha', { exact: true }).fill(password); await page.getByRole('button', { name: 'Criar conta', exact: true }).click();
   await expect(page.getByRole('heading', { name: `Bem-vindo, ${name}` })).toBeVisible(); await page.reload(); await expect(page.getByRole('heading', { name: `Bem-vindo, ${name}` })).toBeVisible();
-  await page.locator('.profile-button').click(); await page.getByLabel('Nome de usuário').fill(`${name}_novo`); await page.getByRole('button', { name: 'Salvar', exact: true }).click(); await expect(page.getByRole('dialog')).not.toBeVisible();
+  await page.getByRole('button', { name: 'Configurações', exact: true }).click(); await page.getByRole('tab', { name: 'Perfil', exact: true }).click(); await page.getByLabel('Nome de usuário').fill(`${name}_novo`); await page.getByRole('button', { name: 'Salvar', exact: true }).click(); await expect(page.getByRole('dialog')).not.toBeVisible();
   await page.reload(); await expect(page.getByRole('heading', { name: `Bem-vindo, ${name}_novo` })).toBeVisible();
-  await page.locator('.profile-button').click(); await page.getByRole('button', { name: 'Sair da conta' }).click(); await expect(page.getByRole('heading', { name: 'Bom ter você por aqui' })).toBeVisible();
+  await page.getByRole('button', { name: 'Configurações', exact: true }).click(); await page.getByRole('tab', { name: 'Perfil', exact: true }).click(); await page.getByRole('button', { name: 'Sair da conta' }).click(); await expect(page.getByRole('heading', { name: 'Bom ter você por aqui' })).toBeVisible();
   expect(await page.evaluate(() => sessionStorage.getItem('samuschat.desktop.session'))).toBeNull();
 });
 
@@ -34,10 +34,12 @@ test('duas contas: criar/entrar em servidor, STOMP, anexo e canal novo', async (
   const a = await register(request, 'canal_a'); const b = await register(request, 'canal_b');
   await login(page, a.email); await page.getByRole('button', { name: 'Criar servidor', exact: true }).click();
   await page.getByLabel('Nome', { exact: true }).fill('Servidor desktop'); await page.getByLabel('Descrição', { exact: true }).fill('Integração com API existente'); await page.getByRole('button', { name: 'Criar', exact: true }).click(); await expect(page.getByRole('dialog')).not.toBeVisible();
-  const id = Number((await page.locator('.server-id').innerText()).split(':')[1]);
+  await page.getByRole('button', { name: 'Configura\u00e7\u00f5es do servidor', exact: true }).click();
+  const inviteCode = await page.locator('.server-invite code').innerText();
+  await page.keyboard.press('Escape');
   const context = await browser.newContext({ permissions: ['microphone'], extraHTTPHeaders: { 'X-Forwarded-For': clientIp() } }); const other = await context.newPage();
   try {
-    await login(other, b.email); await other.getByRole('button', { name: 'Entrar em servidor', exact: true }).click(); await other.getByLabel('ID do servidor').fill(String(id)); await other.getByRole('dialog').getByRole('button', { name: 'Entrar', exact: true }).click(); await expect(other.getByRole('dialog')).not.toBeVisible(); await other.locator('.conversation-link').first().click();
+    await login(other, b.email); await other.getByRole('button', { name: 'Entrar em servidor', exact: true }).click(); await other.getByLabel('C\u00f3digo do servidor').fill(inviteCode); await other.getByRole('dialog').getByRole('button', { name: 'Entrar', exact: true }).click(); await expect(other.getByRole('dialog')).not.toBeVisible(); await other.locator('.conversation-link').first().click();
     await expect(page.getByRole('status').filter({ hasText: 'Ao vivo' })).toBeVisible(); await expect(other.getByRole('status').filter({ hasText: 'Ao vivo' })).toBeVisible();
     await page.getByLabel(/^Mensagem para/).fill('Mensagem real desktop'); await page.getByRole('button', { name: 'Enviar ↗' }).click(); await expect(other.locator('.message p').filter({ hasText: 'Mensagem real desktop' })).toHaveCount(1);
     await page.locator('input[type=file]').setInputFiles({ name: 'desktop.txt', mimeType: 'text/plain', buffer: Buffer.from('arquivo desktop') }); await page.getByRole('button', { name: 'Enviar ↗' }).click(); await expect(other.getByRole('link', { name: 'Abrir anexo ↗' })).toBeVisible();
@@ -45,7 +47,7 @@ test('duas contas: criar/entrar em servidor, STOMP, anexo e canal novo', async (
     await page.getByRole('button', { name: /^Excluir mensagem/ }).first().click();
     await page.getByRole('button', { name: 'Confirmar', exact: true }).click();
     await expect(other.locator('.message p').filter({ hasText: 'Mensagem real desktop' })).toHaveCount(0);
-    await page.getByRole('button', { name: '+ Criar canal', exact: true }).click(); await page.getByRole('dialog').getByLabel('Nome').fill('novo-canal'); await page.getByRole('button', { name: 'Criar', exact: true }).click(); await expect(page.getByRole('dialog')).not.toBeVisible(); await expect(page.getByRole('heading', { name: 'Bem-vindo a #novo-canal' })).toBeVisible();
+    await page.getByRole('button', { name: 'Configura\u00e7\u00f5es do servidor', exact: true }).click(); await page.getByRole('button', { name: 'Criar canal', exact: true }).click(); await page.getByRole('dialog').getByLabel('Nome').fill('novo-canal'); await page.getByRole('button', { name: 'Criar', exact: true }).click(); await expect(page.getByRole('dialog')).not.toBeVisible(); await expect(page.getByRole('heading', { name: 'Bem-vindo a #novo-canal' })).toBeVisible();
     await page.screenshot({ path: 'test-results/desktop-chat.png', fullPage: true });
   } finally { await context.close(); }
 });

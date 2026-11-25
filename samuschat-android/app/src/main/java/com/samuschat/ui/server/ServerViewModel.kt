@@ -37,9 +37,12 @@ class ServerViewModel(app: SamusChatApplication) : AppViewModel(app) {
         onSuccess(created.id)
     }
     fun join(id: String, onSuccess: (Long) -> Unit) = runTask {
-        val serverId = id.trim().toLongOrNull()
-        require(serverId != null && serverId > 0) { "Informe um ID válido" }
-        app.servers.join(serverId); servers.value = app.servers.list()
-        onSuccess(serverId)
+        val code = id.trim()
+        require(code.matches(Regex("[A-Za-z0-9!@#$%*+_-]{3}"))) { "Informe o código de 3 caracteres" }
+        val previous = servers.value.map { it.id }.toSet()
+        app.servers.join(code); servers.value = app.servers.list()
+        val joined = servers.value.firstOrNull { it.id !in previous }
+        require(joined != null) { "Atualize a lista de servidores para continuar" }
+        onSuccess(joined.id)
     }
 }

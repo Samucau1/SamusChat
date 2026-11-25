@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ApiRepository, PublicProfile } from '../models/apiRepository';
-import { AppearanceImage, appearanceHref } from './Appearance';
+import { AppearanceImage } from './Appearance';
 
 export function SearchIcon() { return <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>; }
 function Photo({ person }: { person: PublicProfile }) { return person.avatarUrl ? <AppearanceImage url={person.avatarUrl} alt="" className="avatar avatar-image" /> : <span className="avatar">{person.username.slice(0,2).toUpperCase()}</span>; }
 type Action = 'request' | 'accept' | 'remove';
-function Actions({ person, busy, act, talk }: { person: PublicProfile; busy: boolean; act(action: Action): void; talk?(): void }) {
+export function FriendActions({ person, busy, act, talk }: { person: PublicProfile; busy: boolean; act(action: Action): void; talk?(): void }) {
   if (person.relationship === 'SELF') return null;
   if (person.relationship === 'FRIEND') return <>{talk && <button className="primary" onClick={talk}>Conversar</button>}<button className="social-secondary" disabled={busy} onClick={()=>act('remove')}>Remover amigo</button></>;
   if (person.relationship === 'INCOMING') return <><button className="primary" disabled={busy} onClick={()=>act('accept')}>Aceitar</button><button className="social-secondary" disabled={busy} onClick={()=>act('remove')}>Recusar</button></>;
@@ -34,16 +34,6 @@ export function FriendsPanel({ api, initialSearch, onProfile, onTalk, onChange }
     {error&&<p className="error-notice" role="alert">{error}</p>}{notice&&<p className="social-success" role="status">{notice}</p>}
     {(loading||searching)&&<p className="muted" role="status">{searching?'Procurando pessoas…':'Carregando amigos…'}</p>}
     {!loading&&!searching&&!shown.length&&<div className="social-empty"><SearchIcon/><h2>{tab==='search'?(query.trim().length<2?'Encontre sua próxima conversa':'Nenhuma pessoa encontrada'):tab==='pending'?'Nenhuma solicitação pendente':'Sua lista de amigos começa aqui'}</h2><p>{tab==='search'?'Digite pelo menos dois caracteres do nome ou cole o ID completo.':tab==='pending'?'Os convites recebidos e enviados aparecerão aqui.':'Use a lupa para procurar alguém pelo nome ou ID e enviar um convite.'}</p>{tab==='friends'&&<button className="primary" onClick={()=>setTab('search')}>Encontrar amigos</button>}</div>}
-    <ul className="social-list">{shown.map(person=><li key={person.publicId}><button className="social-person" aria-label={`Ver perfil de ${person.username}`} onClick={()=>onProfile(person.publicId)}><Photo person={person}/><span><strong>{person.username}</strong><small>{person.relationship==='INCOMING'?'Quer ser seu amigo':person.relationship==='FRIEND'?'Seu amigo':person.publicId}</small></span></button><div className="social-actions"><Actions person={person} busy={busy} act={action=>void act(person,action)} talk={()=>onTalk(person)}/></div></li>)}</ul>
+    <ul className="social-list">{shown.map(person=><li key={person.publicId}><button className="social-person" aria-label={`Ver perfil de ${person.username}`} onClick={()=>onProfile(person.publicId)}><Photo person={person}/><span><strong>{person.username}</strong><small>{person.relationship==='INCOMING'?'Quer ser seu amigo':person.relationship==='FRIEND'?'Seu amigo':person.publicId}</small></span></button><div className="social-actions"><FriendActions person={person} busy={busy} act={action=>void act(person,action)} talk={()=>onTalk(person)}/></div></li>)}</ul>
   </section>;
-}
-export function UserProfileDialog({ api, id, close, onChange, onTalk }: { api: ApiRepository; id: string; close(): void; onChange(): Promise<unknown>; onTalk(person: PublicProfile): void }) {
-  const dialog=useRef<HTMLDialogElement>(null);const [person,setPerson]=useState<PublicProfile|null>(null);const [error,setError]=useState('');const [busy,setBusy]=useState(false);const [copied,setCopied]=useState(false);
-  useEffect(()=>{dialog.current?.showModal();const abort=new AbortController();let alive=true;void api.publicProfile(id,abort.signal).then(value=>{if(alive)setPerson(value);}).catch(e=>{if(alive)setError(e.message);});return()=>{alive=false;abort.abort();};},[api,id]);
-  async function act(action: Action){if(busy)return;setBusy(true);setError('');try{setPerson(await api.friendAction(id,action));await onChange();}catch(e){setError(e instanceof Error?e.message:'Não foi possível atualizar.');}finally{setBusy(false);}}
-  return <dialog ref={dialog} onCancel={close} className="public-profile" aria-label="Perfil do usuário" style={person?.backgroundUrl?{backgroundImage:`linear-gradient(#24262ae8,#24262af7),url("${appearanceHref(person.backgroundUrl)}")`,backgroundSize:'cover'}:undefined}>
-    <button className="profile-close" aria-label="Fechar perfil" onClick={close}>×</button>
-    {error&&<p className="error-notice" role="alert">{error}</p>}{!person&&!error&&<p role="status">Carregando perfil…</p>}
-    {person&&<><div className="public-profile-banner" style={{backgroundColor:person.accentColor??'#5865f2'}}><AppearanceImage url={person.bannerUrl} alt={`Capa de ${person.username}`} /></div><div className="public-profile-body"><Photo person={person}/><h2>{person.username}</h2><span className="social-tag">{person.relationship==='FRIEND'?'Seu amigo':person.relationship==='INCOMING'?'Convite recebido':person.relationship==='OUTGOING'?'Convite enviado':'Perfil'}</span><h3>SOBRE MIM</h3><p className="public-bio">{person.bio||'Ainda sem descrição.'}</p><h3>ID DO USUÁRIO</h3><div className="public-id"><code>{person.publicId}</code><button onClick={()=>{void navigator.clipboard.writeText(person.publicId).then(()=>setCopied(true)).catch(()=>setError('Não foi possível copiar o ID.'));}}>{copied?'Copiado':'Copiar ID'}</button></div><div className="social-actions"><Actions person={person} busy={busy} act={action=>void act(action)} talk={()=>{onTalk(person);close();}}/></div></div></>}
-  </dialog>;
 }

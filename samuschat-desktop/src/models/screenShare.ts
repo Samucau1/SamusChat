@@ -1,3 +1,4 @@
+import { screenCaptureSupport } from './mediaCapabilities';
 export const screenHeights = [750, 900, 1080, 1440, 2160] as const;
 export const screenFrameRates = [30, 60] as const;
 export interface ScreenProfile { width: number; height: number; minHeight: number; frameRate: number; maxBitrate: number }
@@ -59,18 +60,17 @@ export async function constrainSender(sender: RTCRtpSender, profile: ScreenProfi
 }
 
 export function captureScreen(profile: ScreenProfile): Promise<MediaStream> {
-  if (!window.isSecureContext || !navigator.mediaDevices?.getDisplayMedia) {
-    throw new Error('Compartilhar tela exige navegador compatível em HTTPS ou localhost. Abra o PC em http://127.0.0.1:5173.');
-  }
+  const support = screenCaptureSupport();
+  if (!support.supported) throw new Error(support.message);
   // Invoke the picker directly within the click gesture, before any await.
   return navigator.mediaDevices.getDisplayMedia(screenCaptureOptions(profile));
 }
 
 export function screenShareError(problem: unknown): unknown {
   if (!(problem instanceof DOMException)) return problem;
-  if (problem.name === 'NotSupportedError') return new Error('O navegador ou o Windows não aceitou esta captura. Tente outra tela ou janela, selecione 750p/30 fps na engrenagem e use Chrome ou Edge atualizado.');
+  if (problem.name === 'NotSupportedError') return new Error('Este navegador não aceitou a captura. Tente outra fonte em um navegador com suporte a compartilhamento de tela. Você ainda pode assistir às transmissões recebidas.');
   if (problem.name === 'OverconstrainedError') return new Error('A fonte não permite a qualidade escolhida. Selecione outra tela ou escolha 750p/30 fps na engrenagem.');
-  if (problem.name === 'NotReadableError') return new Error('O Windows não conseguiu capturar esta fonte. Verifique as permissões e tente outra tela ou janela.');
+  if (problem.name === 'NotReadableError') return new Error('Não foi possível capturar esta fonte. Verifique as permissões do dispositivo e tente outra tela ou janela.');
   if (problem.name === 'InvalidStateError') return new Error('Mantenha esta janela ativa e clique novamente em Compartilhar tela.');
   return problem;
 }

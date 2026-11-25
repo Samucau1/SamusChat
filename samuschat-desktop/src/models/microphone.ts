@@ -9,9 +9,9 @@ export async function captureMicrophone(id = selectedMicrophone()): Promise<Medi
     return stream;
   } catch (error) {
     if (error instanceof DOMException) {
-      if (error.name === 'NotAllowedError') throw new Error('Permita o microfone no navegador e em Configurações do Windows > Privacidade > Microfone.');
+      if (error.name === 'NotAllowedError') throw new Error('Permita o microfone nas permissões deste site e nas configurações de privacidade do seu dispositivo.');
       if (['NotFoundError', 'OverconstrainedError'].includes(error.name)) throw new Error('O microfone selecionado não está disponível. Abra Microfone e escolha outra entrada.');
-      if (error.name === 'NotReadableError') throw new Error('O Windows não conseguiu abrir o microfone. Confira a conexão e se outro aplicativo está usando a entrada.');
+      if (error.name === 'NotReadableError') throw new Error('Não foi possível abrir o microfone. Confira se outro aplicativo está usando a entrada e tente novamente.');
     }
     throw error;
   }

@@ -84,7 +84,7 @@ class PublicIdentityTests {
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertThat(server).doesNotContain(a.getEmail());
         long id=mapper.readTree(server).path("data").path("id").asLong();
-        mvc.perform(post("/api/servers/"+id+"/join").header("Authorization","Bearer "+jwt.generateToken(b.getEmail())))
+        mvc.perform(post("/api/servers/join").contentType("application/json").content(mapper.writeValueAsString(Map.of("code", mapper.readTree(server).path("data").path("inviteCode").asText()))).header("Authorization","Bearer "+jwt.generateToken(b.getEmail())))
                 .andExpect(status().isOk());
         String members=mvc.perform(get("/api/servers/"+id+"/members").header("Authorization",owner))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();

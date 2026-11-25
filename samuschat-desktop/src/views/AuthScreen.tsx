@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { useSession } from '../controllers/useSession';
 import { GoogleSignIn } from './GoogleSignIn';
+import { Settings } from './Settings';
 
 export function AuthScreen({ session: s }: { session: ReturnType<typeof useSession> }) {
   const [register, setRegister] = useState(false);
@@ -17,8 +18,9 @@ export function AuthScreen({ session: s }: { session: ReturnType<typeof useSessi
   }
   return <main className="auth-shell"><section className="auth-intro"><div className="brand-mark">SC</div><p className="eyebrow">SAMUSCHAT PARA COMPUTADOR</p><h1>Suas conversas.<br />Mais espaço para conectar.</h1><p>Servidores, amigos e projetos no mesmo lugar. Continue no computador usando sua conta do celular.</p><div className="auth-feature"># Converse nos seus servidores</div><div className="auth-feature">@ Encontre seus amigos</div><div className="auth-feature">↗ Compartilhe ideias e arquivos</div></section>
     <section className="auth-card"><h2>{recovering ? 'Recuperar senha' : register ? 'Crie sua conta' : 'Bom ter você por aqui'}</h2><p className="muted">{recovering ? 'Siga as etapas para recuperar o acesso.' : 'Use a mesma conta do SamusChat Android.'}</p>
+      <Settings />
       {s.error && <p className="error-notice" role="alert">{s.error}</p>}{notice && <p role="status">{notice}</p>}
-      {s.api.token && <button type="button" disabled={s.busy} onClick={() => { void s.reconnect(); }}>Reconectar à conta salva</button>}
+      {s.api.token && <button type="button" className="button-secondary" disabled={s.busy} onClick={() => { void s.reconnect(); }}>Reconectar à conta salva</button>}
       <form onSubmit={event => { event.preventDefault(); if (recovering) void recovery(); else void s.authenticate(register, name, email, password); }}>
         {register && !recovering && <label>Nome de usuário<input autoComplete="username" value={name} onChange={event => setName(event.target.value)} minLength={3} maxLength={30} pattern="[A-Za-z0-9_-]{3,30}" required /></label>}
         <label>Email<input type="email" autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} disabled={recovering && stage > 0} required /></label>

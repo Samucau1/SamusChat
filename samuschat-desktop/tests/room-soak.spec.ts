@@ -36,7 +36,7 @@ test('three participants sustain room voice and screen audio, then release captu
   }
   const owner={Authorization:`Bearer ${accounts[0].token}`};
   const r=await request.post('/api/servers',{headers:owner,data:{name:'Soak '+crypto.randomUUID().slice(0,6)}});expect(r.ok()).toBe(true);const server=(await r.json()).data;
-  for(const a of accounts.slice(1))expect((await request.post(`/api/servers/${server.id}/join`,{headers:{Authorization:`Bearer ${a.token}`}})).ok()).toBe(true);
+  for(const a of accounts.slice(1))expect((await request.post(`/api/servers/join`,{headers:{Authorization:`Bearer ${a.token}`},data:{code:server.inviteCode}})).ok()).toBe(true);
   expect((await request.post(`/api/servers/${server.id}/channels`,{headers:owner,data:{name:'soak-voice',type:'VOICE'}})).ok()).toBe(true);
   for(let i=0;i<3;i++){
    const page=pages[i];await page.goto('/');await page.getByLabel('Email',{exact:true}).fill(accounts[i].email);await page.getByLabel('Senha',{exact:true}).fill(password);await page.getByRole('button',{name:'Entrar',exact:true}).click();

@@ -37,6 +37,8 @@ public class RateLimitConfig {
         return limited("auth_" + ip, auth);
     }
 
+    public Bucket resolveInviteBucket(String ip) { return limited("invite_" + ip, 10); }
+
     public Bucket resolveCallBucket(String ip) {
         return limited("calls_" + ip, 180);
     }

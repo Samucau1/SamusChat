@@ -33,7 +33,7 @@ public class AttachmentService {
         });
         var response = messages.sendMessageWithAttachment(email, channelId, content, url, file.getContentType().startsWith("image/") ? "IMAGE" : "FILE");
         var saved = repository.findById(response.getId()).orElseThrow();
-        saved.setAttachmentSize(Files.size(storage.file(saved.getAttachmentName())));
+        saved.setAttachmentSize(storage.size(saved.getAttachmentName()));
         return response;
     }
     private Message permitted(String email, String filename) {
@@ -42,9 +42,9 @@ public class AttachmentService {
         permissions.requireMember(message.getChannel().getServer().getId(), email); return message;
     }
     @Transactional(readOnly = true)
-    public Path download(String email, String filename) {
-        permitted(email, filename); Path file = storage.file(filename);
-        if (!Files.isRegularFile(file)) throw new ResponseStatusException(HttpStatus.NOT_FOUND); return file;
+    public byte[] download(String email, String filename) throws IOException {
+        permitted(email, filename);
+        return storage.load(filename);
     }
     @Transactional
     public void delete(String email, String url) {

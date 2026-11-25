@@ -44,7 +44,7 @@ public class AppearanceService {
     }
     @Transactional public ServerResponse server(long id, String email, ServerAppearance request) {
         Server server = server(id, email); server.setAccentColor(color(request.accentColor()));
-        servers.save(server); return serverMapper.toResponse(server, server.getChannels());
+        servers.save(server); ServerResponse response = serverMapper.toResponse(server, server.getChannels()); response.setMyRole("ADMIN"); response.setInviteCode(server.getInviteCode()); return response;
     }
     @Transactional public UserResponse profileMedia(String email, String slot, MultipartFile file) throws IOException {
         User user = user(email);

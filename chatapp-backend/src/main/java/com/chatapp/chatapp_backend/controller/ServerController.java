@@ -45,11 +45,18 @@ public class ServerController {
         return ResponseEntity.ok(ApiResponse.success(serverService.getServer(auth.getName(), id)));
     }
 
+    public record JoinRequest(String code) {}
+
+    @PostMapping("/join")
+    public ResponseEntity<ApiResponse<String>> joinWithCode(Authentication auth, @RequestBody JoinRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(serverService.joinServer(auth.getName(), request.code())));
+    }
+
     @PostMapping("/{id}/join")
     public ResponseEntity<ApiResponse<String>> joinServer(
             Authentication auth,
             @PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success(serverService.joinServer(auth.getName(), id)));
+        return ResponseEntity.ok(ApiResponse.success(serverService.joinServerByLegacyId(auth.getName(), id)));
     }
 
     @PostMapping("/{id}/channels")

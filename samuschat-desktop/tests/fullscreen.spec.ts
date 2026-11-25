@@ -40,14 +40,14 @@ test('tela cheia nativa acompanha retrato → paisagem → retrato e oferece pre
     });
     expect(dimensions.width).toBe(dimensions.viewportWidth); expect(dimensions.height).toBe(dimensions.viewportHeight);
     await expect(page.locator('.call-video')).toHaveCSS('object-fit', 'contain');
-    await page.screenshot({ path: '../docs/images/validacao-2026-10-14/desktop-paisagem-tela-cheia.png' });
+    await page.screenshot({ path: '../logs/fullscreen-regression-paisagem-tela-cheia.png' });
     await page.getByRole('button', { name: 'Preencher tela (corta bordas)', exact: true }).click();
     await expect(page.locator('.call-video')).toHaveCSS('object-fit', 'cover');
-    await page.screenshot({ path: '../docs/images/validacao-2026-10-14/desktop-preencher-tela.png' });
+    await page.screenshot({ path: '../logs/fullscreen-regression-preencher-tela.png' });
     await page.getByRole('button', { name: 'Mostrar imagem inteira', exact: true }).click();
     await page.evaluate(() => (window as any).viewer.size(456, 960));
     await expect.poll(() => page.locator('.call-video').evaluate((video: HTMLVideoElement) => [video.videoWidth, video.videoHeight])).toEqual([456, 960]);
-    await page.screenshot({ path: '../docs/images/validacao-2026-10-14/desktop-retrato-tela-cheia.png' });
+    await page.screenshot({ path: '../logs/fullscreen-regression-retrato-tela-cheia.png' });
     if (!await page.getByRole('button', { name: 'Sair da tela cheia', exact: true }).count()) await page.locator('.call-video').click();
     await page.getByRole('button', { name: 'Sair da tela cheia', exact: true }).click();
     await expect.poll(() => page.evaluate(() => document.fullscreenElement === null)).toBe(true);
