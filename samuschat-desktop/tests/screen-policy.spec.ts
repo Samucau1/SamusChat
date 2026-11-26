@@ -16,7 +16,7 @@ test('PC solicita 900p, exige captura a 30 fps e mantém bitrate por conexão', 
   expect(track.contentHint).toBe('motion');
   expect(constraints).toEqual({ height: { exact: 900 }, frameRate: { exact: 30 } });
   expect(applied?.encodings[0]).toMatchObject({ maxBitrate: 4000000, maxFramerate: 30, scaleResolutionDownBy: 1 });
-  expect(applied?.degradationPreference).toBe('maintain-framerate-and-resolution');
+  expect(applied?.degradationPreference).toBe('maintain-framerate');
   expect(applied?.transactionId).toBe('transaction');
 });
 
@@ -59,11 +59,11 @@ test('codificador sem a preferência nova mantém limites ao usar alternativa co
     getParameters: () => ({ encodings: [{}], transactionId: `transaction-${attempts.length}` }),
     setParameters: async (value: RTCRtpSendParameters) => {
       attempts.push(value);
-      if ((value.degradationPreference as string) === 'maintain-framerate-and-resolution') throw new DOMException('Not supported', 'NotSupportedError');
+      if ((value.degradationPreference as string) === 'maintain-framerate') throw new DOMException('Not supported', 'NotSupportedError');
     },
   } as unknown as RTCRtpSender;
   await constrainSender(sender, screenProfile(750, 30));
-  expect(attempts.map(item => item.degradationPreference)).toEqual(['maintain-framerate-and-resolution', 'maintain-resolution']);
+  expect(attempts.map(item => item.degradationPreference)).toEqual(['maintain-framerate', 'balanced']);
   expect(attempts[1].transactionId).toBe('transaction-1');
   for (const item of attempts) expect(item.encodings[0]).toMatchObject({ maxBitrate: 2500000, maxFramerate: 30, scaleResolutionDownBy: 1 });
 });

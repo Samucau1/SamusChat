@@ -46,6 +46,20 @@ test('áudio real sintético pelo canal Android: captura, recepção, limite de 
     const { DeviceAudioTransport } = await import('/src/models/deviceAudio.ts');
     const tx = new DeviceAudioTransport(() => {}), rx = new DeviceAudioTransport(() => {});
     const a = new RTCPeerConnection(), b = new RTCPeerConnection();
+    const canvas = document.createElement('canvas'); canvas.width = 1600; canvas.height = 900;
+    const paint = canvas.getContext('2d')!;
+    const redraw = setInterval(() => {
+      paint.fillStyle = '#23132e'; paint.fillRect(0, 0, 1600, 900);
+      paint.fillStyle = '#a969cf'; paint.fillRect(Math.floor(performance.now()) % 1480, 150, 120, 240);
+    }, 1000 / 30);
+    const video = canvas.captureStream(30);
+    const sender = a.addTrack(video.getVideoTracks()[0], video);
+    const { constrainSender, encoderSample, screenMetrics } = await import('/src/models/screenShare.ts');
+    const measureFps = async () => {
+      const start = encoderSample(await sender.getStats());
+      await new Promise(resolve => setTimeout(resolve, 2500));
+      return screenMetrics(encoderSample(await sender.getStats())!, start).fps!;
+    };
     const sourceContext = new AudioContext(), destination = sourceContext.createMediaStreamDestination();
     const oscillator = sourceContext.createOscillator(); oscillator.frequency.value = 440; oscillator.connect(destination); oscillator.start();
     let packets = 0, audible = 0, wireBytes = 0, decodedRms = 0, decodedRate = 0, decodedFrames = 0;
@@ -79,8 +93,10 @@ test('áudio real sintético pelo canal Android: captura, recepção, limite de 
         if (channel.readyState === 'open') { clearTimeout(timer); resolve(); }
         else channel.onopen = () => { clearTimeout(timer); resolve(); };
       });
+      await constrainSender(sender);
+      const silentFps = await measureFps();
       await tx.startCapture(destination.stream);
-      await new Promise(resolve => setTimeout(resolve, 600));
+      const audioFps = await measureFps();
       const before = packets;
       tx.stopCapture(); await new Promise(resolve => setTimeout(resolve, 200));
       const after = packets; await new Promise(resolve => setTimeout(resolve, 150));
@@ -88,10 +104,13 @@ test('áudio real sintético pelo canal Android: captura, recepção, limite de 
       await tx.startCapture(destination.stream); await new Promise(resolve => setTimeout(resolve, 300));
       const resumedFrames = decodedFrames - beforeResume; tx.stopCapture();
       const receiver = rx as any;
-      return { before, audible, wireBytes, decodedRms, decodedRate, stopped, resumedFrames, queued: receiver.sources.size, ahead: receiver.nextTime - receiver.context.currentTime };
-    } finally { tx.close(); rx.close(); a.close(); b.close(); oscillator.stop(); await sourceContext.close(); }
+      return { silentFps, audioFps, before, audible, wireBytes, decodedRms, decodedRate, stopped, resumedFrames, queued: receiver.sources.size, ahead: receiver.nextTime - receiver.context.currentTime };
+    } finally { clearInterval(redraw); video.getTracks().forEach(track => track.stop()); tx.close(); rx.close(); a.close(); b.close(); oscillator.stop(); await sourceContext.close(); }
   });
   expect(result.before).toBeGreaterThan(10);
+  console.log(`Loopback 900p, FPS sem áudio: ${result.silentFps.toFixed(1)}, com áudio: ${result.audioFps.toFixed(1)}`);
+  expect(result.audioFps).toBeGreaterThan(result.silentFps * 0.75);
+  expect(result.audioFps).toBeGreaterThan(18);
   expect(result.audible).toBeGreaterThan(10);
   expect(result.wireBytes).toBeLessThan(640);
   expect(result.decodedRms).toBeGreaterThan(0.05); expect(result.decodedRate).toBe(48000);

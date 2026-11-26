@@ -83,7 +83,9 @@ export class DeviceAudioTransport {
     await context.audioWorklet.addModule('/device-audio-worklet.js');
     if (this.closed || generation !== this.generation) return false;
     const source = context.createMediaStreamSource(new MediaStream(stream.getAudioTracks()));
-    const worklet = new AudioWorkletNode(context, 'device-audio', { processorOptions: { targetRate: 48000 } });
+    const worklet = new AudioWorkletNode(context, 'device-audio', {
+      channelCount: 1, channelCountMode: 'explicit', processorOptions: { targetRate: 48000 },
+    });
     const NativeEncoder = (window as any).AudioEncoder, AudioData = (window as any).AudioData;
     if (NativeEncoder && AudioData) {
       try {
@@ -94,7 +96,7 @@ export class DeviceAudioTransport {
           const packet = opusPacket(bytes, Math.round(chunk.timestamp / 20000));
           for (const channel of this.channels) if (this.modern.has(channel) && channel.readyState === 'open' && channel.bufferedAmount < 800) { try { channel.send(packet); } catch {} }
         }, error: () => { this.encoder = null; } });
-        this.encoder.configure({ codec: 'opus', sampleRate: 48000, numberOfChannels: 1, bitrate: 64000 });
+        this.encoder.configure({ codec: 'opus', sampleRate: 48000, numberOfChannels: 1, bitrate: 48000 });
       } catch { this.encoder?.close(); this.encoder = null; }
     }
     let sequence = this.captureSequence, lastNotice = 0;
@@ -102,13 +104,13 @@ export class DeviceAudioTransport {
       if (this.closed || generation !== this.generation || !(event.data instanceof ArrayBuffer)) return;
       const targets = [...this.channels].filter(channel => channel.readyState === 'open');
       const compressed = this.encoder?.state === 'configured';
-      if (compressed && this.encoder.encodeQueueSize < 3 && targets.some(channel => this.modern.has(channel))) {
+      if (compressed && this.encoder.encodeQueueSize < 3 && targets.some(channel => this.modern.has(channel) && channel.bufferedAmount < 800)) {
         const frame = new AudioData({ format: 's16', sampleRate: 48000, numberOfFrames: event.data.byteLength / 2, numberOfChannels: 1, timestamp: sequence * 20000, data: event.data });
         try { this.encoder.encode(frame); } finally { frame.close(); }
       }
       sequence++;
       this.captureSequence = sequence;
-      const legacy = targets.filter(channel => !compressed || !this.modern.has(channel));
+      const legacy = targets.filter(channel => (!compressed || !this.modern.has(channel)) && channel.bufferedAmount < 3200);
       if (legacy.length) {
         const packet = legacyScreenPcm(event.data);
         for (const channel of legacy) if (channel.bufferedAmount < 3200) { try { channel.send(packet); } catch {} }

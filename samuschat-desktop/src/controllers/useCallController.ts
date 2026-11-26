@@ -15,7 +15,11 @@ export async function gathered(peer: RTCPeerConnection) {
     const finish = () => { clearTimeout(timer); peer.removeEventListener('icegatheringstatechange', changed); peer.removeEventListener('connectionstatechange', closed); };
     const changed = () => { if (peer.iceGatheringState === 'complete') { finish(); resolve(); } };
     const closed = () => { if (peer.connectionState === 'closed') { finish(); reject(new Error('Chamada encerrada.')); } };
-    const timer = setTimeout(() => { finish(); reject(new Error('Não foi possível encontrar um caminho de mídia. Verifique a configuração TURN.')); }, 15000);
+    const timer = setTimeout(() => {
+      finish();
+      if (peer.connectionState !== 'closed' && /^a=candidate:/m.test(peer.localDescription?.sdp ?? '')) resolve();
+      else reject(new Error('Não foi possível encontrar um caminho de mídia. Verifique a configuração TURN.'));
+    }, 15000);
     peer.addEventListener('icegatheringstatechange', changed); peer.addEventListener('connectionstatechange', closed); changed();
   });
 }

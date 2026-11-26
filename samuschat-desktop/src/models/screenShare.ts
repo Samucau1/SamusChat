@@ -35,7 +35,7 @@ export async function constrainScreen(track: MediaStreamTrack, profile: ScreenPr
 export async function constrainSender(sender: RTCRtpSender, profile: ScreenProfile = desktopScreenProfile) {
   // Some native encoders reject the newer W3C preference. Retry only this
   // optional hint, keeping capture constraints and encoding limits intact.
-  for (const preference of ['maintain-framerate-and-resolution', 'maintain-resolution', undefined] as const) {
+  for (const preference of ['maintain-framerate', 'balanced', undefined] as const) {
     const parameters = sender.getParameters();
     if (!parameters.encodings?.length) return;
     for (const encoding of parameters.encodings) {
@@ -47,9 +47,6 @@ export async function constrainSender(sender: RTCRtpSender, profile: ScreenProfi
     else delete parameters.degradationPreference;
     try {
       await sender.setParameters(parameters);
-      // A browser with no degradation preference can still honor the content
-      // hint. Avoid its motion default shrinking a screen below the chosen size.
-      if (!preference && sender.track) sender.track.contentHint = 'detail';
       return;
     }
     catch (problem) {

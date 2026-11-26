@@ -150,7 +150,7 @@ test('chamada individual: convite, aceite, mídia WebRTC, microfone e encerramen
       // Reproduce older native encoders rejecting the newer preference.
       const nativeSetParameters = RTCRtpSender.prototype.setParameters;
       Object.defineProperty(RTCRtpSender.prototype, 'setParameters', { value: function(this: RTCRtpSender, parameters: RTCRtpSendParameters) {
-        if ((parameters.degradationPreference as string) === 'maintain-framerate-and-resolution') return Promise.reject(new DOMException('Not supported', 'NotSupportedError'));
+        if ((parameters.degradationPreference as string) === 'maintain-framerate') return Promise.reject(new DOMException('Not supported', 'NotSupportedError'));
         return nativeSetParameters.call(this, parameters);
       } });
       Object.defineProperty(navigator.mediaDevices, 'getDisplayMedia', { value: async () => {
