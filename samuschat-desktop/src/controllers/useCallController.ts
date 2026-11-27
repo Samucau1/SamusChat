@@ -1,4 +1,4 @@
-import { DeviceAudioTransport } from '../models/deviceAudio';
+import { DeviceAudioTransport, screenAudioChannelOptions } from '../models/deviceAudio';
 import { applyRemoteAnswer } from '../models/remoteAnswer';
 import { configureScreenReceiver } from '../models/screenReceiver';
 import { captureMicrophone, rememberMicrophone } from '../models/microphone';
@@ -106,7 +106,7 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
     connection.ondatachannel = event => attach(event.channel);
     if (caller) {
       attach(connection.createDataChannel('call-control'));
-      attach(connection.createDataChannel('device-audio', { ordered: false, maxRetransmits: 0 }));
+      attach(connection.createDataChannel('device-audio', screenAudioChannelOptions));
     }
     connection.ontrack = event => {
       if (!alive.current || peer.current !== connection) return;

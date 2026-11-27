@@ -43,7 +43,7 @@ test('worklet reduz 48kHz/44.1kHz estéreo para PCM16/16kHz mono em pacotes de 2
 test('áudio real sintético pelo canal Android: captura, recepção, limite de fila e parada', async ({ page }) => {
   await page.goto('/');
   const result = await page.evaluate(async () => {
-    const { DeviceAudioTransport } = await import('/src/models/deviceAudio.ts');
+    const { DeviceAudioTransport, screenAudioChannelOptions } = await import('/src/models/deviceAudio.ts');
     const tx = new DeviceAudioTransport(() => {}), rx = new DeviceAudioTransport(() => {});
     const a = new RTCPeerConnection(), b = new RTCPeerConnection();
     const canvas = document.createElement('canvas'); canvas.width = 1600; canvas.height = 900;
@@ -69,7 +69,7 @@ test('áudio real sintético pelo canal Android: captura, recepção, limite de 
       decodedRms = Math.max(decodedRms, Math.sqrt(samples.reduce((sum, sample) => sum + sample * sample, 0) / samples.length)); decodedRate = rate;
       originalPlay(samples, rate, channel);
     };
-    const channel = a.createDataChannel('device-audio', { ordered: false, maxRetransmits: 0 }); tx.attach(channel);
+    const channel = a.createDataChannel('device-audio', screenAudioChannelOptions); tx.attach(channel);
     b.ondatachannel = event => {
       rx.attach(event.channel); const receive = event.channel.onmessage!;
       event.channel.onmessage = data => {
@@ -97,6 +97,15 @@ test('áudio real sintético pelo canal Android: captura, recepção, limite de 
       const silentFps = await measureFps();
       await tx.startCapture(destination.stream);
       const audioFps = await measureFps();
+      // Let the transport warm up, then include periodic desktop scheduling stalls.
+      const framesAtStart = decodedFrames, startTime = performance.now();
+      const stall = window.setInterval(() => {
+        const until = performance.now() + 105;
+        while (performance.now() < until) { /* Simulate a busy UI thread. */ }
+      }, 500);
+      try { await new Promise(resolve => setTimeout(resolve, 10000)); }
+      finally { clearInterval(stall); }
+      const blocksPerSecond = (decodedFrames - framesAtStart) * 1000 / (performance.now() - startTime);
       const before = packets;
       tx.stopCapture(); await new Promise(resolve => setTimeout(resolve, 200));
       const after = packets; await new Promise(resolve => setTimeout(resolve, 150));
@@ -104,10 +113,12 @@ test('áudio real sintético pelo canal Android: captura, recepção, limite de 
       await tx.startCapture(destination.stream); await new Promise(resolve => setTimeout(resolve, 300));
       const resumedFrames = decodedFrames - beforeResume; tx.stopCapture();
       const receiver = rx as any;
-      return { silentFps, audioFps, before, audible, wireBytes, decodedRms, decodedRate, stopped, resumedFrames, queued: receiver.sources.size, ahead: receiver.nextTime - receiver.context.currentTime };
+      return { silentFps, audioFps, blocksPerSecond, before, audible, wireBytes, decodedRms, decodedRate, stopped, resumedFrames, queued: receiver.sources.size, ahead: receiver.nextTime - receiver.context.currentTime };
     } finally { clearInterval(redraw); video.getTracks().forEach(track => track.stop()); tx.close(); rx.close(); a.close(); b.close(); oscillator.stop(); await sourceContext.close(); }
   });
   expect(result.before).toBeGreaterThan(10);
+  console.log(`Blocos Opus decodificados por segundo: ${result.blocksPerSecond.toFixed(2)}`);
+  expect(result.blocksPerSecond).toBeGreaterThanOrEqual(49);
   console.log(`Loopback 900p, FPS sem áudio: ${result.silentFps.toFixed(1)}, com áudio: ${result.audioFps.toFixed(1)}`);
   expect(result.audioFps).toBeGreaterThan(result.silentFps * 0.75);
   expect(result.audioFps).toBeGreaterThan(18);

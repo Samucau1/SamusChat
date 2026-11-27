@@ -1,4 +1,4 @@
-import { DeviceAudioTransport } from '../models/deviceAudio';
+import { DeviceAudioTransport, screenAudioChannelOptions } from '../models/deviceAudio';
 import { captureMicrophone, rememberMicrophone } from '../models/microphone';
 import { useScreenFeedback } from './useScreenFeedback';
 import type { ScreenPreferences } from './useScreenPreferences';
@@ -68,7 +68,7 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
     connection.ondatachannel = event => attach(peer, event.channel);
     if (session.caller === email) {
       attach(peer, connection.createDataChannel('call-control'));
-      attach(peer, connection.createDataChannel('device-audio', { ordered: false, maxRetransmits: 0 }));
+      attach(peer, connection.createDataChannel('device-audio', screenAudioChannelOptions));
     }
     connection.ontrack = event => { if (active.current && peers.current.get(session.id) === peer) { configureScreenReceiver(event.receiver); peer.stream.addTrack(event.track); updateRemote(); } };
     connection.onconnectionstatechange = () => {

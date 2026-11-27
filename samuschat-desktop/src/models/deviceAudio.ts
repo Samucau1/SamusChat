@@ -1,5 +1,10 @@
 import { isOpusPacket, legacyScreenPcm, opusHeader, opusPacket, opusReady } from './screenAudioWire';
 import { planAudioChunk } from './audioPlayout';
+// Keep short scheduling bursts of real 20 ms blocks without building an unbounded audio delay.
+const maxEncoderBlocks = 10;
+const opusBitrate = 48000;
+const maxOpusBufferedBytes = maxEncoderBlocks * (opusBitrate / 8 / 50 + 8);
+export const screenAudioChannelOptions: RTCDataChannelInit = { ordered: false, maxRetransmits: 1 };
 export function decodeDeviceAudio(packet: ArrayBuffer): Float32Array<ArrayBuffer> | null {
   if (!packet.byteLength || packet.byteLength > 640 || packet.byteLength % 2) return null;
   const view = new DataView(packet), samples = new Float32Array(packet.byteLength / 2);
@@ -94,9 +99,9 @@ export class DeviceAudioTransport {
           const bytes = new Uint8Array(chunk.byteLength); chunk.copyTo(bytes);
           if (bytes.length > 4088) return;
           const packet = opusPacket(bytes, Math.round(chunk.timestamp / 20000));
-          for (const channel of this.channels) if (this.modern.has(channel) && channel.readyState === 'open' && channel.bufferedAmount < 800) { try { channel.send(packet); } catch {} }
+          for (const channel of this.channels) if (this.modern.has(channel) && channel.readyState === 'open' && channel.bufferedAmount + packet.byteLength <= maxOpusBufferedBytes) { try { channel.send(packet); } catch {} }
         }, error: () => { this.encoder = null; } });
-        this.encoder.configure({ codec: 'opus', sampleRate: 48000, numberOfChannels: 1, bitrate: 48000 });
+        this.encoder.configure({ codec: 'opus', sampleRate: 48000, numberOfChannels: 1, bitrate: opusBitrate });
       } catch { this.encoder?.close(); this.encoder = null; }
     }
     let sequence = this.captureSequence, lastNotice = 0;
@@ -104,7 +109,7 @@ export class DeviceAudioTransport {
       if (this.closed || generation !== this.generation || !(event.data instanceof ArrayBuffer)) return;
       const targets = [...this.channels].filter(channel => channel.readyState === 'open');
       const compressed = this.encoder?.state === 'configured';
-      if (compressed && this.encoder.encodeQueueSize < 3 && targets.some(channel => this.modern.has(channel) && channel.bufferedAmount < 800)) {
+      if (compressed && this.encoder.encodeQueueSize < maxEncoderBlocks && targets.some(channel => this.modern.has(channel) && channel.bufferedAmount < maxOpusBufferedBytes)) {
         const frame = new AudioData({ format: 's16', sampleRate: 48000, numberOfFrames: event.data.byteLength / 2, numberOfChannels: 1, timestamp: sequence * 20000, data: event.data });
         try { this.encoder.encode(frame); } finally { frame.close(); }
       }
