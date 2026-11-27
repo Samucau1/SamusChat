@@ -76,6 +76,14 @@ test('perfil GIF e servidor personalizado persistem; membros, cargos e exclusão
 });
 
 test('canal de chamada: dois clientes, áudio, tela a 30 fps e saída', async ({ page, browser, request }) => {
+  test.setTimeout(100000);
+  await page.addInitScript(() => {
+    const connections: RTCPeerConnection[] = [];
+    window.RTCPeerConnection = class extends RTCPeerConnection {
+      constructor(config?: RTCConfiguration) { super(config); connections.push(this); }
+    };
+    Object.assign(window, { roomTestPeers: connections });
+  });
   const a = await account(request, 'room_a'), b = await account(request, 'room_b');
   const created = await request.post('/api/servers', { headers: { Authorization: `Bearer ${a.token}` }, data: { name: 'Sala desktop' } });
   const server = (await created.json()).data;
@@ -130,7 +138,7 @@ test('canal de chamada: dois clientes, áudio, tela a 30 fps e saída', async ({
     await page.screenshot({ path: '../logs/desktop-room-sharing.png', fullPage: true });
     await page.getByRole('button', { name: 'Voltar à grade da ligação' }).click();
     await expect(other.locator('.voice-room video.call-video')).toBeVisible({ timeout: 30000 });
-    await expect.poll(() => other.locator('.voice-room video.call-video').evaluate((video: HTMLVideoElement) => video.videoHeight)).toBeGreaterThanOrEqual(1080);
+    await expect.poll(() => other.locator('.voice-room video.call-video').evaluate((video: HTMLVideoElement) => video.videoHeight), { timeout: 30000 }).toBeGreaterThanOrEqual(1080);
     expect(await page.evaluate(() => (window as unknown as { testScreenTrack: MediaStreamTrack }).testScreenTrack.getSettings().frameRate)).toBe(60);
     await page.getByRole('button', { name: 'Configurações da transmissão', exact: true }).click();
     await expect(page.getByLabel('Resolução da transmissão', { exact: true })).toBeDisabled();
@@ -149,10 +157,25 @@ test('canal de chamada: dois clientes, áudio, tela a 30 fps e saída', async ({
     await page.getByLabel('FPS da transmissão', { exact: true }).selectOption('30');
     await page.getByRole('button', { name: 'Concluído', exact: true }).click();
     await page.getByRole('button', { name: 'Compartilhar tela no canal', exact: true }).click();
-    await expect.poll(() => other.locator('.voice-room video.call-video').evaluate((video: HTMLVideoElement) => video.videoHeight)).toBeGreaterThanOrEqual(750);
+    await expect.poll(() => other.locator('.voice-room video.call-video').evaluate((video: HTMLVideoElement) => video.videoHeight), { timeout: 30000 }).toBeGreaterThanOrEqual(750);
     expect(await page.evaluate(() => (window as unknown as { testScreenTrack: MediaStreamTrack }).testScreenTrack.getSettings().frameRate)).toBe(30);
     await page.getByRole('button', { name: 'Parar transmissão do canal' }).click();
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem('samuschat.desktop.screenPreferences')!))).toMatchObject({ height: 750, frameRate: 30, automatic: true });
+    const heartbeat = '**/api/channels/*/call';
+    const outage = page.waitForResponse(response => response.status() === 503 && response.url().endsWith('/call'));
+    await page.route(heartbeat, route => route.fulfill({ status: 503, body: 'temporarily unavailable' }), { times: 1 });
+    await outage;
+    await page.waitForResponse(response => response.ok() && response.url().endsWith('/call'));
+    await page.evaluate(() => {
+      const [connection] = (window as unknown as { roomTestPeers: RTCPeerConnection[] }).roomTestPeers;
+      Object.defineProperty(connection, 'connectionState', { configurable: true, value: 'failed' });
+      connection.dispatchEvent(new Event('connectionstatechange'));
+    });
+    await expect.poll(() => page.evaluate(() => {
+      const peers = (window as unknown as { roomTestPeers: RTCPeerConnection[] }).roomTestPeers;
+      return peers.slice(1).some(connection => connection.connectionState === 'connected');
+    }), { timeout: 30000 }).toBe(true);
+    await expect(page.getByRole('button', { name: 'Ativar microfone do canal' })).toHaveAttribute('aria-pressed', 'true');
     await other.getByRole('button', { name: 'Sair do canal de chamada' }).click();
     await expect(page.locator('.voice-room')).toContainText('1/6 participantes');
     await page.getByRole('button', { name: 'Sair do canal de chamada' }).click(); await expect(page.locator('.voice-room')).toHaveCount(0);

@@ -56,12 +56,28 @@ public class VoiceRoomService {
             if(participants.size()>=6) throw new IllegalArgumentException("Canal cheio: limite de 6 participantes");
             if(calls.active(email).stream().anyMatch(c->!CallRules.expired(c,Instant.now()))) throw new IllegalArgumentException("Encerre a chamada atual primeiro");
             var presence=new VoicePresence();presence.setEmail(email);presence.setChannelId(id);presence.setSeenAt(Instant.now());presences.save(presence);
-            for(var other:participants) {
-                var call=new CallSession();call.setId(UUID.randomUUID().toString());call.setCaller(email);call.setCallee(other.getEmail());
-                call.setChannelId(id);call.setState("CONNECTING");call.setCreatedAt(Instant.now());call.setCallerSeen(call.getCreatedAt());call.setCalleeSeen(call.getCreatedAt());calls.save(call);
-            }
+            for(var other:participants) createLink(id,email,other.getEmail());
         }
         return snapshot(id,email);
+    }
+    private void createLink(Long id,String caller,String callee) {
+        var call=new CallSession();
+        call.setId(UUID.randomUUID().toString());call.setCaller(caller);call.setCallee(callee);
+        call.setChannelId(id);call.setState("CONNECTING");call.setCreatedAt(Instant.now());
+        call.setCallerSeen(call.getCreatedAt());call.setCalleeSeen(call.getCreatedAt());calls.save(call);
+    }
+    @Transactional
+    public void reconnect(Long id,String sessionId,String email) {
+        channel(id,email);
+        var call=calls.locked(sessionId).orElseThrow(()->new IllegalArgumentException("Chamada inexistente"));
+        if(!id.equals(call.getChannelId())) throw new SecurityException("Chamada de outro canal");
+        CallRules.participant(call,email);
+        // Both ends may observe failure. Only the first request replaces this link.
+        if(call.terminal()) return;
+        var present=live(id).stream().map(VoicePresence::getEmail).toList();
+        if(!present.contains(call.getCaller()) || !present.contains(call.getCallee())) return;
+        call.setState("ENDED");call.setOffer(null);call.setAnswer(null);
+        createLink(id,call.getCaller(),call.getCallee());
     }
     @Transactional
     public Room snapshot(Long id,String email) {

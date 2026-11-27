@@ -3,11 +3,11 @@ import { captureMicrophone, rememberMicrophone } from '../models/microphone';
 import { useScreenFeedback } from './useScreenFeedback';
 import type { ScreenPreferences } from './useScreenPreferences';
 import { useEffect, useRef, useState } from 'react';
-import { ApiRepository, type CallSession, type VoiceRoom } from '../models/apiRepository';
+import { ApiError, ApiRepository, type CallSession, type VoiceRoom } from '../models/apiRepository';
 import { constrainScreen, constrainSender, captureScreen, screenShareError, preferEfficientEncoder } from '../models/screenShare';
 import { gathered } from './useCallController';
 
-interface Peer { connection: RTCPeerConnection; sender: RTCRtpSender; stream: MediaStream; control?: RTCDataChannel; sharing: boolean; email: string; }
+interface Peer { connection: RTCPeerConnection; sender: RTCRtpSender; stream: MediaStream; control?: RTCDataChannel; sharing: boolean; email: string; signaling: boolean; failed: boolean; disconnectedAt: number; }
 export function useVoiceRoomController(api: ApiRepository, email: string, onError: (error: unknown) => void, preferences: ScreenPreferences) {
   const [room, setRoom] = useState<VoiceRoom | null>(null);
   const [busy, setBusy] = useState(false);
@@ -21,12 +21,14 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
   const [remote, setRemote] = useState<{ id: string; email: string; stream: MediaStream; sharing: boolean }[]>([]);
   const current = useRef<VoiceRoom | null>(null);
   const peers = useRef(new Map<string, Peer>());
+  const retryAfter = useRef(new Map<string, number>());
   const microphone = useRef<MediaStream | null>(null);
   const blank = useRef<MediaStream | null>(null);
   const screen = useRef<MediaStream | null>(null);
   const audio = useRef<DeviceAudioTransport | null>(null);
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [audioNotice, setAudioNotice] = useState('');
+  const [reconnecting, setReconnecting] = useState(false);
   const [microphoneStream, setMicrophoneStream] = useState<MediaStream | null>(null);
   const ice = useRef<RTCIceServer[]>([]);
   const epoch = useRef(0);
@@ -40,7 +42,8 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
     audio.current?.close(); audio.current = null;
     epoch.current++;
     for (const peer of peers.current.values()) peer.connection.close();
-    peers.current.clear();
+    peers.current.clear(); retryAfter.current.clear();
+    if (active.current) setReconnecting(false);
     for (const stream of [microphone.current, blank.current, screen.current]) stream?.getTracks().forEach(track => track.stop());
     microphone.current = blank.current = screen.current = null; current.current = null;
     if (active.current) { setMicrophoneStream(null); setAudioBlocked(false); setAudioNotice(''); setRoom(null); setRemote([]); setMuted(false); setSharing(false); setPreview(null); setPreviewVisible(false); }
@@ -63,7 +66,7 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
     const video = screen.current ?? blank.current!;
     const sender = connection.addTrack(video.getVideoTracks()[0], video);
     preferEfficientEncoder(connection, sender, preferencesRef.current.hardware);
-    const peer: Peer = { connection, sender, stream: new MediaStream(), sharing: false, email: session.caller === email ? session.callee : session.caller };
+    const peer: Peer = { connection, sender, stream: new MediaStream(), sharing: false, signaling: false, failed: false, disconnectedAt: 0, email: session.caller === email ? session.callee : session.caller };
     peers.current.set(session.id, peer);
     connection.ondatachannel = event => attach(peer, event.channel);
     if (session.caller === email) {
@@ -72,47 +75,68 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
     }
     connection.ontrack = event => { if (active.current && peers.current.get(session.id) === peer) { configureScreenReceiver(event.receiver); peer.stream.addTrack(event.track); updateRemote(); } };
     connection.onconnectionstatechange = () => {
-      if (connection.connectionState === 'failed' && active.current) errorRef.current(new Error(`Mídia interrompida com ${peer.email}. Saia e entre no canal novamente.`));
+      if (!active.current || peers.current.get(session.id) !== peer) return;
+      peer.disconnectedAt = connection.connectionState === 'disconnected' ? (peer.disconnectedAt || Date.now()) : 0;
+      if (connection.connectionState === 'failed') peer.failed = true;
+      if (connection.connectionState === 'connected') retryAfter.current.delete(peer.email);
       if (connection.connectionState === 'connected' && screen.current) void constrainSender(peer.sender, screenProfile.current).catch(errorRef.current);
     };
     return peer;
   }
-  async function sync(snapshot: VoiceRoom, generation: number) {
-    const previousSize = peers.current.size;
+  async function signal(session: CallSession, peer: Peer, channelId: number) {
+    const { connection } = peer;
+    const isCurrent = () => active.current && peers.current.get(session.id) === peer;
+    if (peer.failed || (peer.disconnectedAt && Date.now() - peer.disconnectedAt >= 10000)) {
+      if (Date.now() < (retryAfter.current.get(peer.email) ?? 0)) return;
+      retryAfter.current.set(peer.email, Date.now() + 15000);
+      await api.reconnectRoomPeer(channelId, session.id);
+    } else if (session.caller === email && !session.offer) {
+      if (!connection.localDescription) await connection.setLocalDescription(await connection.createOffer());
+      await gathered(connection);
+      if (isCurrent()) await api.callAction(session.id, 'offer', connection.localDescription!.sdp);
+    } else if (session.callee === email && session.offer && !session.answer) {
+      if (!connection.remoteDescription) await connection.setRemoteDescription({ type: 'offer', sdp: session.offer });
+      if (!connection.localDescription) await connection.setLocalDescription(await connection.createAnswer());
+      await gathered(connection);
+      if (isCurrent()) await api.callAction(session.id, 'answer', connection.localDescription!.sdp);
+    } else if (session.caller === email && session.answer && !connection.remoteDescription) {
+      await connection.setRemoteDescription({ type: 'answer', sdp: session.answer });
+    }
+  }
+  function sync(snapshot: VoiceRoom, generation: number) {
     current.current = snapshot; setRoom(snapshot);
     const sessions = snapshot.sessions.filter(item => !['ENDED', 'EXPIRED', 'DECLINED'].includes(item.state));
     for (const [id, peer] of peers.current) if (!sessions.some(item => item.id === id)) { peer.connection.close(); peers.current.delete(id); updateRemote(); }
     for (const session of sessions) {
       if (!active.current || epoch.current !== generation) return;
-      const peer = prepare(session), connection = peer.connection;
-      if (session.caller === email && !session.offer) {
-        await connection.setLocalDescription(await connection.createOffer()); await gathered(connection);
-        if (epoch.current !== generation) return;
-        await api.callAction(session.id, 'offer', connection.localDescription!.sdp);
-      } else if (session.callee === email && session.offer && !session.answer) {
-        if (!connection.remoteDescription) await connection.setRemoteDescription({ type: 'offer', sdp: session.offer });
-        await connection.setLocalDescription(await connection.createAnswer()); await gathered(connection);
-        if (epoch.current !== generation) return;
-        await api.callAction(session.id, 'answer', connection.localDescription!.sdp);
-      } else if (session.caller === email && session.answer && !connection.remoteDescription) {
-        await connection.setRemoteDescription({ type: 'answer', sdp: session.answer });
-      }
+      const peer = prepare(session);
+      if (peer.signaling) continue;
+      peer.signaling = true;
+      void signal(session, peer, snapshot.channelId).catch(problem => {
+        if (peers.current.get(session.id) !== peer) return;
+        if (!(problem instanceof ApiError) || [400, 409].includes(problem.status)) peer.failed = true;
+      }).finally(() => { peer.signaling = false; });
     }
-    if (screen.current && peers.current.size !== previousSize) for (const peer of peers.current.values()) {
-      await constrainSender(peer.sender, screenProfile.current);
-    }
+    setReconnecting([...peers.current.values()].some(peer => retryAfter.current.has(peer.email)));
   }
   useEffect(() => {
-    active.current = true; let alive = true; let timer: number;
+    active.current = true; let alive = true; let timer: number; let delay = 1500;
     const tick = async () => {
       if (!alive) return;
       if (!working.current && current.current) {
         working.current = true; const generation = epoch.current;
-        try { const snapshot = await api.callRoom(current.current.channelId); if (alive && generation === epoch.current) await sync(snapshot, generation); }
-        catch (problem) { if (alive && generation === epoch.current) { errorRef.current(problem); await leave(); } }
+        try {
+          const snapshot = await api.callRoom(current.current.channelId);
+          if (alive && generation === epoch.current) { sync(snapshot, generation); delay = 1500; }
+        }
+        catch (problem) {
+          if (alive && generation === epoch.current && problem instanceof ApiError && [400, 401, 403, 404].includes(problem.status)) {
+            cleanup(); errorRef.current(problem);
+          } else delay = Math.min(delay * 2, 6000);
+        }
         finally { working.current = false; }
       }
-      if (alive) timer = window.setTimeout(tick, 1500);
+      if (alive) timer = window.setTimeout(tick, delay);
     };
     void tick();
     return () => { alive = false; active.current = false; clearTimeout(timer); const id = current.current?.channelId; cleanup(); if (id !== undefined) void api.leaveCallRoom(id).catch(() => {}); };
@@ -132,7 +156,7 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
       blank.current = canvas.captureStream(1); blank.current.getVideoTracks()[0].enabled = false;
       const result = await api.joinCallRoom(id);
       if (!active.current || epoch.current !== generation) { await api.leaveCallRoom(id); return; }
-      await sync(result, generation);
+      sync(result, generation);
     } catch (problem) { captured?.getTracks().forEach(track => track.stop()); await leave(); if (active.current) errorRef.current(problem); }
     finally { working.current = false; if (active.current) setBusy(false); }
   }
@@ -194,7 +218,7 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
     microphone.current = next; setMicrophoneStream(next); rememberMicrophone(id); previous.getTracks().forEach(track => track.stop());
   }
   const activateAudio = () => { void audio.current?.activate().catch(() => setAudioBlocked(true)); };
-  return { microphoneStream, changeMicrophone, audioBlocked, audioNotice, activateAudio, feedback, screenStarting, room, busy, muted, sharing, remote, preview: previewVisible ? preview : null, previewVisible, setPreviewVisible, join, leave, toggleMute, share };
+  return { reconnecting, microphoneStream, changeMicrophone, audioBlocked, audioNotice, activateAudio, feedback, screenStarting, room, busy, muted, sharing, remote, preview: previewVisible ? preview : null, previewVisible, setPreviewVisible, join, leave, toggleMute, share };
 }
 export type VoiceRoomController = ReturnType<typeof useVoiceRoomController>;
 import { configureScreenReceiver } from '../models/screenReceiver';

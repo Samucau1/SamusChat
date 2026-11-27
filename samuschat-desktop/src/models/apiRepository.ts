@@ -115,6 +115,7 @@ export class ApiRepository {
   unregisterDevice(fcmToken: string) { return this.request<void>(`/api/devices/unregister?fcmToken=${encodeURIComponent(fcmToken)}`, { method: 'DELETE' }); }
   joinCallRoom(id: number) { return this.post<VoiceRoom>(`/api/channels/${id}/call/join`); }
   callRoom(id: number) { return this.request<VoiceRoom>(`/api/channels/${id}/call`); }
+  reconnectRoomPeer(id: number, sessionId: string) { return this.post<boolean>(`/api/channels/${id}/call/sessions/${encodeURIComponent(sessionId)}/reconnect`); }
   leaveCallRoom(id: number) { return this.post<string>(`/api/channels/${id}/call/leave`); }
   history(conversation: { channelId?: number; contact?: string }, page = 0, signal?: AbortSignal) {
     const path = conversation.channelId !== undefined ? `/api/channels/${conversation.channelId}/messages?page=${page}&size=50` : `/api/direct-messages?contact=${encodeURIComponent(conversation.contact!)}&page=${page}`;

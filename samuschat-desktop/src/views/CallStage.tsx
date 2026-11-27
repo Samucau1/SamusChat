@@ -156,6 +156,7 @@ export function VoiceRoomPanel({ rooms, preferences, email, name, avatarUrl }: {
   });
   return <Stage title="Canal de chamada" status={`${room.participants.length}/${room.capacity} participantes`} participants={participants} preferences={preferences} locked={rooms.sharing || rooms.screenStarting} feedback={rooms.feedback}>
     {rooms.audioNotice && <span className="call-audio-notice" role="status">{rooms.audioNotice}</span>}
+    {rooms.reconnecting && <span className="call-audio-notice" role="status">Reconectando a mídia no canal…</span>}
     {rooms.audioBlocked && <button onClick={rooms.activateAudio}>Ativar áudio da transmissão</button>}
     <Action label={rooms.muted ? 'Ativar microfone do canal' : 'Silenciar microfone do canal'} icon="mic" off={rooms.muted} active={rooms.muted} onClick={rooms.toggleMute} />
     <Action label={rooms.sharing ? 'Parar transmissão do canal' : 'Compartilhar tela no canal'} icon="screen" active={rooms.sharing} disabled={!capture.supported || rooms.screenStarting} onClick={() => { void rooms.share(); }} />

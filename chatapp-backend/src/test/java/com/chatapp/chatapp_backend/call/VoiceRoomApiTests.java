@@ -53,6 +53,19 @@ class VoiceRoomApiTests {
         var ab=calls.active("a@room.test").stream().filter(c->c.getCaller().equals("b@room.test")).findFirst().orElseThrow();
         api.perform(get("/api/calls/"+ab.getId()).with(user("c@room.test"))).andExpect(status().isUnauthorized());
     }
+    @Test void reconnectReplacesOnlyOneLinkEvenWhenBothEndsRetry()throws Exception {
+        join("a");join("b");join("c");
+        var ab=calls.active("a@room.test").stream().filter(c->c.getCaller().equals("b@room.test")).findFirst().orElseThrow();
+        var otherLinks=calls.active("c@room.test").stream().map(CallSession::getId).toList();
+        var url="/api/channels/"+voiceId+"/call/sessions/"+ab.getId()+"/reconnect";
+        api.perform(post(url).with(user("c@room.test"))).andExpect(status().isUnauthorized());
+        for(var who:List.of("a","b")) api.perform(post(url).with(user(who+"@room.test"))).andExpect(status().isOk());
+        assertThat(ab.getState()).isEqualTo("ENDED");
+        assertThat(calls.count()).isEqualTo(4);
+        assertThat(calls.active("a@room.test")).hasSize(2);
+        assertThat(calls.active("c@room.test")).extracting(CallSession::getId).containsExactlyInAnyOrderElementsOf(otherLinks);
+        assertThat(presences.count()).isEqualTo(3);
+    }
     @Test void leaveEndsOnlyOwnLinksAndIsIdempotent()throws Exception {
         join("a");join("b");join("c");
         for(int i=0;i<2;i++)api.perform(post("/api/channels/"+voiceId+"/call/leave").with(user("c@room.test"))).andExpect(status().isOk());
