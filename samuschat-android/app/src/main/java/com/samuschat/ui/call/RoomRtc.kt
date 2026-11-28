@@ -16,7 +16,7 @@ import kotlin.coroutines.resumeWithException
 
 /** One capture/factory shared by the room's peer connections, including screen projection. */
 class RoomRtc(
-    private val context: Context, private val ice: List<IceServerConfig>,
+    private val context: Context, private var ice: List<IceServerConfig>,
     private val onConnection: (String, Boolean) -> Unit,
     private val onVideo: (String, VideoTrack) -> Unit,
     private val onRemoteSharing: (String, Boolean) -> Unit,
@@ -73,36 +73,40 @@ class RoomRtc(
             }
         }, 5000)
     }
+    fun refreshIce(fresh: List<IceServerConfig>) {
+        ice = fresh
+        for (link in peers.values) check(link.peer.setConfiguration(mediaConfiguration(fresh)))
+    }
     inner class Link(val id: String, caller: Boolean) {
         val candidates = java.util.concurrent.CopyOnWriteArrayList<GatheredCandidate>()
-        @Volatile var candidateAt = 0L
+        @Volatile var gatheringComplete = false
         var control: DataChannel? = null
         var deviceChannel: DataChannel? = null
         var sent = false
         var answerSet = false
         var localSdp: String? = null
         var disposed = false
+        internal val protection = VoiceProtection()
+        var retryAt = Long.MAX_VALUE
         var connected = false
         val peer: PeerConnection
         val screenSender: RtpSender
         init {
-            val config = PeerConnection.RTCConfiguration(ice.map { PeerConnection.IceServer.builder(it.urls).setUsername(it.username).setPassword(it.credential).createIceServer() })
-            config.sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
-            if (BuildConfig.CALLS_FORCE_RELAY) config.iceTransportsType = PeerConnection.IceTransportsType.RELAY
+            val config = mediaConfiguration(ice)
             peer = checkNotNull(factory.createPeerConnection(config, object : PeerConnection.Observer {
                 override fun onSignalingChange(state: PeerConnection.SignalingState) {}
                 override fun onIceConnectionChange(state: PeerConnection.IceConnectionState) {
-                    if (state == PeerConnection.IceConnectionState.FAILED) main.post { if (!closed && !disposed) onFailure("Falha de conexão no canal. Confira a rede e tente entrar novamente.") }
+                    if (state == PeerConnection.IceConnectionState.FAILED) main.post { if (!closed && !disposed) retryAt = android.os.SystemClock.elapsedRealtime() }
                 }
                 override fun onConnectionChange(state: PeerConnection.PeerConnectionState) { main.post { if (!closed && !disposed) {
                     connected = state == PeerConnection.PeerConnectionState.CONNECTED
-                    if (connected) applyScreenProfile()
+                    if (connected) { retryAt = Long.MAX_VALUE; applyScreenProfile() }
                     onConnection(id, connected)
-                    if (state == PeerConnection.PeerConnectionState.DISCONNECTED) main.postDelayed({ if (!closed && !disposed && !connected) onFailure("Conexão do canal perdida. Entre novamente.") }, 35000)
+                    if (state == PeerConnection.PeerConnectionState.DISCONNECTED) main.postDelayed({ if (!closed && !disposed && !connected) retryAt = android.os.SystemClock.elapsedRealtime() }, 35000)
                 } } }
                 override fun onIceConnectionReceivingChange(receiving: Boolean) {}
-                override fun onIceGatheringChange(state: PeerConnection.IceGatheringState) {}
-                override fun onIceCandidate(candidate: IceCandidate) { candidates.add(GatheredCandidate(candidate.sdpMLineIndex, candidate.sdp)); candidateAt = System.currentTimeMillis() }
+                override fun onIceGatheringChange(state: PeerConnection.IceGatheringState) { gatheringComplete = state == PeerConnection.IceGatheringState.COMPLETE }
+                override fun onIceCandidate(candidate: IceCandidate) { candidates.add(GatheredCandidate(candidate.sdpMLineIndex, candidate.sdp)) }
                 override fun onIceCandidatesRemoved(candidates: Array<out IceCandidate>) {}
                 override fun onAddStream(stream: MediaStream) {}
                 override fun onRemoveStream(stream: MediaStream) {}
@@ -170,7 +174,7 @@ class RoomRtc(
             localSdp?.let { return it }
             if (remoteOffer != null) set(SessionDescription(SessionDescription.Type.OFFER, remoteOffer), false)
             set(create(offer), true)
-            check(withTimeoutOrNull(15000) { while (!closed && !disposed && (candidates.isEmpty() || System.currentTimeMillis() - candidateAt < 1200)) delay(100); true } == true) { "Tempo de negociação do canal esgotado" }
+            awaitIceGathering { closed || disposed || gatheringComplete }
             check(!closed && !disposed)
             return completeSdp(peer.localDescription.description, candidates.toList()).also { check(it.contains("a=candidate:")); localSdp = it }
         }
@@ -229,7 +233,7 @@ class RoomRtc(
         if (closed) return
         peers.values.forEach { link -> link.peer.getStats { report ->
             val (local, remote) = audioLevels(report)
-            main.post { if (!closed && !link.disposed) callback(link.id, local, remote) }
+            main.post { if (!closed && !link.disposed) { link.protection.sample(report, link.screenSender, screenSizing?.profile); callback(link.id, local, remote) } }
         } }
     }
     fun close() {

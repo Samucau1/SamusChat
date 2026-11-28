@@ -4,6 +4,15 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CompleteSdpTest {
+    @Test fun slowRelayHasTimeToArriveAfterHostCandidate() = kotlinx.coroutines.test.runTest {
+        awaitIceGathering { testScheduler.currentTime >= 3100 }
+        assertEquals(3100L, testScheduler.currentTime)
+    }
+
+    @Test fun stalledInterfaceDoesNotBlockSignalingIndefinitely() = kotlinx.coroutines.test.runTest {
+        awaitIceGathering { false }
+        assertEquals(15000L, testScheduler.currentTime)
+    }
     @Test fun gatheredCandidatesBelongToTheirMediaSections() {
         val result = completeSdp("v=0\r\nm=audio 9 RTP/SAVPF 111\r\nm=video 9 RTP/SAVPF 96\r\n", listOf(GatheredCandidate(0,"candidate:audio"),GatheredCandidate(1,"candidate:video")))
         assertTrue(result.indexOf("a=candidate:audio") < result.indexOf("m=video"))

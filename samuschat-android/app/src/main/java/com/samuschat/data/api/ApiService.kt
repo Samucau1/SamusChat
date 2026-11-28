@@ -32,6 +32,7 @@ interface ApiService {
     @POST("api/auth/password/reset") suspend fun resetPassword(@Body request: RecoveryReset): Response<ApiResponse<String>>
     @POST("api/auth/google") suspend fun googleLogin(@Body request: GoogleLogin): Response<ApiResponse<TokenData>>
     @POST("api/channels/{id}/call/join") suspend fun joinCallRoom(@Header("Authorization") token: String, @Path("id") id: Long): Response<ApiResponse<com.samuschat.ui.call.CallRoom>>
+    @POST("api/channels/{id}/call/sessions/{session}/reconnect") suspend fun reconnectRoomPeer(@Header("Authorization") token: String, @Path("id") id: Long, @Path("session") session: String): Response<ApiResponse<Boolean>>
     @GET("api/channels/{id}/call") suspend fun callRoom(@Header("Authorization") token: String, @Path("id") id: Long): Response<ApiResponse<com.samuschat.ui.call.CallRoom>>
     @POST("api/channels/{id}/call/leave") suspend fun leaveCallRoom(@Header("Authorization") token: String, @Path("id") id: Long): Response<ApiResponse<String>>
     @POST("api/servers/{id}/channels") suspend fun createChannel(@Header("Authorization") token: String, @Path("id") id: Long, @Body request: ChannelRequest): Response<ApiResponse<Channel>>

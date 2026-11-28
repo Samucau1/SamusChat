@@ -1,16 +1,43 @@
 import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { constrainScreen, constrainSender, encoderSample, lowerScreenProfile, screenMetrics, screenUnderPressure, type EncoderSample, type ScreenMetrics, type ScreenProfile } from '../models/screenShare';
-export function useScreenFeedback(active: boolean, automatic: boolean, profile: MutableRefObject<ScreenProfile>, getTrack: () => MediaStreamTrack | undefined, getSenders: () => RTCRtpSender[]) {
+export function useScreenFeedback(active: boolean, automatic: boolean, profile: MutableRefObject<ScreenProfile>, getTrack: () => MediaStreamTrack | undefined, getSenders: () => RTCRtpSender[], getPeers: () => RTCPeerConnection[]) {
   const [feedback, setFeedback] = useState<{ profile: ScreenProfile; metrics?: ScreenMetrics; notice?: string } | null>(null);
-  const options = useRef({ automatic, getTrack, getSenders }); options.current = { automatic, getTrack, getSenders };
+  const options = useRef({ automatic, getTrack, getSenders, getPeers }); options.current = { automatic, getTrack, getSenders, getPeers };
   useEffect(() => {
     if (!active) { setFeedback(null); return; }
     let alive = true, timer: number, pressure = 0, cooldown = 0;
+    const protection = new WeakMap<RTCPeerConnection, { timestamp: number; bad: number; good: number; level: number }>();
+    async function protectVoice(connection: RTCPeerConnection) {
+      const video = connection.getSenders().find(sender => sender.track?.kind === 'video');
+      if (!video) return;
+      const report = await connection.getStats();
+      if (!alive || !options.current.getPeers().includes(connection)) return;
+      const state = protection.get(connection) ?? { timestamp: -1, bad: 0, good: 0, level: 0 };
+      report.forEach(item => {
+        if (item.type !== 'remote-inbound-rtp' || item.kind !== 'audio' || item.timestamp <= state.timestamp ||
+            (item.fractionLost === undefined && item.jitter === undefined)) return;
+        state.timestamp = item.timestamp;
+        const impaired = item.fractionLost >= 0.04 || item.jitter >= 0.05;
+        state.bad = impaired ? state.bad + 1 : 0;
+        state.good = impaired ? 0 : state.good + 1;
+      });
+      if (!options.current.automatic) state.level = 0;
+      else if (state.bad >= 3) { state.level = Math.min(3, state.level + 1); state.bad = 0; }
+      else if (state.good >= 15) { state.level = Math.max(0, state.level - 1); state.good = 0; }
+      protection.set(connection, state);
+      const target = Math.round(profile.current.maxBitrate / (1 + state.level));
+      const params = video.getParameters();
+      if (!params.encodings?.length || params.encodings.every(e => e.maxBitrate === target)) return;
+      for (const encoding of params.encodings) encoding.maxBitrate = target;
+      await video.setParameters(params);
+    }
     let previous = new Map<RTCRtpSender, EncoderSample>();
     setFeedback({ profile: profile.current });
     const tick = async () => {
       if (!alive) return;
       try {
+        await Promise.allSettled(options.current.getPeers().map(protectVoice));
+        if (!alive) return;
         const senders = options.current.getSenders();
         const reports = await Promise.allSettled(senders.map(async sender => ({ sender, sample: encoderSample(await sender.getStats()) })));
         if (!alive) return;

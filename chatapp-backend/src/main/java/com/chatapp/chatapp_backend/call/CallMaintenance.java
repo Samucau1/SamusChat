@@ -13,7 +13,7 @@ public class CallMaintenance {
     @Scheduled(initialDelay=30000, fixedDelay=30000) @Transactional
     public void clean() {
         var now=Instant.now();
-        calls.expireAbandoned(now.minusSeconds(45),now.minusSeconds(105),now.minusSeconds(45));
+        calls.expireAbandoned(now.minusSeconds(45),now.minusSeconds(105),now.minusSeconds(45),now.minusSeconds(CallRules.ACTIVE_GRACE_SECONDS));
         calls.deleteOld(now.minusSeconds(86400));
     }
 }

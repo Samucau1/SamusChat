@@ -13,8 +13,8 @@ public interface CallRepository extends JpaRepository<CallSession,String> {
     List<CallSession> active(@Param("email") String email);
 
     @Modifying
-    @Query("update CallSession c set c.state='EXPIRED', c.offer=null, c.answer=null where c.state in ('RINGING','CONNECTING','ACTIVE') and ((c.state='RINGING' and c.createdAt<:ring) or (c.state='CONNECTING' and c.createdAt<:connecting) or (c.state<>'RINGING' and (c.callerSeen<:heartbeat or c.calleeSeen<:heartbeat)))")
-    int expireAbandoned(@Param("ring") java.time.Instant ring, @Param("connecting") java.time.Instant connecting, @Param("heartbeat") java.time.Instant heartbeat);
+    @Query("update CallSession c set c.state='EXPIRED', c.offer=null, c.answer=null where c.state in ('RINGING','CONNECTING','ACTIVE') and ((c.state='RINGING' and c.createdAt<:ring) or (c.state='CONNECTING' and c.createdAt<:connecting) or (c.state='CONNECTING' and (c.callerSeen<:heartbeat or c.calleeSeen<:heartbeat)) or (c.state='ACTIVE' and (c.callerSeen<:activeHeartbeat or c.calleeSeen<:activeHeartbeat)))")
+    int expireAbandoned(@Param("ring") java.time.Instant ring, @Param("connecting") java.time.Instant connecting, @Param("heartbeat") java.time.Instant heartbeat, @Param("activeHeartbeat") java.time.Instant activeHeartbeat);
 
     @Modifying
     @Query("delete from CallSession c where c.state in ('ENDED','DECLINED','EXPIRED') and c.createdAt<:before")

@@ -83,8 +83,15 @@ public class CallService {
                 c.setState("DECLINED");
             }
             case "end" -> c.setState("ENDED");
+            case "restart" -> {
+                if(c.getChannelId()!=null)throw new IllegalArgumentException("Use a reconexao do canal");
+                // Compare the previous answer under the call lock so duplicate requests are harmless.
+                if("ACTIVE".equals(c.getState()) && sdp!=null && sdp.equals(c.getAnswer())) {
+                    c.setOffer(null);c.setAnswer(null);
+                }
+            }
             case "offer" -> {
-                if(!email.equals(c.getCaller()) || !c.getState().equals("CONNECTING"))throw new IllegalArgumentException("Oferta invalida");
+                if(!email.equals(c.getCaller()) || !(c.getState().equals("CONNECTING") || c.getState().equals("ACTIVE") && c.getAnswer()==null))throw new IllegalArgumentException("Oferta invalida");
                 CallRules.sdp(sdp,"offer");
                 if(c.getOffer()!=null && !c.getOffer().equals(sdp))throw new IllegalArgumentException("Oferta ja enviada");
                 c.setOffer(sdp);

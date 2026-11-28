@@ -45,6 +45,16 @@ class CallApiTests {
         action("a","end",null).andExpect(jsonPath("$.data.state").value("ENDED")).andExpect(jsonPath("$.data.offer").doesNotExist());
         action("b","end",null).andExpect(jsonPath("$.data.state").value("ENDED"));
     }
+    @Test void eitherParticipantCanRestartOnlyTheCurrentNegotiation() throws Exception {
+        String offer = "v=0\nm=audio old offer", answer = "v=0\nm=audio old answer";
+        invite();action("b","accept",null);action("a","offer",offer);action("b","answer",answer);
+        action("outsider","restart",answer).andExpect(status().isUnauthorized());
+        action("b","restart",answer).andExpect(jsonPath("$.data.answer").doesNotExist());
+        action("a","offer",offer+" new").andExpect(status().isOk());
+        action("a","restart",answer).andExpect(jsonPath("$.data.offer").value(offer+" new"));
+        action("b","answer",answer+" new").andExpect(jsonPath("$.data.state").value("ACTIVE"));
+        action("a","restart",answer).andExpect(jsonPath("$.data.answer").value(answer+" new"));
+    }
     @Test void rejectsOutsiderAndCallerAccept()throws Exception{
         invite();api.perform(get("/api/calls/"+id).with(user("outsider@call.test"))).andExpect(status().isUnauthorized());
         action("outsider","end",null).andExpect(status().isUnauthorized());action("a","accept",null).andExpect(status().isUnauthorized());

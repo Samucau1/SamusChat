@@ -8,10 +8,11 @@ class IceConfigurationTest {
     @Test void credentialsAreExpiringAndDoNotExposeSharedSecret() {
         var config=new IceConfiguration();
         ReflectionTestUtils.setField(config,"stun","");
-        ReflectionTestUtils.setField(config,"turn","turn:example.test:3478");
+        ReflectionTestUtils.setField(config,"turn","turn:example.test:3478, turns:example.test:443?transport=tcp");
         ReflectionTestUtils.setField(config,"secret","test-secret");
         var first=config.servers("first@example.test").getFirst();
         var second=config.servers("second@example.test").getFirst();
+        assertThat(first.urls()).containsExactly("turn:example.test:3478","turns:example.test:443?transport=tcp");
         assertThat(first.credential()).isNotEqualTo("test-secret").isNotEqualTo(second.credential());
         assertThat(first.username()).doesNotContain("first@example.test");
         long expiry=Long.parseLong(first.username().split(":")[0]);

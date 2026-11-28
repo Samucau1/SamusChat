@@ -1,9 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
 
-async function connectCall(page: Page) {
+async function connectCall(page: Page, automatic = false) {
   await page.context().grantPermissions(['microphone', 'camera']);
   await page.goto('/');
-  await page.evaluate(async () => {
+  await page.evaluate(async automatic => {
     const reactPath = '/node_modules/.vite/deps/react.js';
     const domPath = '/node_modules/.vite/deps/react-dom_client.js';
     const controllerPath = '/src/controllers/useCallController.ts';
@@ -17,20 +17,26 @@ async function connectCall(page: Page) {
     const { createRoot } = dom.default ?? dom;
     const probe = (window as any).cameraProbe = { controllers: {}, errors: [] };
     let session: any = null;
+    probe.peers = [];
+    window.RTCPeerConnection = class extends RTCPeerConnection {
+      constructor(config?: RTCConfiguration) { super(config); probe.peers.push(this); }
+    };
     const api = {
-      ice: async () => [],
+      ice: async () => { probe.iceRequests = (probe.iceRequests ?? 0) + 1; return []; },
       calls: async () => session ? [session] : [],
-      call: async () => session,
+      call: async () => { if (probe.failPoll) { probe.failPoll = false; throw new Error("offline"); } return session; },
       invite: async () => session = { id: 'camera-test', caller: 'pc', callee: 'mobile', channelId: null, state: 'RINGING' },
       callAction: async (_id: string, action: string, sdp?: string) => {
         session = { ...session };
-        if (action === 'accept') session.state = 'ACTIVE';
+        if (action === 'accept') session.state = 'CONNECTING';
+        if (action === 'restart' && session.answer === sdp) { session.offer = null; session.answer = null; }
+        if (action === 'answer') session.state = 'ACTIVE';
         if (action === 'offer' || action === 'answer') session[action] = sdp;
         if (action === 'end') session.state = 'ENDED';
         return session;
       },
     };
-    const preferences = { profile: screenProfile(750, 30), automatic: false, hardware: null, choose() {} };
+    const preferences = { profile: screenProfile(750, 30), automatic, hardware: null, choose() {} };
     const container = document.createElement('div');
     container.style.cssText = 'position:fixed;inset:0;z-index:10000;background:#111;overflow:auto';
     document.body.append(container);
@@ -45,7 +51,7 @@ async function connectCall(page: Page) {
     root.render(React.createElement(React.Fragment, null,
       React.createElement(Client, { email: 'pc' }), React.createElement(Client, { email: 'mobile' })));
     probe.close = () => { root.unmount(); container.remove(); };
-  });
+  }, automatic);
   await expect.poll(() => page.evaluate(() => !!(window as any).cameraProbe.controllers.pc)).toBe(true);
   await page.evaluate(() => (window as any).cameraProbe.controllers.pc.invite('mobile'));
   await expect(page.locator('[data-client=mobile]').getByRole('button', { name: 'Aceitar', exact: true })).toBeVisible();
@@ -54,6 +60,48 @@ async function connectCall(page: Page) {
     .every((controller: any) => controller.status === 'Em chamada')), { timeout: 20000 }).toBe(true);
 }
 
+test('renova ICE e retoma chamada direta com o mesmo microfone', async ({ page }) => {
+  await connectCall(page);
+  await page.evaluate(() => {
+    const probe = (window as any).cameraProbe;
+    probe.failPoll = true;
+    probe.initialTrack = probe.controllers.pc.microphoneStream.getAudioTracks()[0];
+    probe.initialOffer = probe.controllers.pc.call.offer;
+    probe.controllers.pc.toggleMute();
+    const peer = probe.peers[0];
+    Object.defineProperty(peer, 'connectionState', { configurable: true, value: 'failed' });
+    peer.dispatchEvent(new Event('connectionstatechange'));
+    delete peer.connectionState;
+  });
+  await expect.poll(() => page.evaluate(() => {
+    const probe = (window as any).cameraProbe, pc = probe.controllers.pc;
+    return pc.call?.offer && pc.call.offer !== probe.initialOffer && pc.call.answer &&
+      pc.status === 'Em chamada' && pc.muted && probe.iceRequests >= 4 &&
+      pc.microphoneStream.getAudioTracks()[0] === probe.initialTrack;
+  }), { timeout: 35000 }).toBe(true);
+});
+
+test('protege voz com perda sustentada e restaura o bitrate após recuperação', async ({ page }) => {
+  test.setTimeout(90000);
+  await connectCall(page, true);
+  await page.evaluate(() => {
+    const probe = (window as any).cameraProbe;
+    const pc = probe.peers[0] as RTCPeerConnection;
+    const video = pc.getSenders().find(sender => sender.track?.kind === 'video')!;
+    probe.bitrate = () => video.getParameters().encodings[0].maxBitrate;
+    probe.loss = 0.08;
+    Object.defineProperty(pc, 'getStats', { value: async () => new Map([['audio', {
+      type: 'remote-inbound-rtp', kind: 'audio', timestamp: performance.now(), fractionLost: probe.loss, jitter: 0.005
+    }]]) });
+    const canvas = document.createElement('canvas'); canvas.width = 1334; canvas.height = 750;
+    canvas.getContext('2d')!.fillRect(0, 0, 1334, 750);
+    navigator.mediaDevices.getDisplayMedia = async () => canvas.captureStream(30);
+  });
+  await page.locator('[data-client=pc]').getByRole('button', { name: 'Compartilhar tela', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => (window as any).cameraProbe.bitrate()), { timeout: 16000 }).toBe(1250000);
+  await page.evaluate(() => { (window as any).cameraProbe.loss = 0; });
+  await expect.poll(() => page.evaluate(() => (window as any).cameraProbe.bitrate()), { timeout: 45000 }).toBe(2500000);
+});
 test.afterEach(async ({ page }) => {
   await page.evaluate(() => (window as any).cameraProbe?.close());
 });

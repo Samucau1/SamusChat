@@ -21,7 +21,7 @@ public class IceConfiguration {
             // Coturn REST credentials: short-lived and account-specific, never expose the shared secret.
             String user=(Instant.now().getEpochSecond()+3600)+":"+UUID.nameUUIDFromBytes(email.getBytes(StandardCharsets.UTF_8));
             var mac=Mac.getInstance("HmacSHA1");mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8),"HmacSHA1"));
-            result.add(new Server(List.of(turn),user,Base64.getEncoder().encodeToString(mac.doFinal(user.getBytes(StandardCharsets.UTF_8)))));
+            result.add(new Server(Arrays.stream(turn.split(",")).map(String::trim).filter(url -> !url.isEmpty()).distinct().toList(),user,Base64.getEncoder().encodeToString(mac.doFinal(user.getBytes(StandardCharsets.UTF_8)))));
         }catch(Exception e){throw new IllegalStateException("Configuracao TURN invalida",e);}
         return result;
     }

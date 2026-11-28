@@ -4,7 +4,6 @@ import android.content.Context
 import android.media.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.util.concurrent.ArrayBlockingQueue
 
 /** Versioned packets: magic + unsigned sequence + one 20 ms Opus frame. */
 object ScreenAudioWire {
@@ -58,12 +57,21 @@ class ScreenOpusEncoder(private val packetSequence: java.util.concurrent.atomic.
 }
 
 class ScreenOpusPlayer(private val context: Context) : AutoCloseable {
-    private val queue = ArrayBlockingQueue<ByteArray>(5)
+    private val queue = ScreenAudioBuffer()
+    private val available = Object()
+    private fun nextPacket(): ByteArray? = synchronized(available) {
+        while (running) {
+            queue.poll(android.os.SystemClock.elapsedRealtime())?.let { return@synchronized it }
+            available.wait(if (queue.isEmpty()) 0L else 5L)
+        }
+        null
+    }
     @Volatile private var running = true
     private val thread = Thread({
         var codec: MediaCodec? = null
         var player: AudioTrack? = null
         try {
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO)
             codec = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_AUDIO_OPUS)
             val format = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_OPUS, 48000, 1)
             format.setByteBuffer("csd-0", ByteBuffer.wrap(opusHeader()))
@@ -71,16 +79,17 @@ class ScreenOpusPlayer(private val context: Context) : AutoCloseable {
             format.setByteBuffer("csd-2", ByteBuffer.allocate(8).order(ByteOrder.nativeOrder()).putLong(80_000_000).apply { flip() })
             codec.configure(format, null, null, 0); codec.start()
             val info = MediaCodec.BufferInfo()
-            var last = -1L; var frames = 0L
+            var frames = 0L
+            var pending: ByteArray? = null
             while (running) {
-                val packet = queue.take()
+                val packet = pending ?: nextPacket() ?: break
                 val sequence = ByteBuffer.wrap(packet).order(ByteOrder.LITTLE_ENDIAN).getInt(4).toLong() and 0xffffffffL
-                if (sequence <= last) continue
-                last = sequence
                 val input = codec.dequeueInputBuffer(5000)
-                if (input < 0) continue
-                codec.getInputBuffer(input)!!.apply { clear(); put(packet, 8, packet.size - 8) }
-                codec.queueInputBuffer(input, 0, packet.size - 8, sequence * 20000L, 0)
+                if (input >= 0) {
+                    codec.getInputBuffer(input)!!.apply { clear(); put(packet, 8, packet.size - 8) }
+                    codec.queueInputBuffer(input, 0, packet.size - 8, sequence * 20000L, 0)
+                    pending = null
+                } else pending = packet // Drain output before retrying this input.
                 while (running) {
                     val output = codec.dequeueOutputBuffer(info, 0)
                     if (output == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
@@ -98,9 +107,12 @@ class ScreenOpusPlayer(private val context: Context) : AutoCloseable {
                         if (info.size > 0) {
                             val buffer = codec.getOutputBuffer(output)!!
                             buffer.position(info.offset); buffer.limit(info.offset + info.size)
-                            player?.write(buffer, info.size, AudioTrack.WRITE_BLOCKING)
+                            while (running && buffer.hasRemaining()) {
+                                val written = player?.write(buffer, buffer.remaining(), AudioTrack.WRITE_BLOCKING) ?: break
+                                if (written <= 0) break
+                            }
                             frames++
-                            if (com.samuschat.BuildConfig.DEBUG && frames % 50 == 0L) android.util.Log.i("CallStats", "screenOpusFrames=$frames head=${player?.playbackHeadPosition} route=${player?.routedDevice?.type}")
+                            if (com.samuschat.BuildConfig.DEBUG && frames % 50 == 0L) android.util.Log.i("CallStats", "screenOpusFrames=$frames head=${player?.playbackHeadPosition} route=${player?.routedDevice?.type} underruns=${player?.underrunCount}")
                         }
                     } finally { codec.releaseOutputBuffer(output, false) }
                 }
@@ -109,6 +121,14 @@ class ScreenOpusPlayer(private val context: Context) : AutoCloseable {
         catch (failure: Exception) { if (com.samuschat.BuildConfig.DEBUG) android.util.Log.e("CallStats", "screenOpusDecodeFailed", failure) }
         finally { running = false; runCatching { player?.stop() }; player?.release(); runCatching { codec?.stop() }; codec?.release() }
     }, "screen-opus-playback").apply { start() }
-    fun receive(bytes: ByteArray) { if (running && ScreenAudioWire.isOpus(bytes) && !queue.offer(bytes)) { queue.poll(); queue.offer(bytes) } }
-    override fun close() { running = false; queue.clear(); thread.interrupt(); thread.join(1000) }
+    fun receive(bytes: ByteArray) {
+        if (!ScreenAudioWire.isOpus(bytes)) return
+        val sequence = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt(4).toLong() and 0xffffffffL
+        synchronized(available) {
+            if (!running) return
+            queue.offer(sequence, bytes, android.os.SystemClock.elapsedRealtime())
+            available.notifyAll()
+        }
+    }
+    override fun close() { running = false; thread.interrupt(); thread.join(1000) }
 }

@@ -13,8 +13,8 @@ android {
         manifestPlaceholders["appLabel"] = "SamusChat"
         minSdk = 26
         targetSdk = 35
-        versionCode = 10
-        versionName = "1.4.3-beta"
+        versionCode = 13
+        versionName = "1.4.6-beta"
         val apiUrl = providers.gradleProperty("apiBaseUrl").getOrElse("https://samuschat-beta.onrender.com/")
         val parsedApiUrl = URI(apiUrl)
         require(parsedApiUrl.scheme in listOf("http", "https") && parsedApiUrl.host != null && parsedApiUrl.userInfo == null && parsedApiUrl.query == null && parsedApiUrl.fragment == null && apiUrl.endsWith('/'))

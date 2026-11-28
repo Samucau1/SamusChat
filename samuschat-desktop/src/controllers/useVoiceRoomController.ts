@@ -30,13 +30,14 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
   const [audioNotice, setAudioNotice] = useState('');
   const [reconnecting, setReconnecting] = useState(false);
   const [microphoneStream, setMicrophoneStream] = useState<MediaStream | null>(null);
+  const refreshIceAt = useRef(0);
   const ice = useRef<RTCIceServer[]>([]);
   const epoch = useRef(0);
   const active = useRef(false);
   const working = useRef(false);
   const sharingWorking = useRef(false);
   const errorRef = useRef(onError); errorRef.current = onError;
-  const feedback = useScreenFeedback(sharing, preferences.automatic, screenProfile, () => screen.current?.getVideoTracks()[0], () => [...peers.current.values()].map(item => item.sender));
+  const feedback = useScreenFeedback(sharing, preferences.automatic, screenProfile, () => screen.current?.getVideoTracks()[0], () => [...peers.current.values()].map(item => item.sender), () => [...peers.current.values()].map(item => item.connection));
   const updateRemote = () => setRemote([...peers.current].map(([id, peer]) => ({ id, email: peer.email, stream: new MediaStream(peer.stream.getTracks()), sharing: peer.sharing })));
   function cleanup() {
     audio.current?.close(); audio.current = null;
@@ -89,6 +90,9 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
     if (peer.failed || (peer.disconnectedAt && Date.now() - peer.disconnectedAt >= 10000)) {
       if (Date.now() < (retryAfter.current.get(peer.email) ?? 0)) return;
       retryAfter.current.set(peer.email, Date.now() + 15000);
+      const fresh = await api.ice();
+      if (!isCurrent()) return;
+      ice.current = fresh;
       await api.reconnectRoomPeer(channelId, session.id);
     } else if (session.caller === email && !session.offer) {
       if (!connection.localDescription) await connection.setLocalDescription(await connection.createOffer());
@@ -126,7 +130,18 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
       if (!working.current && current.current) {
         working.current = true; const generation = epoch.current;
         try {
-          const snapshot = await api.callRoom(current.current.channelId);
+          const id = current.current.channelId;
+          const snapshot = await api.callRoom(id).catch(problem => {
+            if (alive && generation === epoch.current && problem instanceof ApiError && problem.message === 'Entre no canal primeiro') return api.joinCallRoom(id);
+            throw problem;
+          });
+          if (alive && generation === epoch.current && Date.now() >= refreshIceAt.current) {
+            const fresh = await api.ice();
+            if (alive && generation === epoch.current) {
+              ice.current = fresh; refreshIceAt.current = Date.now() + 45 * 60000;
+              for (const { connection } of peers.current.values()) connection.setConfiguration({ ...connection.getConfiguration(), iceServers: fresh });
+            }
+          }
           if (alive && generation === epoch.current) { sync(snapshot, generation); delay = 1500; }
         }
         catch (problem) {
@@ -151,7 +166,7 @@ export function useVoiceRoomController(api: ApiRepository, email: string, onErro
       captured = await captureMicrophone();
       const config = await api.ice();
       if (!active.current || epoch.current !== generation) { captured.getTracks().forEach(track => track.stop()); return; }
-      microphone.current = captured; setMicrophoneStream(captured); ice.current = config;
+      microphone.current = captured; setMicrophoneStream(captured); ice.current = config; refreshIceAt.current = Date.now() + 45 * 60000;
       const canvas = document.createElement('canvas'); canvas.width = 16; canvas.height = 9; canvas.getContext('2d')?.fillRect(0, 0, 16, 9);
       blank.current = canvas.captureStream(1); blank.current.getVideoTracks()[0].enabled = false;
       const result = await api.joinCallRoom(id);

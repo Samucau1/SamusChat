@@ -55,7 +55,7 @@ class RtcCall(
     private val deviceAudio = DeviceAudio(context)
     private val screenSender: RtpSender
     private val candidates = java.util.concurrent.CopyOnWriteArrayList<GatheredCandidate>()
-    @Volatile private var lastCandidateAt = 0L
+    @Volatile private var gatheringComplete = false
 
     init {
         PeerConnectionFactory.initialize(PeerConnectionFactory.InitializationOptions.builder(context).createInitializationOptions())
@@ -64,9 +64,7 @@ class RtcCall(
             .setVideoEncoderFactory(DefaultVideoEncoderFactory(egl.eglBaseContext, true, true))
             .setVideoDecoderFactory(DefaultVideoDecoderFactory(egl.eglBaseContext)).createPeerConnectionFactory()
         audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
-        val config = PeerConnection.RTCConfiguration(ice.map { PeerConnection.IceServer.builder(it.urls).setUsername(it.username).setPassword(it.credential).createIceServer() })
-        config.sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
-        if (BuildConfig.CALLS_FORCE_RELAY) config.iceTransportsType = PeerConnection.IceTransportsType.RELAY
+        val config = mediaConfiguration(ice)
         peer = checkNotNull(factory.createPeerConnection(config, object : PeerConnection.Observer {
             override fun onSignalingChange(state: PeerConnection.SignalingState) {}
             override fun onIceConnectionChange(state: PeerConnection.IceConnectionState) {
@@ -76,10 +74,9 @@ class RtcCall(
                 main.post { if (!closed) onConnection(state == PeerConnection.PeerConnectionState.CONNECTED) }
             }
             override fun onIceConnectionReceivingChange(receiving: Boolean) {}
-            override fun onIceGatheringChange(state: PeerConnection.IceGatheringState) {}
+            override fun onIceGatheringChange(state: PeerConnection.IceGatheringState) { gatheringComplete = state == PeerConnection.IceGatheringState.COMPLETE }
             override fun onIceCandidate(candidate: IceCandidate) {
                 candidates.add(GatheredCandidate(candidate.sdpMLineIndex, candidate.sdp))
-                lastCandidateAt = System.currentTimeMillis()
                 if (BuildConfig.DEBUG) android.util.Log.i("CallStats", "gatheredCandidate media=${candidate.sdpMLineIndex}")
             }
             override fun onIceCandidatesRemoved(candidates: Array<out IceCandidate>) {}
@@ -152,6 +149,10 @@ class RtcCall(
         deviceAudio.advertise(value)
     }
 
+    fun refreshIce(ice: List<IceServerConfig>) { check(peer.setConfiguration(mediaConfiguration(ice))) }
+    private val protection = VoiceProtection()
+    private var restarting = false
+    fun beginRestart() { restarting = true; candidates.clear(); gatheringComplete = false }
     private suspend fun create(offer: Boolean): SessionDescription = suspendCancellableCoroutine { continuation ->
         val observer = object : SdpObserver {
             override fun onCreateSuccess(sdp: SessionDescription) { if (continuation.isActive) continuation.resume(sdp) }
@@ -159,7 +160,7 @@ class RtcCall(
             override fun onSetSuccess() {}
             override fun onSetFailure(error: String) {}
         }
-        if (offer) peer.createOffer(observer, MediaConstraints()) else peer.createAnswer(observer, MediaConstraints())
+        if (offer) peer.createOffer(observer, MediaConstraints().apply { if (restarting) mandatory.add(MediaConstraints.KeyValuePair("IceRestart", "true")) }) else peer.createAnswer(observer, MediaConstraints())
     }
     private suspend fun set(sdp: SessionDescription, local: Boolean): Unit = suspendCancellableCoroutine { continuation ->
         val observer = object : SdpObserver {
@@ -176,18 +177,12 @@ class RtcCall(
     private suspend fun localDescription(offer: Boolean): String {
         check(!closed) { "Chamada encerrada" }
         set(create(offer), true)
-        // Some interfaces continue gathering after a usable TURN candidate is available.
-        // Non-trickle signaling can proceed after a quiet interval; do not wait forever on an unreachable interface.
-        check(withTimeoutOrNull(15000) {
-            while (!closed && (candidates.isEmpty() || System.currentTimeMillis() - lastCandidateAt < 1200)) delay(100)
-            true
-        } == true) { "Tempo de negociação da chamada esgotado" }
-        check(!closed) { "Chamada encerrada" }
-        delay(200)
+        awaitIceGathering { closed || gatheringComplete }
         check(!closed) { "Chamada encerrada" }
         val sdp = completeSdp(peer.localDescription.description, candidates.toList())
         if (BuildConfig.DEBUG) android.util.Log.i("CallStats", "gatheringComplete candidates=${candidates.size} sdpHasCandidates=${sdp.contains("a=candidate:")}")
         check(sdp.contains("a=candidate:")) { "Nenhum caminho de mídia disponível. Verifique a configuração TURN." }
+        restarting = false
         return sdp
     }
     // Keep AudioRecord running: rapid track enable/disable can race its native restart.
@@ -305,7 +300,7 @@ class RtcCall(
         if (closed) return
         peer.getStats { report ->
             val (local, remote) = audioLevels(report)
-            main.post { if (!closed) callback(local, remote) }
+            main.post { if (!closed) { protection.sample(report, screenSender, screenSizing?.profile); callback(local, remote) } }
         }
     }
     fun close() {

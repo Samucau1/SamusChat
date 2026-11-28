@@ -5,7 +5,7 @@ import { captureMicrophone, rememberMicrophone } from '../models/microphone';
 import { useScreenFeedback } from './useScreenFeedback';
 import type { ScreenPreferences } from './useScreenPreferences';
 import { useEffect, useRef, useState } from 'react';
-import { ApiRepository, type CallSession } from '../models/apiRepository';
+import { ApiError, ApiRepository, type CallSession } from '../models/apiRepository';
 import { constrainScreen, constrainSender, captureScreen, screenShareError, preferEfficientEncoder } from '../models/screenShare';
 
 const terminal = (state: string) => ['ENDED', 'DECLINED', 'EXPIRED'].includes(state);
@@ -55,12 +55,16 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
   const control = useRef<RTCDataChannel | null>(null);
   const alive = useRef(true);
   const generation = useRef(0);
+  const disconnectedAt = useRef(0);
+  const retryAt = useRef(0);
+  const refreshIceAt = useRef(0);
   const working = useRef(false);
   const errorRef = useRef(onError); errorRef.current = onError;
-  const feedback = useScreenFeedback(sharing, preferences.automatic, screenProfile, () => screen.current?.getVideoTracks()[0], () => videoSender.current ? [videoSender.current] : []);
+  const feedback = useScreenFeedback(sharing, preferences.automatic, screenProfile, () => screen.current?.getVideoTracks()[0], () => videoSender.current ? [videoSender.current] : [], () => peer.current ? [peer.current] : []);
   function update(value: CallSession | null) { ref.current = value; if (alive.current) setCall(value); }
   function cleanup() {
     audio.current?.close(); audio.current = null;
+    disconnectedAt.current = retryAt.current = 0;
     generation.current++; peer.current?.close(); peer.current = null;
     for (const stream of [microphone.current, screen.current, placeholder.current, camera.current]) stream?.getTracks().forEach(track => track.stop());
     camera.current = null;
@@ -93,6 +97,7 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
     microphone.current = stream; setMicrophoneStream(stream);
     const iceServers = await api.ice();
     if (!alive.current || currentGeneration !== generation.current) throw new Error('Chamada encerrada.');
+    refreshIceAt.current = Date.now() + 45 * 60000;
     const connection = new RTCPeerConnection({ iceServers }); peer.current = connection;
     connection.addTrack(stream.getAudioTracks()[0], stream);
     // Negotiate a video track up front, as the Android client does, so sharing
@@ -116,7 +121,10 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
     connection.onconnectionstatechange = () => {
       if (!alive.current || peer.current !== connection) return;
       setStatus(connection.connectionState === 'connected' ? 'Em chamada' : connection.connectionState === 'disconnected' ? 'Conexão interrompida' : 'Conectando');
-      if (connection.connectionState === 'failed') { errorRef.current(new Error('A conexão de mídia falhou. Encerre e tente novamente.')); void end(); }
+      if (['failed', 'disconnected'].includes(connection.connectionState)) {
+        disconnectedAt.current ||= Date.now();
+        setStatus('Reconectando…');
+      } else if (connection.connectionState === 'connected') disconnectedAt.current = 0;
     };
     return connection;
   }
@@ -125,21 +133,40 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
     update(value);
     if (value.state === 'RINGING') { setStatus(value.caller === email ? 'Chamando…' : 'Chamada recebida'); return; }
     const currentGeneration = generation.current;
+    const connection = peer.current;
+    const restart = value.state === 'ACTIVE' && !value.answer;
+    if (connection && (Date.now() >= refreshIceAt.current || restart && connection.signalingState === 'stable')) {
+      const iceServers = await api.ice();
+      if (peer.current !== connection) return;
+      connection.setConfiguration({ ...connection.getConfiguration(), iceServers });
+      refreshIceAt.current = Date.now() + 45 * 60000;
+    }
+    if (connection && value.answer && disconnectedAt.current && Date.now() - disconnectedAt.current >= 10000 && Date.now() >= retryAt.current) {
+      retryAt.current = Date.now() + 20000;
+      await api.callAction(value.id, 'restart', value.answer);
+      return;
+    }
     if (value.caller === email && !value.offer) {
       const connection = await prepare(true);
-      await connection.setLocalDescription(await connection.createOffer()); await gathered(connection);
+      if (connection.signalingState !== 'have-local-offer') await connection.setLocalDescription(await connection.createOffer({ iceRestart: restart })); await gathered(connection);
       if (generation.current !== currentGeneration || !alive.current) return;
       const next = await api.callAction(value.id, 'offer', connection.localDescription!.sdp);
       if (generation.current === currentGeneration && alive.current) update(next);
     } else if (value.callee === email && value.offer && !value.answer) {
       const connection = await prepare(false);
-      await connection.setRemoteDescription({ type: 'offer', sdp: value.offer });
-      await connection.setLocalDescription(await connection.createAnswer()); await gathered(connection);
+      if (connection.remoteDescription?.sdp !== value.offer || !connection.localDescription) {
+        await connection.setRemoteDescription({ type: 'offer', sdp: value.offer });
+        await connection.setLocalDescription(await connection.createAnswer());
+      } await gathered(connection);
       if (generation.current !== currentGeneration || !alive.current) return;
       const next = await api.callAction(value.id, 'answer', connection.localDescription!.sdp);
-      if (generation.current === currentGeneration && alive.current) update(next);
-    } else if (value.caller === email && value.answer && peer.current && !peer.current.remoteDescription) {
+      if (generation.current === currentGeneration && alive.current) {
+        update(next);
+        if (connection.connectionState === 'connected') { disconnectedAt.current = 0; setStatus('Em chamada'); }
+      }
+    } else if (value.caller === email && value.answer && peer.current?.signalingState === 'have-local-offer') {
       await applyRemoteAnswer(peer.current, value.answer);
+      if (peer.current?.connectionState === 'connected') { disconnectedAt.current = 0; setStatus('Em chamada'); }
     }
   }
   useEffect(() => {
@@ -150,7 +177,8 @@ export function useCallController(api: ApiRepository, email: string, onError: (e
         working.current = true;
         const epoch = generation.current;
         try { const value = ref.current ? await api.call(ref.current.id) : (await api.calls()).find(item => item.channelId === null); if (active && generation.current === epoch && value) await progress(value); }
-        catch (problem) { if (active && generation.current === epoch) { errorRef.current(problem); if (ref.current) { const id = ref.current.id; cleanup(); update(null); void api.callAction(id, 'end').catch(() => {}); } } }
+        catch (problem) { if (active && generation.current === epoch) { if (problem instanceof ApiError && [401, 403, 404].includes(problem.status)) { cleanup(); update(null); errorRef.current(problem); }
+          else if (ref.current && peer.current?.connectionState !== 'connected') setStatus('Tentando reconectar…'); } }
         finally { working.current = false; }
       }
       if (active) timer = window.setTimeout(tick, 1500);
